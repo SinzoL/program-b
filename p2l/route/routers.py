@@ -128,7 +128,7 @@ class EndpointP2LRouter(BaseRouter):
         "claude-3-opus-20240229": 4,
         "claude-3-5-haiku-20241022": 4,
         "qwen2.5-72b-instruct": 2,
-        "qwen2.5-plus-1127": 4,
+        "qwen-plus": 4,
         "llama-3.1-405b-instruct-bf16": 4,
         "mistral-large-2411": 4,
         "grok-2-2024-08-13": 4,

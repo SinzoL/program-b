@@ -150,6 +150,28 @@ class P2LBackendService:
                 "avg_response_time": 1.6,
                 "strengths": ["编程", "代码生成", "技术问答"],
                 "quality_score": 0.88
+            },
+            # 千问主流模型
+            "qwen2.5-72b-instruct": {
+                "provider": "qwen",
+                "cost_per_1k": 0.002,  # 约$0.002 (¥0.015转换)
+                "avg_response_time": 2.0,
+                "strengths": ["中文理解", "推理", "编程", "数学"],
+                "quality_score": 0.90
+            },
+            "qwen-plus": {
+                "provider": "qwen", 
+                "cost_per_1k": 0.004,
+                "avg_response_time": 2.5,
+                "strengths": ["复杂推理", "长文本", "多轮对话"],
+                "quality_score": 0.92
+            },
+            "qwen-turbo": {
+                "provider": "qwen",
+                "cost_per_1k": 0.001,
+                "avg_response_time": 1.0,
+                "strengths": ["快速响应", "成本效益", "日常对话"],
+                "quality_score": 0.85
             }
         }
     
@@ -525,6 +547,25 @@ class P2LBackendService:
                     return llm_response
                 else:
                     raise Exception("DeepSeek API密钥未配置")
+            
+            # 对于千问模型，使用千问客户端
+            elif request.model.startswith('qwen'):
+                from simple_qwen_client import SimpleQwenClient
+                qwen_client = SimpleQwenClient()
+                
+                if qwen_client.api_key:
+                    logger.info(f"使用千问API调用: {request.model}")
+                    llm_response = qwen_client.generate_response(
+                        model=request.model,
+                        prompt=request.prompt,
+                        max_tokens=2000,
+                        temperature=0.7
+                    )
+                    
+                    logger.info(f"✅ 千问API调用成功: {request.model}")
+                    return llm_response
+                else:
+                    raise Exception("千问API密钥未配置")
             
             # 对于OpenAI模型，使用简单客户端
             elif request.model.startswith('gpt-'):

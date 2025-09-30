@@ -276,12 +276,19 @@ class LLMClient:
             'Content-Type': 'application/json'
         }
         
+        # 千问模型映射
+        qwen_model = model if model.startswith('qwen') else 'qwen2.5-72b-instruct'
+        
         data = {
-            'model': model,
-            'input': {'messages': [{'role': 'user', 'content': prompt}]},
+            'model': qwen_model,
+            'input': {
+                'messages': [{'role': 'user', 'content': prompt}]
+            },
             'parameters': {
                 'max_tokens': kwargs.get('max_tokens', 2000),
-                'temperature': kwargs.get('temperature', 0.7)
+                'temperature': kwargs.get('temperature', 0.7),
+                'top_p': kwargs.get('top_p', 0.8),
+                'repetition_penalty': kwargs.get('repetition_penalty', 1.1)
             }
         }
         
@@ -291,20 +298,33 @@ class LLMClient:
                 raise Exception(f"DashScope API错误 {resp.status}: {error_text}")
             
             result = await resp.json()
-            content = result['output']['text']
-            tokens_used = result['usage']['total_tokens']
             
-            # 计算成本
-            cost_per_1k = 0.015
-            cost = (tokens_used / 1000) * cost_per_1k
+            # 检查API响应状态
+            if result.get('code'):
+                raise Exception(f"千问API错误: {result.get('message', '未知错误')}")
+            
+            # 提取响应内容
+            output = result.get('output', {})
+            content = output.get('text', '')
+            
+            # 提取使用统计
+            usage = result.get('usage', {})
+            input_tokens = usage.get('input_tokens', 0)
+            output_tokens = usage.get('output_tokens', 0)
+            total_tokens = usage.get('total_tokens', input_tokens + output_tokens)
+            
+            # 千问定价 (qwen2.5-72b-instruct: ¥0.015/1K tokens)
+            cost_per_1k_cny = 0.015  # 人民币
+            cost_cny = (total_tokens / 1000) * cost_per_1k_cny
+            cost_usd = cost_cny * 0.14  # 汇率转换为美元
             
             return LLMResponse(
                 content=content,
-                model=model,
-                tokens_used=tokens_used,
-                cost=cost,
+                model=qwen_model,
+                tokens_used=total_tokens,
+                cost=cost_usd,
                 response_time=0,
-                provider='dashscope'
+                provider='qwen'
             )
     
     async def _call_deepseek(self, model: str, prompt: str, **kwargs) -> LLMResponse:

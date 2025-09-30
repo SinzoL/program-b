@@ -166,8 +166,8 @@ class P2LInferenceEngine:
                 "context_length": 1000000, "multimodal": False
             },
             "qwen2.5-72b-instruct": {
-                "provider": "alibaba", "cost_per_1k": 0.015, "avg_response_time": 2.0,
-                "strengths": ["中文", "翻译"], "quality_score": 0.88,
+                "provider": "qwen", "cost_per_1k": 0.002, "avg_response_time": 2.0,
+                "strengths": ["中文理解", "推理", "编程", "数学"], "quality_score": 0.90,
                 "context_length": 32768, "multimodal": False
             },
             "llama-3.1-70b-instruct": {

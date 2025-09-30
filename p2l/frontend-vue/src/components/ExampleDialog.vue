@@ -33,9 +33,9 @@ const visible = ref(props.modelValue)
 const exampleQuestions = ref([
   {
     id: 1,
-    category: '编程开发',
-    prompt: '展示js实现字符串中下划线转化为驼峰',
-    description: '代码实现类问题，适合测试编程能力'
+    category: '技术解释',
+    prompt: '你是谁？',
+    description: '解释类问题，测试知识整理能力'
   },
   {
     id: 2,
@@ -54,6 +54,12 @@ const exampleQuestions = ref([
     category: '技术解释',
     prompt: '解释什么是区块链技术及其应用场景',
     description: '解释类问题，测试知识整理能力'
+  },
+  {
+    id: 5,
+    category: '编程开发',
+    prompt: '展示js实现字符串中下划线转化为驼峰',
+    description: '代码实现类问题，适合测试编程能力'
   }
 ])
 

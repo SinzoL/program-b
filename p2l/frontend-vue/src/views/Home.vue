@@ -41,6 +41,7 @@
           ref="chatHistoryRef"
           :chat-history="p2lStore.chatHistory"
           @show-examples="showExamples"
+          @clear-history="clearChatHistory"
         />
       </div>
     </div>
@@ -133,6 +134,11 @@ const clearAll = () => {
   userPrompt.value = ''
   p2lStore.clearChatHistory()
   ElMessage.success('已清空所有结果')
+}
+
+const clearChatHistory = () => {
+  p2lStore.clearChatHistory()
+  ElMessage.success('已清空对话历史')
 }
 
 const showExamples = () => {
