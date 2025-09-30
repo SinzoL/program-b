@@ -367,6 +367,11 @@ const formatTime = (timestamp) => {
 }
 
 const formatResponse = (response) => {
+  // 检查response是否存在
+  if (!response || typeof response !== 'string') {
+    return '暂无回复内容'
+  }
+  
   // 简单的代码高亮处理
   return response
     .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="code-block"><code>$2</code></pre>')

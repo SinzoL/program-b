@@ -101,10 +101,10 @@ export const useP2LStore = defineStore('p2l', {
           id: Date.now(),
           prompt,
           model,
-          response: response.data.response,
+          response: response.data.response || response.data.content || '暂无回复内容',
           timestamp: new Date(),
           cost: response.data.cost || 0,
-          tokens: response.data.tokens || 0
+          tokens: response.data.tokens || response.data.tokens_used || 0
         }
         
         this.chatHistory.push(result)

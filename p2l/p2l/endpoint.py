@@ -14,7 +14,8 @@ from transformers import (
     PreTrainedModel,
 )
 
-from p2l.model import get_p2l_model, P2LOutputs
+from p2l.model import get_p2l_model, P2LOutputs, load_model as load_p2l_model, generate_text
+from p2l.p2l_inference import P2LInferenceEngine
 from contextlib import asynccontextmanager
 import logging
 
@@ -143,9 +144,20 @@ class InputData(BaseModel):
     prompt: list[str]
 
 
+class P2LInferenceRequest(BaseModel):
+    code: str
+    max_length: Optional[int] = 512
+    temperature: Optional[float] = 0.7
+
+
 class OutputData(BaseModel):
     coefs: List[float]
     eta: Optional[float] = None
+
+
+class P2LInferenceResponse(BaseModel):
+    natural_language: str
+    confidence: Optional[float] = None
 
 
 class ModelList(BaseModel):
@@ -218,6 +230,49 @@ async def predict(input_data: InputData, api_key: str = Header(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/p2l_inference")
+async def p2l_inference(input_data: P2LInferenceRequest, api_key: str = Header(...)):
+    """P2L推理端点 - 将代码转换为自然语言"""
+    
+    logging.debug(f"Received P2L Inference Request: {input_data.code[:100]}...")
+
+    if api_key != app.state.api_key:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    try:
+        model = app.state.model
+        tokenizer = app.state.tokenizer
+        
+        # 检查是否是P2L推理引擎
+        if isinstance(model, P2LInferenceEngine):
+            result = model.infer(
+                input_data.code,
+                max_length=input_data.max_length,
+                temperature=input_data.temperature
+            )
+            return P2LInferenceResponse(
+                natural_language=result["natural_language"],
+                confidence=result.get("confidence")
+            )
+        else:
+            # 使用标准模型进行推理
+            result = generate_text(
+                model, 
+                tokenizer, 
+                input_data.code,
+                max_length=input_data.max_length,
+                temperature=input_data.temperature
+            )
+            return P2LInferenceResponse(
+                natural_language=result or "推理失败",
+                confidence=None
+            )
+            
+    except Exception as e:
+        logging.error(f"P2L inference failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/models")
 async def models(api_key: str = Header(...)):
 
@@ -241,29 +296,65 @@ async def models(api_key: str = Header(...)):
 def load_model(
     model_name, model_type, head_type, loss_type
 ) -> Tuple[PreTrainedModel, AutoTokenizer, List[str]]:
+    """加载模型 - 支持P2L推理引擎和标准模型"""
+    
+    try:
+        # 首先尝试使用新的P2L推理引擎
+        logging.info("尝试加载P2L推理引擎...")
+        model, tokenizer = load_p2l_model(model_name)
+        
+        if model is not None:
+            # 如果是P2L推理引擎，创建默认模型列表
+            if isinstance(model, P2LInferenceEngine):
+                model_list = ["P2L-Inference-Engine"]
+                return model, tokenizer, model_list
+            else:
+                # 标准模型，尝试加载模型列表
+                try:
+                    fname = hf_hub_download(
+                        repo_id=model_name, filename="model_list.json", repo_type="model"
+                    )
+                    with open(fname) as fin:
+                        model_list = json.load(fin)
+                except:
+                    model_list = ["default-model"]
+                return model, tokenizer, model_list
+    
+    except Exception as e:
+        logging.warning(f"P2L推理引擎加载失败: {e}")
+    
+    # 回退到原始加载方法
+    try:
+        logging.info("回退到原始模型加载方法...")
+        
+        # Download and load the model list
+        fname = hf_hub_download(
+            repo_id=model_name, filename="model_list.json", repo_type="model"
+        )
+        with open(fname) as fin:
+            model_list = json.load(fin)
 
-    # Download and load the model list
-    fname = hf_hub_download(
-        repo_id=model_name, filename="model_list.json", repo_type="model"
-    )
-    with open(fname) as fin:
-        model_list = json.load(fin)
+        # Initialize tokenizer
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer.truncation_side = "left"
+        tokenizer.padding_side = "right"
 
-    # Initialize tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    tokenizer.truncation_side = "left"
-    tokenizer.padding_side = "right"
+        # Get the model class and load the model
+        model_cls = get_p2l_model(model_type, loss_type, head_type)
 
-    # Get the model class and load the model
-    model_cls = get_p2l_model(model_type, loss_type, head_type)
-
-    model = model_cls.from_pretrained(
-        model_name,
-        CLS_id=tokenizer.cls_token_id,
-        num_models=len(model_list),
-        torch_dtype=torch.bfloat16,
-    )
-    return model, tokenizer, model_list
+        model = model_cls.from_pretrained(
+            model_name,
+            CLS_id=tokenizer.cls_token_id,
+            num_models=len(model_list),
+            torch_dtype=torch.bfloat16,
+        )
+        return model, tokenizer, model_list
+        
+    except Exception as e:
+        logging.error(f"所有模型加载方法都失败了: {e}")
+        # 创建一个基本的P2L推理引擎作为后备
+        engine = P2LInferenceEngine()
+        return engine, None, ["P2L-Fallback-Engine"]
 
 
 if __name__ == "__main__":

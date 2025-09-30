@@ -854,6 +854,111 @@ def bag_tie_loss(
     return loss
 
 
+# 模型加载和推理功能
+import os
+import logging
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+logger = logging.getLogger(__name__)
+
+def load_model(model_path: str, device: str = "auto"):
+    """加载P2L模型 - 支持多种模型格式"""
+    try:
+        logger.info(f"Loading P2L model from {model_path}")
+        
+        # 检查模型文件是否存在
+        if not os.path.exists(model_path):
+            logger.error(f"Model path does not exist: {model_path}")
+            return None, None
+        
+        # 设置设备
+        if device == "auto":
+            if torch.cuda.is_available():
+                device = "cuda"
+            elif torch.backends.mps.is_available():
+                device = "mps"
+            else:
+                device = "cpu"
+        
+        # 检查是否是P2L推理模型
+        p2l_config_path = os.path.join(model_path, "p2l_config.json")
+        if os.path.exists(p2l_config_path):
+            logger.info("检测到P2L推理模型，加载P2L推理引擎...")
+            from .p2l_inference import P2LInferenceEngine
+            engine = P2LInferenceEngine(model_path=model_path, device=device)
+            return engine, None  # P2L引擎不需要单独的tokenizer
+        
+        # 尝试加载标准的transformers模型
+        try:
+            # 加载tokenizer
+            tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+            
+            # 加载模型
+            model = AutoModelForCausalLM.from_pretrained(
+                model_path,
+                torch_dtype=torch.float16 if device != "cpu" else torch.float32,
+                device_map="auto" if device == "cuda" else None,
+                trust_remote_code=True,
+                low_cpu_mem_usage=True
+            )
+            
+            if device != "cuda":
+                model = model.to(device)
+            
+            model.eval()
+            
+            logger.info(f"✅ Transformers模型加载成功，设备: {device}")
+            return model, tokenizer
+            
+        except Exception as e:
+            logger.warning(f"标准模型加载失败: {e}")
+            
+            # 尝试加载为P2L推理引擎
+            logger.info("尝试初始化P2L推理引擎...")
+            from .p2l_inference import P2LInferenceEngine
+            engine = P2LInferenceEngine(device=device)
+            return engine, None
+        
+    except Exception as e:
+        logger.error(f"❌ Failed to load model: {e}")
+        return None, None
+
+
+def generate_text(model, tokenizer, prompt: str, max_length: int = 512, temperature: float = 0.7):
+    """使用加载的模型生成文本"""
+    try:
+        # 检查是否是P2L推理引擎
+        if hasattr(model, 'infer'):
+            return model.infer(prompt, max_length=max_length, temperature=temperature)
+        
+        # 标准transformers模型推理
+        if tokenizer is None:
+            logger.error("Tokenizer is required for standard model inference")
+            return None
+            
+        inputs = tokenizer.encode(prompt, return_tensors="pt")
+        if hasattr(model, 'device'):
+            inputs = inputs.to(model.device)
+        
+        with torch.no_grad():
+            outputs = model.generate(
+                inputs,
+                max_length=max_length,
+                temperature=temperature,
+                do_sample=True,
+                pad_token_id=tokenizer.eos_token_id
+            )
+        
+        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return generated_text[len(prompt):].strip()
+        
+    except Exception as e:
+        logger.error(f"Text generation failed: {e}")
+        return None
+
+
 @register_loss("tie-bb-bag")
 @register_loss("tie-bb-grk")
 def bag_tie_bb_loss(
