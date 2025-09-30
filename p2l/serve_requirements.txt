@@ -7,3 +7,5 @@ wandb
 scipy
 uvicorn
 fastapi
+aiohttp
+python-dotenv

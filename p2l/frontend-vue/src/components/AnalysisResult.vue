@@ -1,0 +1,232 @@
+<template>
+  <el-card v-if="analysis" class="analysis-card" shadow="hover">
+    <template #header>
+      <div class="card-header">
+        <el-icon class="header-icon"><DataAnalysis /></el-icon>
+        <span>P2L智能分析</span>
+      </div>
+    </template>
+    
+    <div class="analysis-content">
+      <!-- 任务特征 -->
+      <div class="task-info">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="任务类型">
+            <el-tag>{{ analysis?.task_analysis?.task_type || '未知' }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="复杂度">
+            <el-tag :type="getComplexityType(analysis.complexity)">
+              {{ analysis?.task_analysis?.complexity || '未知' }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="语言">
+            <el-tag type="info">{{ analysis?.task_analysis?.language || '未知' }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="推荐模型">
+            <el-tag type="success">{{ analysis.recommended_model }}</el-tag>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+
+      <!-- 模型排名 -->
+      <div class="rankings">
+        <h4>🏆 模型智能排名</h4>
+        <div class="ranking-list">
+          <div 
+            v-for="(rec, index) in sortedRecommendations" 
+            :key="rec.model"
+            class="ranking-item"
+            :class="{ 'top-recommendation': index === 0 }"
+          >
+            <div class="rank-badge">{{ index + 1 }}</div>
+            <div class="model-info">
+              <div class="model-name">{{ rec.model }}</div>
+              <div class="model-details">
+                <el-tag size="small">{{ getModelInfo(rec.model)?.provider }}</el-tag>
+                <el-tag size="small" type="info">{{ getModelInfo(rec.model)?.type }}</el-tag>
+              </div>
+            </div>
+            <div class="score-section">
+              <el-progress 
+                :percentage="Math.round(rec.score * 100)" 
+                :color="getScoreColor(rec.score)"
+                :stroke-width="8"
+              />
+              <span class="score-text">{{ (rec.score * 100).toFixed(1) }}%</span>
+            </div>
+            <el-button 
+              type="primary" 
+              size="small"
+              @click="handleCallLLM(rec.model)"
+              :loading="loading"
+            >
+              调用模型
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </el-card>
+</template>
+
+<script setup>
+import { defineProps, defineEmits, computed } from 'vue'
+
+const props = defineProps({
+  analysis: {
+    type: Object,
+    default: null
+  },
+  recommendations: {
+    type: Array,
+    default: () => []
+  },
+  enabledModels: {
+    type: Array,
+    default: () => []
+  },
+  loading: {
+    type: Boolean,
+    default: false
+  },
+  getModelInfo: {
+    type: Function,
+    required: true
+  }
+})
+
+const emit = defineEmits(['call-llm'])
+
+const sortedRecommendations = computed(() => {
+  // 过滤出启用的模型，然后按分数排序
+  return [...props.recommendations]
+    .filter(rec => props.enabledModels.includes(rec.model))
+    .sort((a, b) => b.score - a.score)
+})
+
+const getComplexityType = (complexity) => {
+  const types = {
+    '简单': 'success',
+    '中等': 'warning', 
+    '复杂': 'danger'
+  }
+  return types[complexity] || 'info'
+}
+
+const getScoreColor = (score) => {
+  if (score >= 0.8) return '#67c23a'
+  if (score >= 0.6) return '#e6a23c'
+  return '#f56c6c'
+}
+
+const handleCallLLM = (modelName) => {
+  emit('call-llm', modelName)
+}
+</script>
+
+<style scoped>
+.analysis-card {
+  flex: 1;
+  overflow: hidden;
+}
+
+.analysis-card :deep(.el-card__body) {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+}
+
+.header-icon {
+  font-size: 18px;
+}
+
+.analysis-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.task-info {
+  margin-bottom: 20px;
+}
+
+.rankings h4 {
+  margin: 0 0 15px 0;
+  color: #303133;
+}
+
+.ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.ranking-item:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+}
+
+.top-recommendation {
+  border-color: #67c23a;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+.rank-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #409eff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.top-recommendation .rank-badge {
+  background: #67c23a;
+}
+
+.model-info {
+  flex: 1;
+}
+
+.model-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.model-details {
+  display: flex;
+  gap: 5px;
+}
+
+.score-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 150px;
+}
+
+.score-text {
+  font-weight: bold;
+  color: #409eff;
+}
+</style>

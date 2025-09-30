@@ -28,6 +28,14 @@ except ImportError as e:
     logging.warning(f"P2L模块导入失败: {e}")
     P2L_AVAILABLE = False
 
+# 导入LLM客户端
+try:
+    from llm_client import LLMClient
+    LLM_CLIENT_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"LLM客户端导入失败: {e}")
+    LLM_CLIENT_AVAILABLE = False
+
 # 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -57,7 +65,9 @@ app.add_middleware(
 # 请求模型
 class P2LAnalysisRequest(BaseModel):
     prompt: str
-    priority: str = "performance"  # performance, cost, speed, balanced
+    mode: str = "balanced"  # performance, cost, speed, balanced
+    models: Optional[List[str]] = None  # 启用的模型列表
+    priority: str = "performance"  # 兼容旧字段
 
 class LLMGenerateRequest(BaseModel):
     model: str
@@ -75,6 +85,7 @@ class P2LBackendService:
         self.p2l_inference_engine = None
         self.model_configs = self._load_model_configs()
         self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        self.llm_client = None
         logger.info(f"使用设备: {self.device}")
         
         # 尝试加载P2L模型
@@ -83,6 +94,13 @@ class P2LBackendService:
         # 尝试加载P2L推理引擎
         if P2L_AVAILABLE:
             self._load_p2l_inference_engine()
+        
+        # 初始化LLM客户端
+        if LLM_CLIENT_AVAILABLE:
+            self.llm_client = LLMClient()
+            logger.info("✅ LLM客户端初始化成功")
+        else:
+            logger.warning("❌ LLM客户端不可用，将使用模拟响应")
     
     def _load_model_configs(self) -> Dict:
         """加载模型配置信息"""
@@ -142,6 +160,20 @@ class P2LBackendService:
                 "avg_response_time": 2.3,
                 "strengths": ["开源", "可控"],
                 "quality_score": 0.86
+            },
+            "deepseek-chat": {
+                "provider": "deepseek",
+                "cost_per_1k": 0.002,
+                "avg_response_time": 1.5,
+                "strengths": ["中文理解", "对话交流", "快速响应"],
+                "quality_score": 0.85
+            },
+            "deepseek-coder": {
+                "provider": "deepseek",
+                "cost_per_1k": 0.002,
+                "avg_response_time": 1.6,
+                "strengths": ["编程", "代码生成", "技术问答"],
+                "quality_score": 0.88
             },
             "deepseek-v3": {
                 "provider": "deepseek",
@@ -363,11 +395,17 @@ class P2LBackendService:
             "length": len(prompt)
         }
     
-    def calculate_model_scores(self, task_analysis: Dict, priority: str) -> List[Dict]:
+    def calculate_model_scores(self, task_analysis: Dict, priority: str, enabled_models: Optional[List[str]] = None) -> List[Dict]:
         """计算模型分数并排序"""
         scores = []
         
-        for model_name, config in self.model_configs.items():
+        # 如果指定了启用的模型列表，只计算这些模型的分数
+        models_to_score = self.model_configs.items()
+        if enabled_models:
+            models_to_score = [(name, config) for name, config in self.model_configs.items() if name in enabled_models]
+            logger.info(f"只计算启用模型的分数: {[name for name, _ in models_to_score]}")
+        
+        for model_name, config in models_to_score:
             base_score = config["quality_score"]
             
             # 任务类型匹配
@@ -411,12 +449,16 @@ class P2LBackendService:
     async def p2l_analyze(self, request: P2LAnalysisRequest) -> Dict:
         """P2L智能分析"""
         logger.info(f"P2L分析请求: {request.prompt[:50]}...")
+        logger.info(f"启用的模型: {request.models}")
         
         # 分析任务
         task_analysis = self.analyze_task(request.prompt)
         
-        # 计算模型分数
-        model_scores = self.calculate_model_scores(task_analysis, request.priority)
+        # 使用mode字段，如果没有则使用priority字段
+        priority_mode = request.mode or request.priority
+        
+        # 计算模型分数，只包含启用的模型
+        model_scores = self.calculate_model_scores(task_analysis, priority_mode, enabled_models=request.models)
         
         # 生成推荐理由
         best_model = model_scores[0]
@@ -467,32 +509,121 @@ class P2LBackendService:
         return result
     
     async def generate_llm_response(self, request: LLMGenerateRequest) -> Dict:
-        """模拟LLM响应生成"""
+        """真实LLM响应生成"""
         logger.info(f"调用LLM: {request.model}")
         
         start_time = time.time()
         
-        # 模拟不同模型的响应时间
-        model_config = self.model_configs.get(request.model, {})
-        response_time = model_config.get("avg_response_time", 2.0)
-        
-        # 模拟网络延迟
-        await asyncio.sleep(min(response_time * 0.3, 2.0))
-        
-        # 生成模拟响应
-        response_content = self._generate_mock_response(request.model, request.prompt)
-        
-        actual_time = time.time() - start_time
-        
-        return {
-            "model": request.model,
-            "response": response_content,  # 修改字段名为response
-            "content": response_content,   # 保留content字段兼容性
-            "response_time": round(actual_time, 2),
-            "tokens": int(len(response_content.split()) * 1.3),  # 修改字段名为tokens
-            "tokens_used": len(response_content.split()) * 1.3,  # 保留原字段兼容性
-            "cost": round(model_config.get("cost_per_1k", 0.02) * len(response_content.split()) * 1.3 / 1000, 4)
-        }
+        try:
+            # 对于DeepSeek模型，使用DeepSeek客户端
+            if request.model.startswith('deepseek'):
+                from simple_deepseek_client import SimpleDeepSeekClient
+                deepseek_client = SimpleDeepSeekClient()
+                
+                if deepseek_client.api_key:
+                    logger.info(f"使用DeepSeek API调用: {request.model}")
+                    llm_response = deepseek_client.generate_response(
+                        model=request.model,
+                        prompt=request.prompt,
+                        max_tokens=2000,
+                        temperature=0.7
+                    )
+                    
+                    logger.info(f"✅ DeepSeek API调用成功: {request.model}")
+                    return llm_response
+                else:
+                    raise Exception("DeepSeek API密钥未配置")
+            
+            # 对于OpenAI模型，使用简单客户端
+            elif request.model.startswith('gpt-'):
+                from simple_openai_client import SimpleOpenAIClient
+                openai_client = SimpleOpenAIClient()
+                
+                if openai_client.api_key:
+                    logger.info(f"使用OpenAI API调用: {request.model}")
+                    llm_response = openai_client.generate_response(
+                        model=request.model,
+                        prompt=request.prompt,
+                        max_tokens=2000,
+                        temperature=0.7
+                    )
+                    
+                    logger.info(f"✅ OpenAI API调用成功: {request.model}")
+                    return llm_response
+                else:
+                    raise Exception("OpenAI API密钥未配置")
+            
+            # 尝试使用其他LLM API
+            elif self.llm_client:
+                async with self.llm_client as client:
+                    llm_response = await client.generate_response(
+                        model=request.model,
+                        prompt=request.prompt,
+                        max_tokens=2000,
+                        temperature=0.7
+                    )
+                    
+                    logger.info(f"✅ 真实API调用成功: {request.model}")
+                    
+                    return {
+                        "model": llm_response.model,
+                        "response": llm_response.content,
+                        "content": llm_response.content,
+                        "response_time": round(llm_response.response_time, 2),
+                        "tokens": llm_response.tokens_used,
+                        "tokens_used": llm_response.tokens_used,
+                        "cost": round(llm_response.cost, 4),
+                        "provider": llm_response.provider,
+                        "is_real_api": True
+                    }
+            else:
+                raise Exception("LLM客户端不可用")
+                
+        except Exception as e:
+            error_msg = str(e)
+            
+            # 检查是否是配额不足错误
+            if "insufficient_quota" in error_msg or "exceeded your current quota" in error_msg:
+                logger.error(f"❌ OpenAI API配额不足: {e}")
+                # 返回配额不足的明确提示
+                return {
+                    "model": request.model,
+                    "response": "⚠️ **OpenAI API配额不足**\n\n您的OpenAI API密钥配额已用完，请：\n1. 检查您的OpenAI账户余额\n2. 升级您的付费计划\n3. 或等待配额重置\n\n当前使用模拟响应代替真实API调用。",
+                    "content": "⚠️ OpenAI API配额不足，请检查账户余额",
+                    "response_time": 0.1,
+                    "tokens": 50,
+                    "tokens_used": 50,
+                    "cost": 0.0,
+                    "provider": "openai",
+                    "is_real_api": False,
+                    "error_type": "quota_exceeded"
+                }
+            else:
+                logger.warning(f"真实API调用失败，使用模拟响应: {e}")
+            
+            # 回退到模拟响应
+            model_config = self.model_configs.get(request.model, {})
+            response_time = model_config.get("avg_response_time", 2.0)
+            
+            # 模拟网络延迟
+            await asyncio.sleep(min(response_time * 0.3, 1.0))
+            
+            # 生成模拟响应
+            response_content = self._generate_mock_response(request.model, request.prompt)
+            
+            actual_time = time.time() - start_time
+            
+            return {
+                "model": request.model,
+                "response": response_content,
+                "content": response_content,
+                "response_time": round(actual_time, 2),
+                "tokens": int(len(response_content.split()) * 1.3),
+                "tokens_used": int(len(response_content.split()) * 1.3),
+                "cost": round(model_config.get("cost_per_1k", 0.02) * len(response_content.split()) * 1.3 / 1000, 4),
+                "provider": "simulation",
+                "is_real_api": False
+            }
     
     def _generate_mock_response(self, model: str, prompt: str) -> str:
         """生成模拟的LLM响应"""
@@ -873,7 +1004,9 @@ async def health_check():
         "p2l_inference_engine": p2l_service.p2l_inference_engine is not None,
         "llm_models_available": len(p2l_service.model_configs),
         "device": str(p2l_service.device),
-        "p2l_available": P2L_AVAILABLE
+        "p2l_available": P2L_AVAILABLE,
+        "llm_client_available": LLM_CLIENT_AVAILABLE,
+        "real_api_enabled": p2l_service.llm_client is not None
     })
 
 # 静态文件服务

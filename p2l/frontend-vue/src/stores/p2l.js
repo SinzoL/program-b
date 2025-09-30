@@ -21,19 +21,23 @@ export const useP2LStore = defineStore('p2l', {
     
     // 模型信息
     availableModels: [
-      { name: 'gpt-4o', provider: 'OpenAI', type: '通用强化', cost: '高', speed: '中' },
-      { name: 'gpt-4o-mini', provider: 'OpenAI', type: '轻量快速', cost: '低', speed: '快' },
-      { name: 'claude-3-5-sonnet-20241022', provider: 'Anthropic', type: '推理专家', cost: '高', speed: '中' },
-      { name: 'claude-3-5-haiku-20241022', provider: 'Anthropic', type: '快速响应', cost: '中', speed: '快' },
-      { name: 'gemini-1.5-pro-002', provider: 'Google', type: '多模态', cost: '中', speed: '中' },
-      { name: 'gemini-1.5-flash-002', provider: 'Google', type: '闪电响应', cost: '低', speed: '极快' },
-      { name: 'llama-3.1-70b-versatile', provider: 'Meta', type: '开源强化', cost: '中', speed: '中' },
-      { name: 'llama-3.1-8b-instant', provider: 'Meta', type: '即时响应', cost: '极低', speed: '极快' },
-      { name: 'llama-3.1-70b-instruct', provider: 'Meta', type: '开源指令', cost: '低', speed: '中' },
-      { name: 'mixtral-8x7b-32768', provider: 'Mistral', type: '混合专家', cost: '低', speed: '快' },
-      { name: 'qwen2.5-72b-instruct', provider: 'Alibaba', type: '中文专家', cost: '中', speed: '中' },
-      { name: 'deepseek-v3', provider: 'DeepSeek', type: '深度推理', cost: '中', speed: '中' }
+      { name: 'gpt-4o', provider: 'OpenAI', type: 'GPT', cost: '高', speed: '中', hasApiKey: true },
+      { name: 'gpt-4o-mini', provider: 'OpenAI', type: 'GPT', cost: '低', speed: '快', hasApiKey: true },
+      { name: 'claude-3-5-sonnet-20241022', provider: 'Anthropic', type: 'Claude', cost: '高', speed: '中', hasApiKey: false },
+      { name: 'claude-3-5-haiku-20241022', provider: 'Anthropic', type: 'Claude', cost: '中', speed: '快', hasApiKey: false },
+      { name: 'gemini-1.5-pro-002', provider: 'Google', type: 'Gemini', cost: '中', speed: '中', hasApiKey: false },
+      { name: 'gemini-1.5-flash-002', provider: 'Google', type: 'Gemini', cost: '低', speed: '极快', hasApiKey: false },
+      { name: 'llama-3.1-70b-versatile', provider: 'Meta', type: 'LLaMA', cost: '中', speed: '中', hasApiKey: false },
+      { name: 'llama-3.1-8b-instant', provider: 'Meta', type: 'LLaMA', cost: '极低', speed: '极快', hasApiKey: false },
+      { name: 'llama-3.1-70b-instruct', provider: 'Meta', type: 'LLaMA', cost: '低', speed: '中', hasApiKey: false },
+      { name: 'mixtral-8x7b-32768', provider: 'Mistral', type: 'Mixtral', cost: '低', speed: '快', hasApiKey: false },
+      { name: 'qwen2.5-72b-instruct', provider: 'Alibaba', type: 'Qwen', cost: '中', speed: '中', hasApiKey: false },
+      { name: 'deepseek-chat', provider: 'DeepSeek', type: 'DeepSeek', cost: '低', speed: '快', hasApiKey: true },
+      { name: 'deepseek-coder', provider: 'DeepSeek', type: 'DeepSeek', cost: '低', speed: '快', hasApiKey: true }
     ],
+    
+    // 启用的模型列表
+    enabledModels: [],
     
     // 优先模式
     priorityMode: 'balanced'
@@ -46,8 +50,18 @@ export const useP2LStore = defineStore('p2l', {
       return state.availableModels.find(model => model.name === name)
     },
     
+    // 过滤后的推荐结果（只显示启用的模型）
     sortedRecommendations: (state) => {
-      return [...state.recommendations].sort((a, b) => b.score - a.score)
+      return [...state.recommendations]
+        .filter(rec => state.enabledModels.includes(rec.model))
+        .sort((a, b) => b.score - a.score)
+    },
+    
+    // 启用的模型信息
+    enabledModelInfos: (state) => {
+      return state.availableModels.filter(model => 
+        state.enabledModels.includes(model.name)
+      )
     }
   },
 
@@ -72,7 +86,7 @@ export const useP2LStore = defineStore('p2l', {
         const response = await api.post('/api/p2l/analyze', {
           prompt,
           mode,
-          models: this.availableModels.map(m => m.name)
+          models: this.enabledModels.length > 0 ? this.enabledModels : this.availableModels.map(m => m.name)
         })
         
         this.currentAnalysis = response.data
@@ -120,6 +134,30 @@ export const useP2LStore = defineStore('p2l', {
     // 设置优先模式
     setPriorityMode(mode) {
       this.priorityMode = mode
+    },
+
+    // 设置启用的模型
+    setEnabledModels(models) {
+      this.enabledModels = models
+      // 保存到localStorage
+      localStorage.setItem('p2l_enabled_models', JSON.stringify(models))
+    },
+
+    // 初始化启用的模型（从localStorage加载或默认全部启用）
+    initializeEnabledModels() {
+      try {
+        const saved = localStorage.getItem('p2l_enabled_models')
+        if (saved) {
+          this.enabledModels = JSON.parse(saved)
+        } else {
+          // 默认启用所有模型
+          this.enabledModels = this.availableModels.map(m => m.name)
+        }
+      } catch (error) {
+        console.error('加载模型配置失败:', error)
+        // 默认启用所有模型
+        this.enabledModels = this.availableModels.map(m => m.name)
+      }
     },
 
     // 清空聊天历史
