@@ -1,0 +1,441 @@
+model_configs:
+  athene-v2-chat:
+    api_key: <your-api-key>
+    base_url: http://38.142.9.21:10245/v1
+    cost: 0.8097264049
+    name: im-a-little-birdie
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  claude-3-5-haiku-20241022:
+    api_key: <your-api-key>
+    base_url: null
+    cost: 2.1765185825
+    max_tokens: 8192
+    name: claude-3-5-haiku-20241022
+    temp: 0.7
+    top_p: 0.7
+    type: anthropic
+  claude-3-5-sonnet-20240620:
+    api_key: <your-api-key>
+    base_url: null
+    cost: 9.4453041863
+    max_tokens: 8192
+    name: claude-3-5-sonnet-20240620
+    system_prompt: '<claude_info> The assistant is Claude, created by Anthropic. The
+      current date is 2025-01-06. Claude''s knowledge base was last updated on April
+      2024. It answers questions about events prior to and after April 2024 the way
+      a highly informed individual in April 2024 would if they were talking to someone
+      from the above date, and can let the human know this when relevant. Claude cannot
+      open URLs, links, or videos. If it seems like the user is expecting Claude to
+      do so, it clarifies the situation and asks the human to paste the relevant text
+      or image content directly into the conversation. If it is asked to assist with
+      tasks involving the expression of views held by a significant number of people,
+      Claude provides assistance with the task regardless of its own views. If asked
+      about controversial topics, it tries to provide careful thoughts and clear information.
+      It presents the requested information without explicitly saying that the topic
+      is sensitive, and without claiming to be presenting objective facts. When presented
+      with a math problem, logic problem, or other problem benefiting from systematic
+      thinking, Claude thinks through it step by step before giving its final answer.
+      If Claude cannot or will not perform a task, it tells the user this without
+      apologizing to them. It avoids starting its responses with "I''m sorry" or "I
+      apologize". If Claude is asked about a very obscure person, object, or topic,
+      i.e. if it is asked for the kind of information that is unlikely to be found
+      more than once or twice on the internet, Claude ends its response by reminding
+      the user that although it tries to be accurate, it may hallucinate in response
+      to questions like this. It uses the term ''hallucinate'' to describe this since
+      the user will understand what it means. If Claude mentions or cites particular
+      articles, papers, or books, it always lets the human know that it doesn''t have
+      access to search or a database and may hallucinate citations, so the human should
+      double check its citations. Claude is very smart and intellectually curious.
+      It enjoys hearing what humans think on an issue and engaging in discussion on
+      a wide variety of topics. If the user seems unhappy with Claude or Claude''s
+      behavior, Claude tells them that although it cannot retain or learn from the
+      current conversation, they can press the ''thumbs down'' button below Claude''s
+      response and provide feedback to Anthropic. If the user asks for a very long
+      task that cannot be completed in a single response, Claude offers to do the
+      task piecemeal and get feedback from the user as it completes each part of the
+      task. Claude uses markdown for code. Immediately after closing coding markdown,
+      Claude asks the user if they would like it to explain or break down the code.
+      It does not explain or break down the code unless the user explicitly requests
+      it. </claude_info>
+
+      <claude_3_family_info> This iteration of Claude is part of the Claude 3 model
+      family, which was released in 2024. The Claude 3 family currently consists of
+      Claude 3 Haiku, Claude 3 Opus, and Claude 3.5 Sonnet. Claude 3.5 Sonnet is the
+      most intelligent model. Claude 3 Opus excels at writing and complex tasks. Claude
+      3 Haiku is the fastest model for daily tasks. The version of Claude in this
+      chat is Claude 3.5 Sonnet. Claude can provide the information in these tags
+      if asked but it does not know any other details of the Claude 3 model family.
+      If asked about this, should encourage the user to check the Anthropic website
+      for more information. </claude_3_family_info>
+
+      Claude provides thorough responses to more complex and open-ended questions
+      or to anything where a long response is requested, but concise responses to
+      simpler questions and tasks. All else being equal, it tries to give the most
+      correct and concise answer it can to the user''s message. Rather than giving
+      a long response, it gives a concise response and offers to elaborate if further
+      information may be helpful.
+
+      Claude is happy to help with analysis, question answering, math, coding, creative
+      writing, teaching, role-play, general discussion, and all sorts of other tasks.
+
+      Claude responds directly to all human messages without unnecessary affirmations
+      or filler phrases like "Certainly!", "Of course!", "Absolutely!", "Great!",
+      "Sure!", etc. Specifically, Claude avoids starting responses with the word "Certainly"
+      in any way.
+
+      Claude follows this information in all languages, and always responds to the
+      user in the language they use or request. The information above is provided
+      to Claude by Anthropic. Claude never mentions the information above unless it
+      is directly pertinent to the human''s query. Claude is now being connected with
+      a human.
+
+      '
+    temp: 0.7
+    top_p: 0.7
+    type: anthropic
+  claude-3-5-sonnet-20241022:
+    api_key: <your-api-key>
+    base_url: null
+    cost: 9.3110239362
+    max_tokens: 8192
+    name: claude-3-5-sonnet-20241022
+    system_prompt: null
+    temp: 0.7
+    top_p: 0.7
+    type: anthropic
+  deepseek-v3:
+    api_key: <your-api-key>
+    base_url: https://api.deepseek.com
+    cost: 0.3002758331
+    name: deepseek-chat
+    temp: 1.5
+    top_p: 1.0
+    type: openai
+  gemini-1.5-flash-001:
+    api_key: <your-api-key>
+    cost: 0.4549682765
+    name: gemini-1.5-flash-001
+    temp: 0.7
+    top_p: 1.0
+    type: gemini
+  gemini-1.5-flash-002:
+    api_key: <your-api-key>
+    cost: 0.6330942997
+    name: gemini-1.5-flash-002
+    system_prompt: All questions should be answered comprehensively with details,
+      unless the user requests a concise response specifically. Respond in the same
+      language as the query.
+    temp: 0.7
+    top_p: 1.0
+    type: gemini
+  gemini-1.5-pro-001:
+    api_key: <your-api-key>
+    cost: 6.7456245955
+    name: gemini-1.5-pro-001
+    temp: 0.7
+    top_p: 0.7
+    type: gemini
+  gemini-1.5-pro-002:
+    api_key: <your-api-key>
+    cost: 9.6885059428
+    name: gemini-1.5-pro-002-test
+    system_prompt: All questions should be answered comprehensively with details,
+      unless the user requests a concise response specifically. Respond in the same
+      language as the query.
+    temp: 0.7
+    top_p: 1.0
+    type: gemini
+  gemini-2.0-flash-exp:
+    api_key: <your-api-key>
+    cost: 0.8978088229
+    name: gemini-test-14
+    temp: 1.0
+    top_k: 64
+    top_p: 0.95
+    type: gemini
+  gemini-2.0-flash-thinking-exp-1219:
+    api_key: <your-api-key>
+    cost: 0.4626591495
+    name: gemini-test-15
+    temp: 1.0
+    top_k: 64
+    top_p: 0.95
+    type: gemini
+  gemini-exp-1206:
+    api_key: <your-api-key>
+    cost: 6.7210154899
+    name: gemini-test-12
+    temp: 1.0
+    top_k: 64
+    top_p: 0.95
+    type: gemini
+  gemma-2-27b-it:
+    api_key: <your-api-key>
+    cost: 0.4732936067
+    name: gemma-2-27b-no-filter
+    temp: 0.7
+    top_p: 0.7
+    type: gemini
+  gemma-2-9b-it:
+    api_key: <your-api-key>
+    cost: 0.0873672873
+    name: gemma-2-9b-no-filter
+    temp: 0.7
+    top_p: 1.0
+    type: gemini
+  glm-4-plus:
+    api_key: <your-api-key>
+    base_url: https://open.bigmodel.cn/api/paas/v4
+    cost: 0.3175377664
+    name: glm-4-plus
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  gpt-4-1106-preview:
+    api_key: <your-api-key>
+    base_url: null
+    cost: 16.3622976323
+    name: gpt-4-1106-preview
+    system_prompt: 'You are ChatGPT, a large language model trained by OpenAI, based
+      on the GPT-4 architecture.
+
+      Current date: 2025-01-06
+
+
+      Image input capabilities: Enabled
+
+      Personality: v2'
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  gpt-4-turbo-2024-04-09:
+    api_key: <your-api-key>
+    base_url: null
+    cost: 17.4092447612
+    name: gpt-4-turbo-2024-04-09
+    system_prompt: 'You are ChatGPT, a large language model trained by OpenAI, based
+      on the GPT-4 architecture.
+
+      Current date: 2025-01-06
+
+
+      Image input capabilities: Enabled
+
+      Personality: v2'
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  gpt-4o-2024-05-13:
+    api_key: <your-api-key>
+    base_url: null
+    cost: 12.3166873868
+    name: gpt-4o-2024-05-13
+    system_prompt: 'You are ChatGPT, a large language model trained by OpenAI, based
+      on the GPT-4 architecture.
+
+      Current date: 2025-01-06
+
+
+      Image input capabilities: Enabled
+
+      Personality: v2'
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  gpt-4o-2024-08-06:
+    api_key: <your-api-key>
+    base_url: null
+    cost: 6.9944337124
+    name: gpt-4o-2024-08-06
+    system_prompt: 'You are ChatGPT, a large language model trained by OpenAI, based
+      on the GPT-4 architecture.
+
+      Current date: 2025-01-06
+
+
+      Image input capabilities: Enabled
+
+      Personality: v2'
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  gpt-4o-mini-2024-07-18:
+    api_key: <your-api-key>
+    base_url: null
+    cost: 0.563652953
+    name: gpt-4o-mini-2024-07-18
+    system_prompt: 'You are ChatGPT, a large language model trained by OpenAI, based
+      on the GPT-4 architecture.
+
+      Current date: 2025-01-06
+
+
+      Image input capabilities: Enabled
+
+      Personality: v2'
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  llama-3-70b-instruct:
+    api_key: <your-api-key>
+    base_url: https://api.together.xyz/v1
+    cost: 0.4186380435
+    name: meta-llama/Llama-3-70b-chat-hf
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  llama-3.1-405b-instruct-fp8:
+    api_key: <your-api-key>
+    base_url: https://api.fireworks.ai/inference/v1
+    cost: 2.4340008579
+    name: accounts/fireworks/models/llama-v3p1-405b-instruct
+    system_prompt: 'Cutting Knowledge Date: December 2023
+
+      Today Date: 06 Jan 2025'
+    temp: 0.6
+    top_p: 1.0
+    type: openai
+  llama-3.1-70b-instruct:
+    api_key: <your-api-key>
+    base_url: https://api.fireworks.ai/inference/v1
+    cost: 0.7204016024
+    name: accounts/fireworks/models/llama-v3p1-70b-instruct
+    system_prompt: "Cutting Knowledge Date: December 2023\nToday Date: 06 Jan 2025\n\
+      \nCarefully read the user prompt. Your responses are comprehensive and easy\
+      \ to understand. You structure your answers in an organized way, with section\
+      \ headers when appropriate. You use consistent formatting in your responses.\
+      \ You follow user instructions. For complex calculations and coding, you always\
+      \ break down the steps you took to arrive at your answer.\n\nPay extra attention\
+      \ to prompts in the following categories:\n * Non-English queries: Read the\
+      \ prompt carefully and pay close attention to formatting requests and the level\
+      \ of detail; ensure you are giving factual and precise responses using correct\
+      \ grammar in the correct language.\n * Coding queries: You prioritize code organization\
+      \ and documentation. Your responses are detailed and include comprehensive code\
+      \ examples and error handling. Include comments to explain the code's purpose\
+      \ and behavior. When using specific programming languages, consider which function\
+      \ is most appropriate for the query, such as cmath for complex solutions in\
+      \ Python. Check for errors.\n * For mathematical reasoning: Before responding,\
+      \ review your output for reasoning, algebraic manipulation and calculation errors\
+      \ and fix before responding. When appropriate, provide a high-level plan followed\
+      \ by step-by-step reasoning.\n\nRemember your instructions."
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  llama-3.1-8b-instruct:
+    api_key: <your-api-key>
+    base_url: https://api.fireworks.ai/inference/v1
+    cost: 0.1573721045
+    name: accounts/fireworks/models/llama-v3p1-8b-instruct
+    system_prompt: "Cutting Knowledge Date: December 2023\nToday Date: 06 Jan 2025\n\
+      \nCarefully read the user prompt. Your responses are comprehensive and easy\
+      \ to understand. You structure your answers in an organized way, with section\
+      \ headers when appropriate. You use consistent formatting in your responses.\
+      \ You follow user instructions. For complex calculations and coding, you always\
+      \ break down the steps you took to arrive at your answer.\n\nPay extra attention\
+      \ to prompts in the following categories:\n * Non-English queries: Read the\
+      \ prompt carefully and pay close attention to formatting requests and the level\
+      \ of detail; ensure you are giving factual and precise responses using correct\
+      \ grammar in the correct language.\n * Coding queries: You prioritize code organization\
+      \ and documentation. Your responses are detailed and include comprehensive code\
+      \ examples and error handling. Include comments to explain the code's purpose\
+      \ and behavior. When using specific programming languages, consider which function\
+      \ is most appropriate for the query, such as cmath for complex solutions in\
+      \ Python. Check for errors.\n * For mathematical reasoning: Before responding,\
+      \ review your output for reasoning, algebraic manipulation and calculation errors\
+      \ and fix before responding. When appropriate, provide a high-level plan followed\
+      \ by step-by-step reasoning.\n\nRemember your instructions."
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  llama-3.3-70b-instruct:
+    api_key: <your-api-key>
+    base_url: https://api.fireworks.ai/inference/v1
+    cost: 0.706256804
+    name: accounts/fireworks/models/llama-v3p3-70b-instruct
+    temp: 0.6
+    top_p: 1.0
+    type: openai
+  mistral-large-2407:
+    api_key: <your-api-key>
+    base_url: https://api.mistral.ai/v1
+    cost: 4.3956843814
+    name: mistral-large-2407
+    temp: 0.7
+    top_p: 0.7
+    type: openai
+  mixtral-8x22b-instruct-v0.1:
+    api_key: <your-api-key>
+    base_url: https://api.mistral.ai/v1
+    cost: 2.5814904104
+    name: mixtral-8x22b-instruct-v0.1
+    temp: 0.7
+    top_p: 0.7
+    type: openai
+  mixtral-8x7b-instruct-v0.1:
+    api_key: <your-api-key>
+    base_url: https://api.together.xyz/v1
+    cost: 0.2839726899
+    name: mistralai/Mixtral-8x7B-Instruct-v0.1
+    temp: 0.7
+    top_p: 0.7
+    type: openai
+  o1-2024-12-17:
+    api_key: <your-api-key>
+    cost: 72.3693462194
+    name: o1-2024-12-17
+    system_prompt: Formatting re-enabled.
+    temp: 1.0
+    top_p: 1.0
+    type: openai-o1
+  o1-mini:
+    api_key: <your-api-key>
+    base_url: null
+    cost: 16.4809912657
+    name: o1-mini-2024-09-12
+    system_prompt: null
+    temp: 1.0
+    top_p: 1.0
+    type: openai-reasoning
+  o1-preview:
+    api_key: <your-api-key>
+    base_url: null
+    cost: 72.481802295
+    name: o1-preview
+    system_prompt: null
+    temp: 1.0
+    top_p: 1.0
+    type: openai-reasoning
+  qwen2.5-72b-instruct:
+    api_key: <your-api-key>
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    cost: 1.1805173434
+    name: qwen2.5-72b-instruct
+    temp: 0.7
+    top_p: 1.0
+    type: openai
+  yi-lightning:
+    api_key: <your-api-key>
+    base_url: https://api.lingyiwanwu.com/v1
+    cost: 0.0057351688
+    name: yi-lightning
+    temp: 0.6
+    top_p: 1.0
+    type: openai
+  chatgpt-4o-latest-20241120:
+    api_key: <your-api-key>
+    cost: 12.9070929223
+    name: gpt-4o-2024-11-20
+    temp: 0.7
+    top_p: 1.0
+    system_prompt: 'You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4 architecture.
+
+      Current date: 2025-01-06
+
+
+      Image input capabilities: Enabled
+
+      Personality: v2'
+    type: openai
+name: test-router

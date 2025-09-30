@@ -1,0 +1,7 @@
+uvicorn
+fastapi
+openai
+anthropic
+google-generativeai
+scipy
+cvxpy
