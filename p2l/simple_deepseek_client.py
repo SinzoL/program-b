@@ -58,7 +58,7 @@ class SimpleDeepSeekClient:
                 self.base_url,
                 headers=headers,
                 json=data,
-                timeout=30
+                timeout=60  # 增加到60秒
             )
             
             response_time = time.time() - start_time

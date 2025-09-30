@@ -43,16 +43,21 @@
               <div class="model-name">{{ rec.model }}</div>
               <div class="model-details">
                 <el-tag size="small">{{ getModelInfo(rec.model)?.provider }}</el-tag>
-                <el-tag size="small" type="info">{{ getModelInfo(rec.model)?.type }}</el-tag>
+                <el-tag size="small" type="info">成本: {{ getModelInfo(rec.model)?.cost }}</el-tag>
+                <el-tag size="small" type="warning">速度: {{ getModelInfo(rec.model)?.speed }}</el-tag>
               </div>
             </div>
             <div class="score-section">
+              <div class="score-display">
+                <div class="score-number">{{ Math.round(rec.score) }}</div>
+                <div class="score-label">分</div>
+              </div>
               <el-progress 
-                :percentage="Math.round(rec.score * 100)" 
-                :color="getScoreColor(rec.score)"
-                :stroke-width="8"
+                :percentage="Math.round(rec.score)" 
+                :color="getScoreColor(rec.score / 100)"
+                :stroke-width="6"
+                :show-text="false"
               />
-              <span class="score-text">{{ (rec.score * 100).toFixed(1) }}%</span>
             </div>
             <el-button 
               type="primary" 
@@ -220,13 +225,27 @@ const handleCallLLM = (modelName) => {
 
 .score-section {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  min-width: 150px;
+  gap: 8px;
+  min-width: 120px;
 }
 
-.score-text {
+.score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.score-number {
+  font-size: 24px;
   font-weight: bold;
   color: #409eff;
+  line-height: 1;
+}
+
+.score-label {
+  font-size: 12px;
+  color: #909399;
 }
 </style>

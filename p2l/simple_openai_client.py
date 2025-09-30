@@ -10,7 +10,7 @@ from typing import Dict, Any
 class SimpleOpenAIClient:
     def __init__(self):
         self.api_key = self._load_openai_key()
-        self.base_url = os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
+        self.base_url = self._load_base_url()
         
     def _load_openai_key(self) -> str:
         """加载OpenAI API密钥"""
@@ -26,6 +26,21 @@ class SimpleOpenAIClient:
         
         # 从环境变量加载
         return os.getenv('OPENAI_API_KEY', '')
+    
+    def _load_base_url(self) -> str:
+        """加载OpenAI API基础URL"""
+        # 尝试从api_config.env文件加载
+        env_file = os.path.join(os.path.dirname(__file__), 'api_config.env')
+        if os.path.exists(env_file):
+            with open(env_file, 'r') as f:
+                for line in f:
+                    if line.startswith('OPENAI_BASE_URL=') and '=' in line:
+                        url = line.strip().split('=', 1)[1]
+                        if url:
+                            return url
+        
+        # 从环境变量加载，默认使用官方API
+        return os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1')
     
     def generate_response(self, model: str, prompt: str, **kwargs) -> Dict[str, Any]:
         """生成OpenAI响应"""

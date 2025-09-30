@@ -145,18 +145,19 @@ class LLMClient:
         if not self.api_keys['anthropic']:
             raise ValueError("Anthropic API密钥未配置")
         
-        url = 'https://api.anthropic.com/v1/messages'
+        # 使用中转服务，转换为OpenAI兼容格式
+        base_url = os.getenv('ANTHROPIC_BASE_URL', 'https://api.anthropic.com/v1')
+        url = f'{base_url}/chat/completions'
         headers = {
-            'x-api-key': self.api_keys['anthropic'],
-            'Content-Type': 'application/json',
-            'anthropic-version': '2023-06-01'
+            'Authorization': f'Bearer {self.api_keys["anthropic"]}',
+            'Content-Type': 'application/json'
         }
         
         data = {
             'model': model,
+            'messages': [{'role': 'user', 'content': prompt}],
             'max_tokens': kwargs.get('max_tokens', 2000),
-            'temperature': kwargs.get('temperature', 0.7),
-            'messages': [{'role': 'user', 'content': prompt}]
+            'temperature': kwargs.get('temperature', 0.7)
         }
         
         async with self.session.post(url, headers=headers, json=data) as resp:
@@ -164,37 +165,82 @@ class LLMClient:
                 error_text = await resp.text()
                 raise Exception(f"Anthropic API错误 {resp.status}: {error_text}")
             
-            result = await resp.json()
-            content = result['content'][0]['text']
-            tokens_used = result['usage']['input_tokens'] + result['usage']['output_tokens']
+            # 检查响应内容类型
+            content_type = resp.headers.get('content-type', '').lower()
+            logger.info(f"API响应内容类型: {content_type}")
             
-            # 计算成本
-            cost_per_1k = 0.025 if 'sonnet' in model else 0.008
-            cost = (tokens_used / 1000) * cost_per_1k
-            
-            return LLMResponse(
-                content=content,
-                model=model,
-                tokens_used=tokens_used,
-                cost=cost,
-                response_time=0,
-                provider='anthropic'
-            )
+            # 尝试解析响应
+            try:
+                if 'application/json' in content_type:
+                    result = await resp.json()
+                else:
+                    # 如果不是JSON，尝试解析为文本
+                    text_response = await resp.text()
+                    logger.warning(f"收到非JSON响应: {text_response[:200]}...")
+                    
+                    # 尝试从文本中提取JSON
+                    import re
+                    json_match = re.search(r'\{.*\}', text_response, re.DOTALL)
+                    if json_match:
+                        result = json.loads(json_match.group())
+                    else:
+                        # 如果无法解析为JSON，创建模拟响应格式
+                        result = {
+                            'choices': [{'message': {'content': text_response}}],
+                            'usage': {'total_tokens': len(text_response.split()) * 1.3}
+                        }
+                
+                content = result['choices'][0]['message']['content']
+                tokens_used = result.get('usage', {}).get('total_tokens', len(content.split()) * 1.3)
+                
+                # 计算成本
+                cost_per_1k = 0.025 if 'sonnet' in model else 0.008
+                cost = (tokens_used / 1000) * cost_per_1k
+                
+                return LLMResponse(
+                    content=content,
+                    model=model,
+                    tokens_used=int(tokens_used),
+                    cost=cost,
+                    response_time=0,
+                    provider='anthropic'
+                )
+                
+            except Exception as parse_error:
+                logger.error(f"响应解析失败: {parse_error}")
+                # 获取原始响应文本作为内容
+                raw_text = await resp.text()
+                tokens_used = len(raw_text.split()) * 1.3
+                cost_per_1k = 0.025 if 'sonnet' in model else 0.008
+                cost = (tokens_used / 1000) * cost_per_1k
+                
+                return LLMResponse(
+                    content=raw_text,
+                    model=model,
+                    tokens_used=int(tokens_used),
+                    cost=cost,
+                    response_time=0,
+                    provider='anthropic'
+                )
     
     async def _call_google(self, model: str, prompt: str, **kwargs) -> LLMResponse:
         """调用Google Gemini API"""
         if not self.api_keys['google']:
             raise ValueError("Google API密钥未配置")
         
-        url = f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_keys["google"]}'
-        headers = {'Content-Type': 'application/json'}
+        # 使用中转服务，转换为OpenAI格式
+        base_url = os.getenv('GOOGLE_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')
+        url = f'{base_url}/chat/completions'
+        headers = {
+            'Authorization': f'Bearer {self.api_keys["google"]}',
+            'Content-Type': 'application/json'
+        }
         
         data = {
-            'contents': [{'parts': [{'text': prompt}]}],
-            'generationConfig': {
-                'maxOutputTokens': kwargs.get('max_tokens', 2000),
-                'temperature': kwargs.get('temperature', 0.7)
-            }
+            'model': model,
+            'messages': [{'role': 'user', 'content': prompt}],
+            'max_tokens': kwargs.get('max_tokens', 2000),
+            'temperature': kwargs.get('temperature', 0.7)
         }
         
         async with self.session.post(url, headers=headers, json=data) as resp:
@@ -203,13 +249,11 @@ class LLMClient:
                 raise Exception(f"Google API错误 {resp.status}: {error_text}")
             
             result = await resp.json()
-            content = result['candidates'][0]['content']['parts'][0]['text']
-            
-            # Google API可能不返回token使用量，估算
-            tokens_used = len(content.split()) * 1.3
+            content = result['choices'][0]['message']['content']
+            tokens_used = result.get('usage', {}).get('total_tokens', len(content.split()) * 1.3)
             
             # 计算成本
-            cost_per_1k = 0.02 if 'pro' in model else 0.005
+            cost_per_1k = 0.015 if 'pro' in model else 0.0075
             cost = (tokens_used / 1000) * cost_per_1k
             
             return LLMResponse(

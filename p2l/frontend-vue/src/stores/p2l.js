@@ -3,7 +3,7 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: 'http://localhost:8080',
-  timeout: 30000
+  timeout: 60000
 })
 
 export const useP2LStore = defineStore('p2l', {
@@ -19,20 +19,13 @@ export const useP2LStore = defineStore('p2l', {
     // 聊天历史
     chatHistory: [],
     
-    // 模型信息
+    // 模型信息 - 只包含有API密钥的主流模型
     availableModels: [
       { name: 'gpt-4o', provider: 'OpenAI', type: 'GPT', cost: '高', speed: '中', hasApiKey: true },
       { name: 'gpt-4o-mini', provider: 'OpenAI', type: 'GPT', cost: '低', speed: '快', hasApiKey: true },
-      { name: 'claude-3-5-sonnet-20241022', provider: 'Anthropic', type: 'Claude', cost: '高', speed: '中', hasApiKey: false },
-      { name: 'claude-3-5-haiku-20241022', provider: 'Anthropic', type: 'Claude', cost: '中', speed: '快', hasApiKey: false },
-      { name: 'gemini-1.5-pro-002', provider: 'Google', type: 'Gemini', cost: '中', speed: '中', hasApiKey: false },
-      { name: 'gemini-1.5-flash-002', provider: 'Google', type: 'Gemini', cost: '低', speed: '极快', hasApiKey: false },
-      { name: 'llama-3.1-70b-versatile', provider: 'Meta', type: 'LLaMA', cost: '中', speed: '中', hasApiKey: false },
-      { name: 'llama-3.1-8b-instant', provider: 'Meta', type: 'LLaMA', cost: '极低', speed: '极快', hasApiKey: false },
-      { name: 'llama-3.1-70b-instruct', provider: 'Meta', type: 'LLaMA', cost: '低', speed: '中', hasApiKey: false },
-      { name: 'mixtral-8x7b-32768', provider: 'Mistral', type: 'Mixtral', cost: '低', speed: '快', hasApiKey: false },
-      { name: 'qwen2.5-72b-instruct', provider: 'Alibaba', type: 'Qwen', cost: '中', speed: '中', hasApiKey: false },
-      { name: 'deepseek-chat', provider: 'DeepSeek', type: 'DeepSeek', cost: '低', speed: '快', hasApiKey: true },
+      { name: 'claude-3-5-sonnet-20241022', provider: 'Anthropic', type: 'Claude', cost: '高', speed: '中', hasApiKey: true },
+      { name: 'gemini-1.5-pro', provider: 'Google', type: 'Gemini', cost: '中', speed: '中', hasApiKey: true },
+      { name: 'deepseek-chat', provider: 'DeepSeek', type: 'DeepSeek', cost: '低', speed: '中', hasApiKey: true },
       { name: 'deepseek-coder', provider: 'DeepSeek', type: 'DeepSeek', cost: '低', speed: '快', hasApiKey: true }
     ],
     

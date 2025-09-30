@@ -103,8 +103,9 @@ class P2LBackendService:
             logger.warning("❌ LLM客户端不可用，将使用模拟响应")
     
     def _load_model_configs(self) -> Dict:
-        """加载模型配置信息"""
+        """加载模型配置信息 - 只包含有API密钥的主流模型"""
         return {
+            # OpenAI 主流模型
             "gpt-4o": {
                 "provider": "openai",
                 "cost_per_1k": 0.03,
@@ -119,6 +120,7 @@ class P2LBackendService:
                 "strengths": ["快速响应", "成本效益"],
                 "quality_score": 0.82
             },
+            # Claude 主流模型
             "claude-3-5-sonnet-20241022": {
                 "provider": "anthropic",
                 "cost_per_1k": 0.025,
@@ -126,47 +128,21 @@ class P2LBackendService:
                 "strengths": ["创意写作", "文学分析"],
                 "quality_score": 0.93
             },
-            "claude-3-5-haiku-20241022": {
-                "provider": "anthropic",
-                "cost_per_1k": 0.008,
-                "avg_response_time": 1.5,
-                "strengths": ["快速响应", "简洁回答"],
-                "quality_score": 0.85
-            },
-            "gemini-1.5-pro-002": {
+            # Gemini 主流模型
+            "gemini-1.5-pro": {
                 "provider": "google",
-                "cost_per_1k": 0.02,
-                "avg_response_time": 2.2,
-                "strengths": ["多模态", "长文本"],
-                "quality_score": 0.90
-            },
-            "gemini-1.5-flash-002": {
-                "provider": "google",
-                "cost_per_1k": 0.005,
-                "avg_response_time": 1.0,
-                "strengths": ["快速处理"],
-                "quality_score": 0.80
-            },
-            "qwen2.5-72b-instruct": {
-                "provider": "alibaba",
                 "cost_per_1k": 0.015,
                 "avg_response_time": 2.0,
-                "strengths": ["中文理解", "中文创作"],
-                "quality_score": 0.88
+                "strengths": ["多模态", "长文本", "推理"],
+                "quality_score": 0.89
             },
-            "llama-3.1-70b-instruct": {
-                "provider": "meta",
-                "cost_per_1k": 0.01,
-                "avg_response_time": 2.3,
-                "strengths": ["开源", "可控"],
-                "quality_score": 0.86
-            },
+            # DeepSeek 主流模型
             "deepseek-chat": {
                 "provider": "deepseek",
                 "cost_per_1k": 0.002,
-                "avg_response_time": 1.5,
-                "strengths": ["中文理解", "对话交流", "快速响应"],
-                "quality_score": 0.85
+                "avg_response_time": 1.8,
+                "strengths": ["对话", "中文理解", "快速响应"],
+                "quality_score": 0.86
             },
             "deepseek-coder": {
                 "provider": "deepseek",
@@ -174,13 +150,6 @@ class P2LBackendService:
                 "avg_response_time": 1.6,
                 "strengths": ["编程", "代码生成", "技术问答"],
                 "quality_score": 0.88
-            },
-            "deepseek-v3": {
-                "provider": "deepseek",
-                "cost_per_1k": 0.012,
-                "avg_response_time": 1.8,
-                "strengths": ["数学", "逻辑推理"],
-                "quality_score": 0.87
             }
         }
     
@@ -396,7 +365,7 @@ class P2LBackendService:
         }
     
     def calculate_model_scores(self, task_analysis: Dict, priority: str, enabled_models: Optional[List[str]] = None) -> List[Dict]:
-        """计算模型分数并排序"""
+        """计算模型分数并排序 - 使用百分制评分"""
         scores = []
         
         # 如果指定了启用的模型列表，只计算这些模型的分数
@@ -406,39 +375,62 @@ class P2LBackendService:
             logger.info(f"只计算启用模型的分数: {[name for name, _ in models_to_score]}")
         
         for model_name, config in models_to_score:
-            base_score = config["quality_score"]
+            # 基础分数 (40分)
+            base_score = config["quality_score"] * 40
             
-            # 任务类型匹配
-            task_bonus = 0
+            # 任务匹配度 (25分)
+            task_score = 0
             if task_analysis["task_type"] in config["strengths"]:
-                task_bonus = 0.15
+                task_score = 25
+            elif any(strength in task_analysis["task_type"] for strength in config["strengths"]):
+                task_score = 15
+            else:
+                task_score = 5
             
-            # 语言匹配
-            language_bonus = 0
+            # 语言匹配度 (15分)
+            language_score = 0
             if task_analysis["language"] == "中文" and "中文" in config["strengths"]:
-                language_bonus = 0.20
+                language_score = 15
+            elif task_analysis["language"] == "中文":
+                language_score = 8
+            else:
+                language_score = 10
             
-            # 复杂度匹配
-            complexity_bonus = 0
-            if task_analysis["complexity"] == "复杂" and config["quality_score"] > 0.90:
-                complexity_bonus = 0.10
-            elif task_analysis["complexity"] == "简单" and config["avg_response_time"] < 2.0:
-                complexity_bonus = 0.05
+            # 优先级匹配度 (20分)
+            priority_score = 0
+            if priority == "cost":
+                if config["cost_per_1k"] < 0.005:
+                    priority_score = 20
+                elif config["cost_per_1k"] < 0.015:
+                    priority_score = 15
+                else:
+                    priority_score = 8
+            elif priority == "speed":
+                if config["avg_response_time"] < 1.5:
+                    priority_score = 20
+                elif config["avg_response_time"] < 2.5:
+                    priority_score = 15
+                else:
+                    priority_score = 8
+            elif priority == "performance":
+                if config["quality_score"] > 0.90:
+                    priority_score = 20
+                elif config["quality_score"] > 0.85:
+                    priority_score = 15
+                else:
+                    priority_score = 10
+            else:  # balanced
+                priority_score = 15
             
-            # 优先级调整
-            priority_bonus = 0
-            if priority == "cost" and config["cost_per_1k"] < 0.01:
-                priority_bonus = 0.20
-            elif priority == "speed" and config["avg_response_time"] < 2.0:
-                priority_bonus = 0.15
-            elif priority == "performance" and config["quality_score"] > 0.90:
-                priority_bonus = 0.10
+            # 总分 = 基础分 + 任务分 + 语言分 + 优先级分 (满分100)
+            final_score = base_score + task_score + language_score + priority_score
             
-            final_score = base_score + task_bonus + language_bonus + complexity_bonus + priority_bonus
+            # 确保分数在0-100之间
+            final_score = max(0, min(100, final_score))
             
             scores.append({
                 "model": model_name,
-                "score": round(final_score, 4),
+                "score": round(final_score, 1),
                 "config": config
             })
         
