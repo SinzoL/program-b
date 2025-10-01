@@ -1,7 +1,3 @@
-# ================================
-# Python
-# ================================
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -24,6 +20,7 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
@@ -51,7 +48,6 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-cover/
 
 # Translations
 *.mo
@@ -74,7 +70,6 @@ instance/
 docs/_build/
 
 # PyBuilder
-.pybuilder/
 target/
 
 # Jupyter Notebook
@@ -88,13 +83,7 @@ ipython_config.py
 .python-version
 
 # pipenv
-Pipfile.lock
-
-# poetry
-poetry.lock
-
-# pdm
-.pdm.toml
+#Pipfile.lock
 
 # PEP 582
 __pypackages__/
@@ -133,194 +122,15 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-.idea/
-
-# ================================
-# Node.js / Frontend Dependencies
-# ================================
-
-# Dependencies
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-
-# nyc test coverage
-.nyc_output
-
-# Grunt intermediate storage
-.grunt
-
-# Bower dependency directory
-bower_components
-
-# node-waf configuration
-.lock-wscript
-
-# Compiled binary addons
-build/Release
-
-# Dependency directories
-jspm_packages/
-
-# TypeScript cache
-*.tsbuildinfo
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Optional stylelint cache
-.stylelintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache
-.cache
-.parcel-cache
-
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
-
-# Vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless/
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# yarn v2
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-.pnp.*
-
-# ================================
-# Vue.js / Vite Specific
-# ================================
-
-# Vite build output
-frontend-vue/dist/
-frontend-vue/.vite/
-frontend-vue/node_modules/
-
-# Vue.js specific
-*.vue.js
-*.vue.css
-
-# ================================
-# P2L Project Specific
-# ================================
-
-# P2L Models (large files - keep local only)
+# Model files (too large for git)
 models/
-*.bin
-*.safetensors
-*.onnx
-*.pt
-*.pth
 
-# Logs
-*.log
-demo_service.log
-real_p2l_service.log
-backend_service.log
+# Process ID files
+.backend.pid
+.frontend.pid
 
-# Temporary files
-.DS_Store
-.vscode/
-*.swp
-*.swo
-*~
+# API configuration (contains sensitive keys)
+api_config.env
 
-# API Keys and Secrets
-.env.local
-.env.production
-.env.development
-config/secrets.json
-api_keys.json
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Cache directories
-.cache/
-.pytest_cache/
-
-# Build artifacts
-build/
-dist/
-*.egg-info/
-
-# IDE files
-.idea/
-.vscode/
-*.sublime-*
-.atom/
-
-# OS generated files
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-
-# ================================
-# HuggingFace Cache
-# ================================
-.huggingface/
-transformers_cache/
+# Node modules
+node_modules/

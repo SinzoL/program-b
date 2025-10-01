@@ -74,31 +74,22 @@ class LLMClient:
         import time
         start_time = time.time()
         
-        try:
-            # 根据模型选择提供商
-            if model.startswith('gpt-'):
-                response = await self._call_openai(model, prompt, **kwargs)
-            elif model.startswith('claude-'):
-                response = await self._call_anthropic(model, prompt, **kwargs)
-            elif model.startswith('gemini-'):
-                response = await self._call_google(model, prompt, **kwargs)
-            elif model.startswith('qwen'):
-                response = await self._call_dashscope(model, prompt, **kwargs)
-            elif model.startswith('deepseek'):
-                response = await self._call_deepseek(model, prompt, **kwargs)
-            else:
-                # 如果没有API密钥或不支持的模型，返回模拟响应
-                response = await self._generate_fallback_response(model, prompt, **kwargs)
-            
-            response.response_time = time.time() - start_time
-            return response
-            
-        except Exception as e:
-            logger.error(f"API调用失败: {e}")
-            # 返回模拟响应作为后备
-            response = await self._generate_fallback_response(model, prompt, **kwargs)
-            response.response_time = time.time() - start_time
-            return response
+        # 根据模型选择提供商
+        if model.startswith('gpt-'):
+            response = await self._call_openai(model, prompt, **kwargs)
+        elif model.startswith('claude-'):
+            response = await self._call_anthropic(model, prompt, **kwargs)
+        elif model.startswith('gemini-'):
+            response = await self._call_google(model, prompt, **kwargs)
+        elif model.startswith('qwen'):
+            response = await self._call_dashscope(model, prompt, **kwargs)
+        elif model.startswith('deepseek'):
+            response = await self._call_deepseek(model, prompt, **kwargs)
+        else:
+            raise ValueError(f"不支持的模型: {model}")
+        
+        response.response_time = time.time() - start_time
+        return response
     
     async def _call_openai(self, model: str, prompt: str, **kwargs) -> LLMResponse:
         """调用OpenAI API"""
@@ -367,92 +358,7 @@ class LLMClient:
                 provider='deepseek'
             )
     
-    async def _generate_fallback_response(self, model: str, prompt: str, **kwargs) -> LLMResponse:
-        """生成后备模拟响应"""
-        logger.warning(f"使用模拟响应 for {model}")
-        
-        # 模拟网络延迟
-        await asyncio.sleep(0.5)
-        
-        # 生成模拟内容
-        if "javascript" in prompt.lower() or "js" in prompt.lower():
-            content = """// JavaScript下划线转驼峰实现
 
-function toCamelCase(str) {
-    return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-}
-
-// 使用示例
-console.log(toCamelCase('hello_world')); // helloWorld
-console.log(toCamelCase('user_name')); // userName"""
-        
-        elif any(keyword in prompt.lower() for keyword in ["诗", "poem", "poetry", "晴天", "阳光"]):
-            content = """《晴空万里》
-
-蔚蓝天空无云遮，
-金辉洒向大地花。
-微风轻抚绿叶舞，
-鸟儿欢歌满枝桠。
-
-阳光透过窗棂照，
-温暖心房驱阴霾。
-此刻时光多美好，
-晴天如诗画中来。"""
-        
-        elif any(keyword in prompt.lower() for keyword in ["python", "算法", "代码", "编程"]):
-            content = """# Python快速排序实现
-
-def quicksort(arr):
-    if len(arr) <= 1:
-        return arr
-    
-    pivot = arr[len(arr) // 2]
-    left = [x for x in arr if x < pivot]
-    middle = [x for x in arr if x == pivot]
-    right = [x for x in arr if x > pivot]
-    
-    return quicksort(left) + middle + quicksort(right)
-
-# 使用示例
-test_array = [64, 34, 25, 12, 22, 11, 90]
-sorted_array = quicksort(test_array)
-print(f"排序结果: {sorted_array}")"""
-        
-        else:
-            content = f"""基于您的问题："{prompt}"
-
-这是一个很有意思的问题。让我为您详细分析：
-
-## 核心观点
-针对您提出的问题，我认为需要从多个角度来考虑。
-
-## 详细解答
-1. **背景分析**：首先需要理解问题的背景和上下文
-2. **关键要点**：识别出几个核心要素和关键因素
-3. **解决方案**：提供可行的解决思路和建议
-4. **实施建议**：给出具体的实施步骤和注意事项
-
-## 总结
-综合考虑各种因素，建议采取循序渐进的方法来处理这个问题。
-
-希望这个回答对您有所帮助！如需更详细的信息，请随时告诉我。
-
----
-*注：这是模拟响应，实际使用时请配置相应的API密钥以获得真实的AI回答。*"""
-        
-        # 估算token数量和成本
-        tokens_used = len(content.split()) * 1.3
-        cost_per_1k = 0.02  # 默认成本
-        cost = (tokens_used / 1000) * cost_per_1k
-        
-        return LLMResponse(
-            content=content,
-            model=model,
-            tokens_used=int(tokens_used),
-            cost=cost,
-            response_time=0,
-            provider='simulation'
-        )
 
 # 全局客户端实例
 llm_client = LLMClient()
