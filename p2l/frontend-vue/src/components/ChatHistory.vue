@@ -428,13 +428,18 @@ defineExpose({
 
 /* 问题和回答区域的高度分配 */
 .placeholder-content .content-section {
-  flex: 1;
   display: flex;
   flex-direction: column;
   border-bottom: 1px solid #ebeef5;
 }
 
+.placeholder-content .content-section:first-child {
+  flex: 0 0 auto; /* 问题区域：不拉伸，根据内容自适应 */
+  min-height: 120px; /* 给问题区域更多的最小高度 */
+}
+
 .placeholder-content .content-section:last-child {
+  flex: 1; /* 回答区域：占用剩余所有空间 */
   border-bottom: none;
 }
 
@@ -480,16 +485,16 @@ defineExpose({
   max-width: 300px;
 }
 
-/* 问题内容样式 - 较小的高度，适合简短问题 */
+/* 问题内容样式 - 扩大高度，给问题更多空间 */
 .question-content {
   background: #f0f9ff !important;
   border: 1px solid #d4edda !important;
   color: #303133 !important;
-  min-height: 80px; /* 较小的最小高度 */
-  max-height: 200px; /* 限制最大高度 */
+  min-height: 100px; /* 增加最小高度 */
+  max-height: 300px; /* 增加最大高度限制 */
   height: auto; /* 自适应高度 */
-  padding: 12px 16px; /* 较小的内边距 */
-  line-height: 1.5;
+  padding: 16px; /* 增加内边距 */
+  line-height: 1.6;
   word-break: break-word;
   overflow-y: auto;
   overflow-x: hidden;
@@ -497,6 +502,7 @@ defineExpose({
   white-space: pre-wrap;
   font-size: 14px;
   border-radius: 6px;
+  flex: 1; /* 让问题内容区域充分利用分配的空间 */
 }
 
 /* 回答内容样式 - 较大的高度，适合长回答 */
