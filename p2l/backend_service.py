@@ -603,8 +603,7 @@ class P2LBackendService:
         try:
             # 对于DeepSeek模型，使用DeepSeek客户端
             if request.model.startswith('deepseek'):
-                from simple_deepseek_client import SimpleDeepSeekClient
-                deepseek_client = SimpleDeepSeekClient()
+
                 
                 if deepseek_client.api_key:
                     logger.info(f"使用DeepSeek API调用: {request.model}")
@@ -620,43 +619,7 @@ class P2LBackendService:
                 else:
                     raise Exception("DeepSeek API密钥未配置")
             
-            # 对于千问模型，使用千问客户端
-            elif request.model.startswith('qwen'):
-                from simple_qwen_client import SimpleQwenClient
-                qwen_client = SimpleQwenClient()
-                
-                if qwen_client.api_key:
-                    logger.info(f"使用千问API调用: {request.model}")
-                    llm_response = qwen_client.generate_response(
-                        model=request.model,
-                        prompt=request.prompt,
-                        max_tokens=2000,
-                        temperature=0.7
-                    )
-                    
-                    logger.info(f"✅ 千问API调用成功: {request.model}")
-                    return llm_response
-                else:
-                    raise Exception("千问API密钥未配置")
-            
-            # 对于OpenAI模型，使用简单客户端
-            elif request.model.startswith('gpt-'):
-                from simple_openai_client import SimpleOpenAIClient
-                openai_client = SimpleOpenAIClient()
-                
-                if openai_client.api_key:
-                    logger.info(f"使用OpenAI API调用: {request.model}")
-                    llm_response = openai_client.generate_response(
-                        model=request.model,
-                        prompt=request.prompt,
-                        max_tokens=2000,
-                        temperature=0.7
-                    )
-                    
-                    logger.info(f"✅ OpenAI API调用成功: {request.model}")
-                    return llm_response
-                else:
-                    raise Exception("OpenAI API密钥未配置")
+
             
             # 尝试使用其他LLM API
             elif self.llm_client:
