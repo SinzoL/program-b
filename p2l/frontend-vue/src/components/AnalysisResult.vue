@@ -228,6 +228,8 @@ const handleCallLLM = (modelName) => {
   border: 1px solid #ebeef5;
   border-radius: 8px;
   transition: all 0.3s;
+  min-height: 80px; /* 固定最小高度 */
+  height: 80px; /* 固定高度 */
 }
 
 .ranking-item:hover {
@@ -277,6 +279,8 @@ const handleCallLLM = (modelName) => {
   align-items: center;
   gap: 8px;
   min-width: 120px;
+  width: 120px; /* 固定宽度 */
+  flex-shrink: 0; /* 防止被压缩 */
 }
 
 .score-display {
@@ -297,21 +301,49 @@ const handleCallLLM = (modelName) => {
   color: #909399;
 }
 
-/* 固定按钮宽度，防止加载状态时位置偏移 */
+/* 固定按钮宽度和高度，防止加载状态时位置偏移 */
 .call-model-btn {
-  width: 80px !important; /* 固定宽度 */
+  width: 88px !important; /* 固定宽度，稍微增加一点 */
+  height: 32px !important; /* 固定高度 */
   flex-shrink: 0; /* 防止被压缩 */
   text-align: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
 }
 
-/* 确保加载状态时按钮不会改变大小 */
+/* 确保加载状态时按钮内容不会改变布局 */
 .call-model-btn :deep(.el-button__text) {
-  display: inline-block;
-  min-width: 48px; /* 确保文字区域有最小宽度 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  white-space: nowrap; /* 防止文字换行 */
 }
 
 /* 加载图标样式优化 */
 .call-model-btn :deep(.el-icon.is-loading) {
   margin-right: 4px;
+  animation: rotating 2s linear infinite;
+}
+
+/* 加载动画 */
+@keyframes rotating {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 确保按钮在不同状态下保持一致的外观 */
+.call-model-btn:hover,
+.call-model-btn:focus,
+.call-model-btn:active {
+  width: 88px !important;
+  height: 32px !important;
 }
 </style>
