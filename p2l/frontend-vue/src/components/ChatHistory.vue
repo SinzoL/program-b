@@ -1,182 +1,148 @@
 <template>
-  <el-card shadow="hover" class="chat-card">
-    <template #header>
-      <div class="card-header">
-        <el-icon class="header-icon"><ChatDotRound /></el-icon>
-        <span>对话历史</span>
-        <el-badge :value="chatHistory.length" class="chat-badge" />
-        <div class="header-actions">
-          <el-button 
-            v-if="chatHistory.length > 0"
-            type="text" 
-            size="small"
-            @click="toggleViewMode"
-            class="view-mode-btn"
-          >
-            <el-icon><List v-if="viewMode === 'detailed'" /><Document v-else /></el-icon>
-            {{ viewMode === 'list' ? '详细视图' : '列表视图' }}
-          </el-button>
-          <el-button 
-            v-if="chatHistory.length > 0"
-            type="text" 
-            size="small"
-            @click="clearHistory"
-            class="clear-btn"
-          >
-            <el-icon><Delete /></el-icon>
-            清空
-          </el-button>
-        </div>
-      </div>
-    </template>
-    
-    <div class="chat-content" ref="chatContainer">
-      <div v-if="chatHistory.length === 0" class="empty-chat">
-        <el-empty description="暂无对话记录">
-          <el-button type="primary" @click="handleShowExamples">查看示例问题</el-button>
-        </el-empty>
-      </div>
-      
-      <!-- 列表视图 -->
-      <div v-else-if="viewMode === 'list'" class="history-list">
-        <div class="list-header">
-          <span class="list-title">对话记录 ({{ chatHistory.length }})</span>
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索对话..."
-            size="small"
-            class="search-input"
-            clearable
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-        </div>
+  <div class="chat-history-container">
+    <!-- 历史记录控制按钮 - 移到顶部 -->
+    <div class="history-controls">
+      <el-button 
+        v-if="chatHistory.length > 1"
+        type="primary" 
+        @click="toggleHistoryPanel"
+        class="history-toggle-btn"
+        :icon="showHistoryPanel ? 'ArrowUp' : 'ArrowDown'"
+      >
+        {{ showHistoryPanel ? '返回当前对话' : `查看历史记录 (${chatHistory.length - 1})` }}
+      </el-button>
+    </div>
+
+    <!-- 当前最新对话显示区域 -->
+    <div v-if="chatHistory.length > 0 && !showHistoryPanel" class="current-chat">
+      <el-card shadow="hover" class="current-chat-card">
+        <template #header>
+          <div class="current-header">
+            <div class="current-title">
+              <el-icon class="header-icon"><ChatDotRound /></el-icon>
+              <span>当前对话</span>
+              <el-tag size="small" type="success">{{ latestChat.model }}</el-tag>
+            </div>
+            <div class="current-meta">
+              <span class="chat-time">{{ formatTime(latestChat.timestamp) }}</span>
+              <span class="chat-cost">${{ latestChat.cost.toFixed(4) }}</span>
+            </div>
+          </div>
+        </template>
         
-        <div class="history-items">
-          <!-- 最新的对话 - 自动展开 -->
-          <div 
-            v-if="filteredHistory.length > 0" 
-            :key="filteredHistory[0].id"
-            class="history-item latest-item active"
-          >
-            <div class="latest-header">
-              <div class="latest-badge">
-                <el-icon><Star /></el-icon>
-                <span>最新对话</span>
-              </div>
-              <div class="latest-meta">
-                <el-tag size="small" type="success">{{ filteredHistory[0].model }}</el-tag>
-                <span class="item-time">{{ formatTime(filteredHistory[0].timestamp) }}</span>
-                <span class="item-cost">${{ filteredHistory[0].cost.toFixed(4) }}</span>
-              </div>
+        <div class="current-content">
+          <div class="content-section">
+            <div class="section-header">
+              <el-icon><User /></el-icon>
+              <span>问题</span>
             </div>
-            
-            <!-- 最新对话的完整内容 -->
-            <div class="latest-content">
-              <div class="content-section">
-                <div class="section-header">
-                  <el-icon><User /></el-icon>
-                  <span>问题</span>
-                </div>
-                <div class="section-content user-content">{{ filteredHistory[0].prompt }}</div>
-              </div>
-              
-              <div class="content-section">
-                <div class="section-header">
-                  <el-icon><Robot /></el-icon>
-                  <span>回答 ({{ filteredHistory[0].tokens }} tokens)</span>
-                </div>
-                <div class="section-content ai-content" v-html="formatResponse(filteredHistory[0].response)"></div>
-              </div>
-            </div>
+            <div class="section-content user-content">{{ latestChat.prompt }}</div>
           </div>
           
-          <!-- 历史记录分隔线 -->
-          <div v-if="filteredHistory.length > 1" class="history-divider">
-            <span>历史记录</span>
+          <div class="content-section">
+            <div class="section-header">
+              <el-icon><Robot /></el-icon>
+              <span>回答 ({{ latestChat.tokens }} tokens)</span>
+            </div>
+            <div class="section-content ai-content" v-html="formatResponse(latestChat.response)"></div>
+          </div>
+        </div>
+      </el-card>
+    </div>
+
+    <!-- 历史记录面板 - 替换当前对话 -->
+    <div v-if="showHistoryPanel && chatHistory.length > 1" class="history-panel">
+        <el-card shadow="hover" class="history-card">
+          <template #header>
+            <div class="history-header">
+              <div class="history-title">
+                <el-icon><History /></el-icon>
+                <span>历史对话记录</span>
+                <el-badge :value="historicalChats.length" class="history-badge" />
+              </div>
+              <div class="history-actions">
+                <el-button 
+                  type="text" 
+                  size="small"
+                  @click="clearHistory"
+                  class="clear-btn"
+                >
+                  <el-icon><Delete /></el-icon>
+                  清空历史
+                </el-button>
+              </div>
+            </div>
+          </template>
+          
+          <!-- 搜索框 -->
+          <div class="search-section">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索历史对话..."
+              size="default"
+              class="search-input"
+              clearable
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
           </div>
           
-          <!-- 其他历史记录 - 折叠显示 -->
-          <div 
-            v-for="(chat, index) in filteredHistory.slice(1)" 
-            :key="chat.id"
-            class="history-item"
-            :class="{ 'active': expandedItems.has(chat.id) }"
-            @click="toggleItemExpansion(chat.id)"
-          >
-            <div class="item-header">
-              <div class="item-info">
-                <div class="item-title">{{ truncateText(chat.prompt, 50) }}</div>
-                <div class="item-meta">
-                  <el-tag size="small" type="info">{{ chat.model }}</el-tag>
-                  <span class="item-time">{{ formatTime(chat.timestamp) }}</span>
-                  <span class="item-cost">${{ chat.cost.toFixed(4) }}</span>
-                </div>
-              </div>
-              <el-icon class="expand-icon" :class="{ 'expanded': expandedItems.has(chat.id) }">
-                <ArrowDown />
-              </el-icon>
+          <!-- 历史记录列表 -->
+          <div class="history-list">
+            <div v-if="filteredHistoricalChats.length === 0" class="no-results">
+              <el-empty description="没有找到匹配的历史记录" />
             </div>
             
-            <!-- 展开的详细内容 -->
-            <el-collapse-transition>
-              <div v-if="expandedItems.has(chat.id)" class="item-content">
-                <div class="content-section">
-                  <div class="section-header">
-                    <el-icon><User /></el-icon>
-                    <span>问题</span>
+            <div v-else class="history-items">
+              <div 
+                v-for="(chat, index) in filteredHistoricalChats" 
+                :key="chat.id"
+                class="history-item"
+                :class="{ 'expanded': expandedItems.has(chat.id) }"
+              >
+                <div class="item-header" @click="toggleItemExpansion(chat.id)">
+                  <div class="item-info">
+                    <div class="item-title">{{ truncateText(chat.prompt, 60) }}</div>
+                    <div class="item-meta">
+                      <el-tag size="small" type="info">{{ chat.model }}</el-tag>
+                      <span class="item-time">{{ formatTime(chat.timestamp) }}</span>
+                      <span class="item-cost">${{ chat.cost.toFixed(4) }}</span>
+                      <span class="item-tokens">{{ chat.tokens }} tokens</span>
+                    </div>
                   </div>
-                  <div class="section-content user-content">{{ chat.prompt }}</div>
+                  <el-icon class="expand-icon" :class="{ 'rotated': expandedItems.has(chat.id) }">
+                    <ArrowDown />
+                  </el-icon>
                 </div>
                 
-                <div class="content-section">
-                  <div class="section-header">
-                    <el-icon><Robot /></el-icon>
-                    <span>回答 ({{ chat.tokens }} tokens)</span>
+                <!-- 展开的详细内容 -->
+                <el-collapse-transition>
+                  <div v-if="expandedItems.has(chat.id)" class="item-content">
+                    <div class="content-section">
+                      <div class="section-header">
+                        <el-icon><User /></el-icon>
+                        <span>问题</span>
+                      </div>
+                      <div class="section-content user-content">{{ chat.prompt }}</div>
+                    </div>
+                    
+                    <div class="content-section">
+                      <div class="section-header">
+                        <el-icon><Robot /></el-icon>
+                        <span>回答</span>
+                      </div>
+                      <div class="section-content ai-content" v-html="formatResponse(chat.response)"></div>
+                    </div>
                   </div>
-                  <div class="section-content ai-content" v-html="formatResponse(chat.response)"></div>
-                </div>
-              </div>
-            </el-collapse-transition>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 详细视图（原来的样式） -->
-      <div v-else class="chat-messages">
-        <div 
-          v-for="chat in chatHistory" 
-          :key="chat.id"
-          class="chat-message"
-        >
-          <!-- 用户问题 -->
-          <div class="message user-message">
-            <div class="message-header">
-              <el-icon><User /></el-icon>
-              <span>您的问题</span>
-              <el-tag size="small">{{ formatTime(chat.timestamp) }}</el-tag>
-            </div>
-            <div class="message-content">{{ chat.prompt }}</div>
-          </div>
-          
-          <!-- AI回答 -->
-          <div class="message ai-message">
-            <div class="message-header">
-              <el-icon><Robot /></el-icon>
-              <span>{{ chat.model }}</span>
-              <div class="message-meta">
-                <el-tag size="small" type="success">{{ chat.tokens }} tokens</el-tag>
-                <el-tag size="small" type="warning">${{ chat.cost.toFixed(4) }}</el-tag>
+                </el-collapse-transition>
               </div>
             </div>
-            <div class="message-content" v-html="formatResponse(chat.response)"></div>
           </div>
-        </div>
-      </div>
+        </el-card>
     </div>
-  </el-card>
+  </div>
 </template>
 
 <script setup>
@@ -191,20 +157,43 @@ const props = defineProps({
 
 const emit = defineEmits(['show-examples', 'clear-history'])
 
-// 视图模式：'list' 列表视图, 'detailed' 详细视图
-const viewMode = ref('list')
-const chatContainer = ref(null)
+// 控制历史记录面板显示
+const showHistoryPanel = ref(false)
 const searchKeyword = ref('')
 const expandedItems = ref(new Set())
 
-// 切换视图模式
-const toggleViewMode = () => {
-  viewMode.value = viewMode.value === 'list' ? 'detailed' : 'list'
-  // 切换到详细视图时滚动到底部
-  if (viewMode.value === 'detailed') {
-    nextTick(() => {
-      scrollToBottom()
-    })
+// 最新的对话
+const latestChat = computed(() => {
+  return props.chatHistory.length > 0 ? props.chatHistory[props.chatHistory.length - 1] : null
+})
+
+// 历史对话（除了最新的）
+const historicalChats = computed(() => {
+  if (props.chatHistory.length <= 1) return []
+  return [...props.chatHistory].slice(0, -1).reverse() // 除了最新的，其他按时间倒序
+})
+
+// 过滤的历史记录（搜索功能）
+const filteredHistoricalChats = computed(() => {
+  if (!searchKeyword.value.trim()) {
+    return historicalChats.value
+  }
+  
+  const keyword = searchKeyword.value.toLowerCase()
+  return historicalChats.value.filter(chat => 
+    chat.prompt.toLowerCase().includes(keyword) ||
+    chat.response.toLowerCase().includes(keyword) ||
+    chat.model.toLowerCase().includes(keyword)
+  )
+})
+
+// 切换历史记录面板
+const toggleHistoryPanel = () => {
+  showHistoryPanel.value = !showHistoryPanel.value
+  // 如果关闭面板，清空搜索和展开状态
+  if (!showHistoryPanel.value) {
+    searchKeyword.value = ''
+    expandedItems.value.clear()
   }
 }
 
@@ -217,26 +206,11 @@ const toggleItemExpansion = (itemId) => {
   }
 }
 
-// 过滤历史记录（搜索功能）
-const filteredHistory = computed(() => {
-  if (!searchKeyword.value.trim()) {
-    return [...props.chatHistory].reverse() // 最新的在前面
-  }
-  
-  const keyword = searchKeyword.value.toLowerCase()
-  return [...props.chatHistory]
-    .filter(chat => 
-      chat.prompt.toLowerCase().includes(keyword) ||
-      chat.response.toLowerCase().includes(keyword) ||
-      chat.model.toLowerCase().includes(keyword)
-    )
-    .reverse()
-})
-
 // 清空历史记录
 const clearHistory = () => {
   emit('clear-history')
   expandedItems.value.clear()
+  showHistoryPanel.value = false
 }
 
 const handleShowExamples = () => {
@@ -294,113 +268,207 @@ defineExpose({
 </script>
 
 <style scoped>
-.chat-card {
+/* 主容器 */
+.chat-history-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  min-height: 0; /* 允许收缩 */
+  overflow: hidden;
+  position: relative; /* 为覆盖层提供定位基准 */
+}
+
+/* 当前对话区域 */
+.current-chat {
+  flex-shrink: 0;
+}
+
+.current-chat-card {
+  border: 2px solid #67c23a;
+  background: linear-gradient(135deg, #f0f9ff 0%, #f6ffed 100%);
+  box-shadow: 0 4px 16px rgba(103, 194, 58, 0.2);
+}
+
+.current-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.current-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.header-icon {
+  font-size: 18px;
+  color: #67c23a;
+}
+
+.current-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.chat-time {
+  color: #909399;
+}
+
+.chat-cost {
+  color: #f56c6c;
+  font-weight: 500;
+}
+
+.current-content {
+  padding: 0;
+}
+
+/* 历史记录控制按钮 */
+.history-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-bottom: 16px; /* 与下方内容保持间距 */
+}
+
+.history-toggle-btn {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  min-width: 200px; /* 确保按钮有足够宽度显示文字 */
+}
+
+.history-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+}
+
+/* 历史记录面板 */
+.history-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.history-card {
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.chat-card :deep(.el-card__body) {
+.history-card :deep(.el-card__body) {
   flex: 1;
   display: flex;
   flex-direction: column;
   padding: 20px;
   overflow: hidden;
+  min-height: 0;
+  /* 与左侧模型排名保持一致的高度 */
+  height: 600px;
 }
 
-.card-header {
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.history-title {
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: bold;
+  color: #303133;
 }
 
-.header-icon {
-  font-size: 18px;
+.history-badge {
+  margin-left: 8px;
 }
 
-.header-actions {
-  margin-left: auto;
+.history-actions {
   display: flex;
   gap: 8px;
 }
 
-.view-mode-btn, .clear-btn {
+.clear-btn {
   padding: 4px 8px;
   font-size: 12px;
+  color: #f56c6c;
 }
 
-.chat-content {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 10px;
+.clear-btn:hover {
+  color: #f56c6c;
+  background: rgba(245, 108, 108, 0.1);
 }
 
-/* 自定义滚动条样式 */
-.chat-content::-webkit-scrollbar {
-  width: 6px;
+/* 搜索区域 */
+.search-section {
+  margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
-.chat-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+.search-input {
+  width: 100%;
 }
 
-.chat-content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.chat-content::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-.empty-chat {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-}
-
-/* 列表视图样式 */
+/* 历史记录列表 */
 .history-list {
-  height: 100%;
+  flex: 1;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.list-header {
+.no-results {
+  flex: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.list-title {
-  font-weight: bold;
-  color: #303133;
-  font-size: 14px;
-}
-
-.search-input {
-  width: 200px;
+  justify-content: center;
 }
 
 .history-items {
   flex: 1;
   overflow-y: auto;
+  padding-right: 8px;
 }
 
+/* 自定义滚动条 */
+.history-items::-webkit-scrollbar {
+  width: 6px;
+}
+
+.history-items::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.history-items::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.history-items::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 历史记录项 */
 .history-item {
   border: 1px solid #ebeef5;
   border-radius: 8px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  margin-bottom: 12px;
   background: #fff;
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .history-item:hover {
@@ -408,83 +476,22 @@ defineExpose({
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
 }
 
-.history-item.active {
+.history-item.expanded {
   border-color: #409eff;
   box-shadow: 0 2px 12px rgba(64, 158, 255, 0.15);
-}
-
-/* 最新对话样式 */
-.latest-item {
-  border: 2px solid #67c23a !important;
-  background: linear-gradient(135deg, #f0f9ff 0%, #f6ffed 100%);
-  box-shadow: 0 4px 16px rgba(103, 194, 58, 0.2);
-  margin-bottom: 16px;
-}
-
-.latest-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  border-bottom: 1px solid #e1f3d8;
-}
-
-.latest-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #67c23a;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.latest-badge .el-icon {
-  font-size: 16px;
-}
-
-.latest-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.latest-content {
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.8);
-}
-
-/* 历史记录分隔线 */
-.history-divider {
-  display: flex;
-  align-items: center;
-  margin: 20px 0 16px 0;
-  color: #909399;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.history-divider::before,
-.history-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(to right, transparent, #e4e7ed, transparent);
-}
-
-.history-divider span {
-  padding: 0 16px;
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 12px;
-  color: #606266;
 }
 
 .item-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.item-header:hover {
+  background: #f8f9fa;
 }
 
 .item-info {
@@ -495,9 +502,10 @@ defineExpose({
 .item-title {
   font-weight: 500;
   color: #303133;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   line-height: 1.4;
   word-break: break-word;
+  font-size: 14px;
 }
 
 .item-meta {
@@ -505,7 +513,7 @@ defineExpose({
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #909399;
+  flex-wrap: wrap;
 }
 
 .item-time {
@@ -517,14 +525,20 @@ defineExpose({
   font-weight: 500;
 }
 
+.item-tokens {
+  color: #67c23a;
+  font-weight: 500;
+}
+
 .expand-icon {
   font-size: 16px;
   color: #909399;
   transition: transform 0.3s ease;
   margin-left: 12px;
+  flex-shrink: 0;
 }
 
-.expand-icon.expanded {
+.expand-icon.rotated {
   transform: rotate(180deg);
 }
 
@@ -534,6 +548,7 @@ defineExpose({
   background: #fafafa;
 }
 
+/* 内容区域 */
 .content-section {
   margin-bottom: 16px;
 }
@@ -557,6 +572,7 @@ defineExpose({
   border-radius: 6px;
   line-height: 1.6;
   font-size: 14px;
+  word-break: break-word;
 }
 
 .user-content {
@@ -569,58 +585,6 @@ defineExpose({
   background: #f6ffed;
   border: 1px solid #b3d8ff;
   color: #303133;
-}
-
-/* 详细视图样式（原来的样式） */
-.chat-messages {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.chat-message {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.message {
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid #ebeef5;
-}
-
-.user-message {
-  background: #f0f9ff;
-  border-color: #409eff;
-}
-
-.ai-message {
-  background: #f6ffed;
-  border-color: #67c23a;
-}
-
-.message-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-
-.message-meta {
-  margin-left: auto;
-  display: flex;
-  gap: 5px;
-}
-
-.message-content {
-  line-height: 1.6;
-  color: #303133;
-}
-
-.chat-badge {
-  margin-left: auto;
 }
 
 /* 代码样式 */
@@ -644,23 +608,45 @@ defineExpose({
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .list-header {
+  .current-header {
     flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
+    gap: 8px;
+    align-items: flex-start;
   }
   
-  .search-input {
-    width: 100%;
+  .current-meta {
+    align-self: flex-end;
   }
   
   .item-meta {
-    flex-wrap: wrap;
-  }
-  
-  .header-actions {
     flex-direction: column;
+    align-items: flex-start;
     gap: 4px;
   }
+  
+  .history-controls {
+    flex-direction: column;
+  }
+  
+  .history-toggle-btn,
+  .examples-btn {
+    width: 100%;
+  }
+}
+
+/* 动画效果 */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.history-panel {
+  animation: slideDown 0.3s ease-out;
 }
 </style>

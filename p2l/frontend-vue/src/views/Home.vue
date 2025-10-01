@@ -178,27 +178,75 @@ onMounted(() => {
   padding: 20px;
   max-width: 1400px;
   margin: 0 auto;
+  min-height: calc(100vh - 40px); /* 减去padding */
+  height: auto; /* 允许内容撑开高度 */
+  display: flex;
+  flex-direction: column;
 }
 
 .main-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  height: calc(100vh - 200px); /* 使用视口高度减去顶部空间 */
-  min-height: 600px;
+  flex: 1;
+  min-height: 700px; /* 确保有足够的最小高度 */
+  overflow: visible; /* 允许内容显示 */
 }
 
 .input-panel, .chat-panel {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  height: 100%; /* 占满父容器高度 */
+  min-height: 700px; /* 确保有足够高度 */
+  overflow: visible; /* 允许内容显示 */
+}
+
+/* 确保子组件能够正确显示 */
+.input-panel > :deep(*),
+.chat-panel > :deep(*) {
+  flex-shrink: 0;
+}
+
+/* AnalysisResult组件需要更多空间 */
+.input-panel > :deep(*:last-child) {
+  flex: 1;
+  min-height: 700px; /* 确保AnalysisResult有足够高度 */
+  overflow: visible; /* 允许内容完全显示 */
+}
+
+.chat-panel > :deep(*:last-child) {
+  flex: 1;
+  min-height: 600px; /* 确保ChatHistory有足够高度 */
+  overflow: visible; /* 允许内容完全显示 */
 }
 
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .main-content {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: calc(100vh - 200px);
+  }
+  
+  .input-panel, .chat-panel {
+    height: auto;
+    min-height: 400px;
+  }
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .home-container {
+    padding: 10px;
+    height: auto;
+  }
+  
+  .main-content {
+    gap: 15px;
+  }
+  
+  .input-panel, .chat-panel {
+    gap: 15px;
   }
 }
 </style>

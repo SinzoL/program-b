@@ -1,3 +1,4 @@
+
 <template>
   <el-card v-if="analysis" class="analysis-card" shadow="hover">
     <template #header>
@@ -132,12 +133,20 @@ const handleCallLLM = (modelName) => {
 <style scoped>
 .analysis-card {
   flex: 1;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 700px; /* 设置最小高度确保有足够显示空间 */
+  height: 100%;
+  overflow: visible; /* 允许内容超出显示 */
 }
 
 .analysis-card :deep(.el-card__body) {
-  height: 100%;
-  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow: visible; /* 允许内容超出显示 */
+  min-height: 600px; /* 确保卡片体有足够高度 */
 }
 
 .card-header {
@@ -155,21 +164,59 @@ const handleCallLLM = (modelName) => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: 100%;
+  min-height: 600px; /* 确保内容区域有足够高度 */
 }
 
 .task-info {
+  flex-shrink: 0;
   margin-bottom: 20px;
+}
+
+.rankings {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .rankings h4 {
   margin: 0 0 15px 0;
   color: #303133;
+  flex-shrink: 0;
 }
 
 .ranking-list {
+  /* 增加高度显示更多模型，每个模型约80px高度 + 间距 */
+  height: 550px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overflow-y: auto;
+  padding: 12px;
+  padding-right: 8px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+/* 自定义滚动条样式 */
+.ranking-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ranking-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.ranking-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.ranking-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .ranking-item {
