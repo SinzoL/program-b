@@ -505,22 +505,24 @@ defineExpose({
   flex: 1; /* 让问题内容区域充分利用分配的空间 */
 }
 
-/* 回答内容样式 - 较大的高度，适合长回答 */
+/* 回答内容样式 - 固定高度，内容过多时滚动 */
 .answer-content {
   background: #f6ffed !important;
   border: 1px solid #b3d8ff !important;
   color: #303133 !important;
-  min-height: 150px; /* 较大的最小高度 */
-  height: 100%; /* 充分利用分配的空间 */
+  height: 300px !important; /* 固定高度，防止容器变高 */
+  max-height: 300px !important; /* 确保不会超过这个高度 */
+  min-height: 300px !important; /* 确保最小高度一致 */
   padding: 16px; /* 较大的内边距 */
   line-height: 1.6;
   word-break: break-word;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow-y: auto !important; /* 强制显示垂直滚动条 */
+  overflow-x: hidden !important;
   box-sizing: border-box;
   white-space: pre-wrap;
   font-size: 14px;
   border-radius: 6px;
+  flex-shrink: 0; /* 防止被压缩 */
 }
 
 /* 问题内容滚动条样式 */
