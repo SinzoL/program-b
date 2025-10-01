@@ -65,6 +65,7 @@
               size="small"
               @click="handleCallLLM(rec.model)"
               :loading="loading"
+              class="call-model-btn"
             >
               调用模型
             </el-button>
@@ -294,5 +295,23 @@ const handleCallLLM = (modelName) => {
 .score-label {
   font-size: 12px;
   color: #909399;
+}
+
+/* 固定按钮宽度，防止加载状态时位置偏移 */
+.call-model-btn {
+  width: 80px !important; /* 固定宽度 */
+  flex-shrink: 0; /* 防止被压缩 */
+  text-align: center;
+}
+
+/* 确保加载状态时按钮不会改变大小 */
+.call-model-btn :deep(.el-button__text) {
+  display: inline-block;
+  min-width: 48px; /* 确保文字区域有最小宽度 */
+}
+
+/* 加载图标样式优化 */
+.call-model-btn :deep(.el-icon.is-loading) {
+  margin-right: 4px;
 }
 </style>
