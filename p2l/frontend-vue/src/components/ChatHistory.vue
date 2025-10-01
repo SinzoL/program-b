@@ -511,8 +511,8 @@ defineExpose({
   border: 1px solid #b3d8ff !important;
   color: #303133 !important;
   height: 300px !important; /* 固定高度，防止容器变高 */
-  max-height: 300px !important; /* 确保不会超过这个高度 */
-  min-height: 300px !important; /* 确保最小高度一致 */
+  max-height: 720px !important; /* 确保不会超过这个高度 */
+  min-height: 720px !important; /* 确保最小高度一致 */
   padding: 16px; /* 较大的内边距 */
   line-height: 1.6;
   word-break: break-word;

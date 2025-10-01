@@ -608,28 +608,8 @@ class P2LBackendService:
         start_time = time.time()
         
         try:
-            # 对于DeepSeek模型，使用DeepSeek客户端
-            if request.model.startswith('deepseek'):
-
-                
-                if deepseek_client.api_key:
-                    logger.info(f"使用DeepSeek API调用: {request.model}")
-                    llm_response = deepseek_client.generate_response(
-                        model=request.model,
-                        prompt=request.prompt,
-                        max_tokens=2000,
-                        temperature=0.7
-                    )
-                    
-                    logger.info(f"✅ DeepSeek API调用成功: {request.model}")
-                    return llm_response
-                else:
-                    raise Exception("DeepSeek API密钥未配置")
-            
-
-            
-            # 尝试使用其他LLM API
-            elif self.llm_client:
+            # 使用统一的LLM客户端处理所有模型
+            if self.llm_client:
                 async with self.llm_client as client:
                     llm_response = await client.generate_response(
                         model=request.model,
