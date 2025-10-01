@@ -27,6 +27,7 @@ export const useP2LStore = defineStore('p2l', {
       { name: 'gpt-4o', provider: 'OpenAI', type: 'GPT', cost: '高', speed: '中', hasApiKey: true },
       { name: 'gpt-4o-mini', provider: 'OpenAI', type: 'GPT', cost: '低', speed: '快', hasApiKey: true },
       { name: 'claude-3-5-sonnet-20241022', provider: 'Anthropic', type: 'Claude', cost: '高', speed: '中', hasApiKey: true },
+      { name: 'claude-3-7-sonnet-20250219', provider: 'Anthropic', type: 'Claude', cost: '高', speed: '中', hasApiKey: true },
       { name: 'gemini-1.5-pro', provider: 'Google', type: 'Gemini', cost: '中', speed: '中', hasApiKey: true },
       { name: 'deepseek-chat', provider: 'DeepSeek', type: 'DeepSeek', cost: '低', speed: '中', hasApiKey: true },
       { name: 'deepseek-coder', provider: 'DeepSeek', type: 'DeepSeek', cost: '低', speed: '快', hasApiKey: true },

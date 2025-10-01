@@ -230,6 +230,8 @@ const handleCallLLM = (modelName) => {
   transition: all 0.3s;
   min-height: 80px; /* 固定最小高度 */
   height: 80px; /* 固定高度 */
+  overflow: hidden; /* 防止内容溢出影响布局 */
+  position: relative; /* 为绝对定位做准备 */
 }
 
 .ranking-item:hover {
@@ -281,6 +283,11 @@ const handleCallLLM = (modelName) => {
   min-width: 120px;
   width: 120px; /* 固定宽度 */
   flex-shrink: 0; /* 防止被压缩 */
+  position: absolute !important;
+  right: 118px !important; /* 按钮宽度88px + 右边距15px + 分数区域右边距15px */
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 1 !important;
 }
 
 .score-display {
@@ -301,32 +308,102 @@ const handleCallLLM = (modelName) => {
   color: #909399;
 }
 
-/* 固定按钮宽度和高度，防止加载状态时位置偏移 */
+/* 超级强制固定按钮样式 - 完全锁定尺寸和位置 */
 .call-model-btn {
-  width: 88px !important; /* 固定宽度，稍微增加一点 */
-  height: 32px !important; /* 固定高度 */
-  flex-shrink: 0; /* 防止被压缩 */
-  text-align: center;
+  width: 88px !important;
+  height: 32px !important;
+  min-width: 88px !important;
+  max-width: 88px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  flex-basis: 88px !important;
+  text-align: center !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   box-sizing: border-box !important;
+  padding: 0 8px !important;
+  margin: 0 !important;
+  border: 1px solid #409eff !important;
+  background-color: #409eff !important;
+  color: white !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
-/* 确保加载状态时按钮内容不会改变布局 */
-.call-model-btn :deep(.el-button__text) {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  white-space: nowrap; /* 防止文字换行 */
+/* 强制覆盖Element Plus的所有按钮样式 */
+.call-model-btn.el-button,
+.call-model-btn.el-button--primary,
+.call-model-btn.el-button--small {
+  width: 88px !important;
+  height: 32px !important;
+  min-width: 88px !important;
+  max-width: 88px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  padding: 0 8px !important;
+  margin: 0 !important;
+  border: 1px solid #409eff !important;
+  background-color: #409eff !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
 }
 
-/* 加载图标样式优化 */
-.call-model-btn :deep(.el-icon.is-loading) {
-  margin-right: 4px;
-  animation: rotating 2s linear infinite;
+/* 按钮内容完全固定 */
+.call-model-btn :deep(.el-button__text),
+.call-model-btn :deep(span) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 加载状态样式 */
+.call-model-btn.is-loading,
+.call-model-btn[loading="true"] {
+  width: 88px !important;
+  height: 32px !important;
+  background-color: #409eff !important;
+  border-color: #409eff !important;
+  pointer-events: none !important;
+}
+
+/* 加载图标样式 */
+.call-model-btn :deep(.el-icon.is-loading),
+.call-model-btn :deep(.el-icon) {
+  margin-right: 4px !important;
+  margin-left: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  font-size: 12px !important;
+  animation: rotating 2s linear infinite !important;
+}
+
+/* 悬停和焦点状态 */
+.call-model-btn:hover,
+.call-model-btn:focus,
+.call-model-btn:active,
+.call-model-btn.is-loading:hover,
+.call-model-btn.is-loading:focus {
+  width: 88px !important;
+  height: 32px !important;
+  background-color: #337ecc !important;
+  border-color: #337ecc !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* 加载动画 */
@@ -339,11 +416,17 @@ const handleCallLLM = (modelName) => {
   }
 }
 
-/* 确保按钮在不同状态下保持一致的外观 */
-.call-model-btn:hover,
-.call-model-btn:focus,
-.call-model-btn:active {
-  width: 88px !important;
-  height: 32px !important;
+/* 确保按钮容器也是固定的 */
+.ranking-item > .call-model-btn {
+  position: absolute !important;
+  right: 15px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 1 !important;
+}
+
+/* 为了给绝对定位的按钮和分数区域留出空间，调整ranking-item的padding */
+.ranking-item {
+  padding-right: 253px !important; /* 15px + 120px + 15px + 88px + 15px (分数区域 + 按钮区域) */
 }
 </style>

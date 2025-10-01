@@ -139,6 +139,16 @@ class P2LTrainingDataGenerator:
                 "总结": {"quality": 0.90, "speed": 0.6, "cost": 0.4},
                 "通用": {"quality": 0.89, "speed": 0.6, "cost": 0.4}
             },
+            "claude-3-7-sonnet-20250219": {
+                "编程": {"quality": 0.92, "speed": 0.65, "cost": 0.4},
+                "创意写作": {"quality": 0.97, "speed": 0.65, "cost": 0.4},
+                "翻译": {"quality": 0.88, "speed": 0.65, "cost": 0.4},
+                "数学": {"quality": 0.89, "speed": 0.65, "cost": 0.4},
+                "分析": {"quality": 0.95, "speed": 0.65, "cost": 0.4},
+                "问答": {"quality": 0.90, "speed": 0.65, "cost": 0.4},
+                "总结": {"quality": 0.92, "speed": 0.65, "cost": 0.4},
+                "通用": {"quality": 0.91, "speed": 0.65, "cost": 0.4}
+            },
             "claude-3-5-haiku-20241022": {
                 "编程": {"quality": 0.80, "speed": 0.85, "cost": 0.8},
                 "创意写作": {"quality": 0.82, "speed": 0.85, "cost": 0.8},
@@ -422,7 +432,7 @@ class P2LTrainingDataGenerator:
         
         # 复杂度调整
         if complexity == "复杂":
-            if model in ["gpt-4o", "claude-3-5-sonnet-20241022", "gemini-1.5-pro-002"]:
+            if model in ["gpt-4o", "claude-3-5-sonnet-20241022", "claude-3-7-sonnet-20250219", "gemini-1.5-pro-002"]:
                 score += 0.05  # 高端模型在复杂任务上表现更好
             else:
                 score -= 0.03  # 其他模型在复杂任务上表现下降

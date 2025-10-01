@@ -146,9 +146,11 @@ class LLMClient:
         # 检查是否使用中转服务（通过URL判断）
         is_proxy_service = 'yinli.one' in base_url or 'openai' in base_url.lower()
         
-        # 如果密钥不是以sk-ant-开头，且不是中转服务，给出警告
+        # 中转服务通常使用统一的API密钥格式，不需要sk-ant-前缀
         if not api_key.startswith('sk-ant-') and not is_proxy_service:
             logger.warning("警告：Anthropic API密钥通常以'sk-ant-'开头，当前密钥格式可能不正确")
+        elif is_proxy_service:
+            logger.info("使用中转服务，API密钥格式已确认")
         
         if is_proxy_service:
             # 中转服务使用OpenAI兼容格式

@@ -107,8 +107,8 @@ class P2LInferenceEngine:
         # LLM模型列表
         self.llm_models = [
             "gpt-4o", "gpt-4o-mini", "claude-3-5-sonnet-20241022", 
-            "claude-3-5-haiku-20241022", "gemini-1.5-pro-002", 
-            "gemini-1.5-flash-002", "qwen2.5-72b-instruct", 
+            "claude-3-7-sonnet-20250219", "claude-3-5-haiku-20241022", 
+            "gemini-1.5-pro-002", "gemini-1.5-flash-002", "qwen2.5-72b-instruct", 
             "llama-3.1-70b-instruct", "deepseek-v3"
         ]
         
@@ -148,6 +148,11 @@ class P2LInferenceEngine:
             "claude-3-5-sonnet-20241022": {
                 "provider": "anthropic", "cost_per_1k": 0.025, "avg_response_time": 2.8,
                 "strengths": ["创意写作", "分析"], "quality_score": 0.93,
+                "context_length": 200000, "multimodal": True
+            },
+            "claude-3-7-sonnet-20250219": {
+                "provider": "anthropic", "cost_per_1k": 0.025, "avg_response_time": 2.5,
+                "strengths": ["创意写作", "分析", "编程"], "quality_score": 0.95,
                 "context_length": 200000, "multimodal": True
             },
             "claude-3-5-haiku-20241022": {
