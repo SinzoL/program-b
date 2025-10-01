@@ -471,8 +471,8 @@ class P2LBackendService:
         # 使用mode字段，如果没有则使用priority字段
         priority_mode = request.mode or request.priority
         
-        # 计算模型分数，只包含启用的模型
-        model_scores = self.calculate_model_scores(task_analysis, priority_mode, enabled_models=request.models)
+        # 计算所有模型的分数（不再限制为启用的模型）
+        model_scores = self.calculate_model_scores(task_analysis, priority_mode, enabled_models=None)
         
         # 生成推荐理由
         best_model = model_scores[0]
@@ -510,11 +510,11 @@ class P2LBackendService:
                     "strengths": item["config"]["strengths"],
                     "quality_score": item["config"]["quality_score"]
                 } 
-                for item in model_scores[:5]
+                for item in model_scores
             ],
             "model_rankings": [
                 {"model": item["model"], "score": item["score"]} 
-                for item in model_scores[:5]
+                for item in model_scores
             ],
             "priority_mode": request.priority
         }

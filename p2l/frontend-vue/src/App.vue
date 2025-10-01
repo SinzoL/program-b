@@ -8,14 +8,6 @@
             <el-icon class="logo-icon"><Cpu /></el-icon>
             <span class="logo-text">P2L智能路由系统</span>
           </div>
-          <div class="header-actions">
-            <el-badge :value="modelCount" class="model-badge">
-              <el-button type="info" plain>
-                <el-icon><Collection /></el-icon>
-                已加载模型
-              </el-button>
-            </el-badge>
-          </div>
         </div>
       </el-header>
 

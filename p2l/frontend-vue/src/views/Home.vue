@@ -102,9 +102,14 @@ const analyzePrompt = async () => {
 
   try {
     await p2lStore.analyzeWithP2L(userPrompt.value, selectedMode.value)
+    // 计算启用的模型数量
+    const enabledRecommendations = p2lStore.recommendations.filter(rec => 
+      p2lStore.enabledModels.includes(rec.model)
+    )
+    
     ElNotification({
       title: 'P2L分析完成',
-      message: `为您推荐了 ${p2lStore.recommendations.length} 个模型`,
+      message: `为您推荐了 ${enabledRecommendations.length} 个启用的模型`, // （共分析了 ${p2lStore.recommendations.length} 个模型）
       type: 'success'
     })
   } catch (error) {
