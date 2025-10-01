@@ -78,7 +78,7 @@
               <el-icon><User /></el-icon>
               <span>问题</span>
             </div>
-            <div class="section-content filled-content">
+            <div class="section-content question-content">
               {{ latestChat.prompt }}
             </div>
           </div>
@@ -89,7 +89,7 @@
               <el-icon><Robot /></el-icon>
               <span>回答 ({{ latestChat.tokens }} tokens)</span>
             </div>
-            <div class="section-content filled-content" v-html="formatResponse(latestChat.response)"></div>
+            <div class="section-content answer-content" v-html="formatResponse(latestChat.response)"></div>
           </div>
         </div>
       </el-card>
@@ -180,7 +180,7 @@
                         <el-icon><User /></el-icon>
                         <span>问题</span>
                       </div>
-                      <div class="section-content user-content">{{ chat.prompt }}</div>
+                      <div class="section-content question-content">{{ chat.prompt }}</div>
                     </div>
                     
                     <div class="content-section">
@@ -188,7 +188,7 @@
                         <el-icon><Robot /></el-icon>
                         <span>回答</span>
                       </div>
-                      <div class="section-content ai-content" v-html="formatResponse(chat.response)"></div>
+                      <div class="section-content answer-content" v-html="formatResponse(chat.response)"></div>
                     </div>
                   </div>
                 </el-collapse-transition>
@@ -480,38 +480,78 @@ defineExpose({
   max-width: 300px;
 }
 
-/* 填充内容样式 - 使用相同结构但不同样式 */
-.filled-content {
-  background: #fff !important;
-  border: 1px solid #ebeef5 !important;
+/* 问题内容样式 - 较小的高度，适合简短问题 */
+.question-content {
+  background: #f0f9ff !important;
+  border: 1px solid #d4edda !important;
   color: #303133 !important;
-  min-height: 120px;
-  height: 100%; /* 充分利用分配的空间 */
-  padding: 16px;
-  line-height: 1.6;
+  min-height: 80px; /* 较小的最小高度 */
+  max-height: 200px; /* 限制最大高度 */
+  height: auto; /* 自适应高度 */
+  padding: 12px 16px; /* 较小的内边距 */
+  line-height: 1.5;
   word-break: break-word;
-  overflow-y: auto; /* 启用垂直滚动 */
-  overflow-x: hidden; /* 禁用水平滚动 */
+  overflow-y: auto;
+  overflow-x: hidden;
   box-sizing: border-box;
   white-space: pre-wrap;
+  font-size: 14px;
+  border-radius: 6px;
 }
 
-/* 自定义滚动条样式 */
-.filled-content::-webkit-scrollbar {
-  width: 6px;
+/* 回答内容样式 - 较大的高度，适合长回答 */
+.answer-content {
+  background: #f6ffed !important;
+  border: 1px solid #b3d8ff !important;
+  color: #303133 !important;
+  min-height: 150px; /* 较大的最小高度 */
+  height: 100%; /* 充分利用分配的空间 */
+  padding: 16px; /* 较大的内边距 */
+  line-height: 1.6;
+  word-break: break-word;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  font-size: 14px;
+  border-radius: 6px;
 }
 
-.filled-content::-webkit-scrollbar-track {
+/* 问题内容滚动条样式 */
+.question-content::-webkit-scrollbar {
+  width: 4px; /* 较细的滚动条 */
+}
+
+.question-content::-webkit-scrollbar-track {
+  background: #e6f7ff;
+  border-radius: 2px;
+}
+
+.question-content::-webkit-scrollbar-thumb {
+  background: #91d5ff;
+  border-radius: 2px;
+}
+
+.question-content::-webkit-scrollbar-thumb:hover {
+  background: #69c0ff;
+}
+
+/* 回答内容滚动条样式 */
+.answer-content::-webkit-scrollbar {
+  width: 6px; /* 较粗的滚动条 */
+}
+
+.answer-content::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
 
-.filled-content::-webkit-scrollbar-thumb {
+.answer-content::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 3px;
 }
 
-.filled-content::-webkit-scrollbar-thumb:hover {
+.answer-content::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
 
@@ -795,17 +835,7 @@ defineExpose({
   border-radius: 0;
 }
 
-.user-content {
-  background: #f0f9ff;
-  border: 1px solid #d4edda;
-  color: #303133;
-}
 
-.ai-content {
-  background: #f6ffed;
-  border: 1px solid #b3d8ff;
-  color: #303133;
-}
 
 /* 代码样式 */
 :deep(.code-block) {
