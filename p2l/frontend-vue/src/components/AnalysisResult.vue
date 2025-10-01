@@ -188,7 +188,7 @@ const handleCallLLM = (modelName) => {
 
 .ranking-list {
   /* 增加高度显示更多模型，每个模型约80px高度 + 间距 */
-  height: 550px;
+  height: 440px;
   display: flex;
   flex-direction: column;
   gap: 10px;

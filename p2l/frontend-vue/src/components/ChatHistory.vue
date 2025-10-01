@@ -1,24 +1,65 @@
 <template>
   <div class="chat-history-container">
-    <!-- 历史记录控制按钮 - 移到顶部 -->
-    <div class="history-controls">
-      <el-button 
-        v-if="chatHistory.length > 1"
-        type="primary" 
-        @click="toggleHistoryPanel"
-        class="history-toggle-btn"
-        :icon="showHistoryPanel ? 'ArrowUp' : 'ArrowDown'"
-      >
-        {{ showHistoryPanel ? '返回当前对话' : `查看历史记录 (${chatHistory.length - 1})` }}
-      </el-button>
-    </div>
-
-    <!-- 当前最新对话显示区域 -->
-    <div v-if="chatHistory.length > 0 && !showHistoryPanel" class="current-chat">
-      <el-card shadow="hover" class="current-chat-card">
+    <!-- Tab切换界面 -->
+    <el-tabs v-model="activeTab" class="chat-tabs" type="border-card">
+      <!-- 当前对话Tab -->
+      <el-tab-pane label="当前对话" name="current" class="tab-pane">
+        <template #label>
+          <span class="tab-label">
+            <el-icon><ChatDotRound /></el-icon>
+            当前对话
+          </span>
+        </template>
+        
+        <div class="current-chat">
+      <!-- 空状态：显示占位符结构 -->
+      <el-card v-if="chatHistory.length === 0" class="placeholder-chat" shadow="hover">
         <template #header>
-          <div class="current-header">
-            <div class="current-title">
+          <div class="placeholder-header">
+            <div class="placeholder-title">
+              <el-icon class="header-icon"><ChatDotRound /></el-icon>
+              <span>对话区域</span>
+              <el-tag size="small" type="info">等待输入</el-tag>
+            </div>
+          </div>
+        </template>
+        
+        <div class="placeholder-content">
+          <!-- 问题占位符 -->
+          <div class="content-section">
+            <div class="section-header">
+              <el-icon><User /></el-icon>
+              <span>问题</span>
+            </div>
+            <div class="section-content placeholder-text">
+              <div class="placeholder-message">
+                <el-icon class="placeholder-icon"><Edit /></el-icon>
+                <span>请在左侧输入您的问题，然后选择合适的模型进行分析...</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 回答占位符 -->
+          <div class="content-section">
+            <div class="section-header">
+              <el-icon><Robot /></el-icon>
+              <span>回答</span>
+            </div>
+            <div class="section-content placeholder-text">
+              <div class="placeholder-message">
+                <el-icon class="placeholder-icon"><Loading /></el-icon>
+                <span>模型的回答将在这里显示...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </el-card>
+
+      <!-- 有对话记录时显示最新对话 - 使用统一模板 -->
+      <el-card v-else-if="chatHistory.length > 0 && latestChat" class="placeholder-chat" shadow="hover">
+        <template #header>
+          <div class="placeholder-header">
+            <div class="placeholder-title">
               <el-icon class="header-icon"><ChatDotRound /></el-icon>
               <span>当前对话</span>
               <el-tag size="small" type="success">{{ latestChat.model }}</el-tag>
@@ -30,28 +71,42 @@
           </div>
         </template>
         
-        <div class="current-content">
+        <div class="placeholder-content">
+          <!-- 问题区域 - 填充实际内容 -->
           <div class="content-section">
             <div class="section-header">
               <el-icon><User /></el-icon>
               <span>问题</span>
             </div>
-            <div class="section-content user-content">{{ latestChat.prompt }}</div>
+            <div class="section-content filled-content">
+              {{ latestChat.prompt }}
+            </div>
           </div>
           
+          <!-- 回答区域 - 填充实际内容 -->
           <div class="content-section">
             <div class="section-header">
               <el-icon><Robot /></el-icon>
               <span>回答 ({{ latestChat.tokens }} tokens)</span>
             </div>
-            <div class="section-content ai-content" v-html="formatResponse(latestChat.response)"></div>
+            <div class="section-content filled-content" v-html="formatResponse(latestChat.response)"></div>
           </div>
         </div>
       </el-card>
-    </div>
+        </div>
+      </el-tab-pane>
 
-    <!-- 历史记录面板 - 替换当前对话 -->
-    <div v-if="showHistoryPanel && chatHistory.length > 1" class="history-panel">
+      <!-- 历史记录Tab -->
+      <el-tab-pane name="history" class="tab-pane">
+        <template #label>
+          <span class="tab-label">
+            <el-icon><History /></el-icon>
+            历史记录
+            <el-badge v-if="chatHistory.length > 0" :value="chatHistory.length" class="tab-badge" />
+          </span>
+        </template>
+        
+        <div class="history-panel">
         <el-card shadow="hover" class="history-card">
           <template #header>
             <div class="history-header">
@@ -141,7 +196,9 @@
             </div>
           </div>
         </el-card>
-    </div>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
@@ -157,8 +214,8 @@ const props = defineProps({
 
 const emit = defineEmits(['show-examples', 'clear-history'])
 
-// 控制历史记录面板显示
-const showHistoryPanel = ref(false)
+// Tab控制
+const activeTab = ref('current')
 const searchKeyword = ref('')
 const expandedItems = ref(new Set())
 
@@ -167,10 +224,10 @@ const latestChat = computed(() => {
   return props.chatHistory.length > 0 ? props.chatHistory[props.chatHistory.length - 1] : null
 })
 
-// 历史对话（除了最新的）
+// 历史对话（所有对话记录，按时间倒序）
 const historicalChats = computed(() => {
-  if (props.chatHistory.length <= 1) return []
-  return [...props.chatHistory].slice(0, -1).reverse() // 除了最新的，其他按时间倒序
+  if (props.chatHistory.length === 0) return []
+  return [...props.chatHistory].reverse() // 所有对话按时间倒序
 })
 
 // 过滤的历史记录（搜索功能）
@@ -187,15 +244,7 @@ const filteredHistoricalChats = computed(() => {
   )
 })
 
-// 切换历史记录面板
-const toggleHistoryPanel = () => {
-  showHistoryPanel.value = !showHistoryPanel.value
-  // 如果关闭面板，清空搜索和展开状态
-  if (!showHistoryPanel.value) {
-    searchKeyword.value = ''
-    expandedItems.value.clear()
-  }
-}
+
 
 // 切换列表项展开状态
 const toggleItemExpansion = (itemId) => {
@@ -210,7 +259,7 @@ const toggleItemExpansion = (itemId) => {
 const clearHistory = () => {
   emit('clear-history')
   expandedItems.value.clear()
-  showHistoryPanel.value = false
+  activeTab.value = 'current'
 }
 
 const handleShowExamples = () => {
@@ -272,22 +321,215 @@ defineExpose({
 .chat-history-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   height: 100%;
-  min-height: 0; /* 允许收缩 */
+  min-height: 700px; /* 与左侧保持一致 */
   overflow: hidden;
-  position: relative; /* 为覆盖层提供定位基准 */
+}
+
+/* Tab容器 */
+.chat-tabs {
+  height: 100%;
+  min-height: 700px; /* 确保最小高度与左侧一致 */
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-tabs :deep(.el-tabs__content) {
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+  min-height: 650px; /* 减去Tab头部高度后的最小高度 */
+}
+
+.chat-tabs :deep(.el-tab-pane) {
+  height: 100%;
+  min-height: 650px; /* 确保Tab面板有足够高度 */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tab标签样式 */
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-badge {
+  margin-left: 4px;
+}
+
+/* Tab面板 */
+.tab-pane {
+  height: 100%;
+  overflow: hidden;
 }
 
 /* 当前对话区域 */
 .current-chat {
-  flex-shrink: 0;
+  height: 100%;
+  min-height: 650px; /* 确保有足够高度 */
+  display: flex;
+  flex-direction: column;
 }
 
 .current-chat-card {
   border: 2px solid #67c23a;
   background: linear-gradient(135deg, #f0f9ff 0%, #f6ffed 100%);
   box-shadow: 0 4px 16px rgba(103, 194, 58, 0.2);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 占位符对话卡片 */
+.placeholder-chat {
+  height: 100%; /* 占满Tab面板的全部高度 */
+  min-height: 650px; /* 确保最小高度与左侧一致 */
+  border: 2px dashed #d9d9d9;
+  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.placeholder-chat :deep(.el-card__body) {
+  flex: 1; /* 占用卡片的剩余空间 */
+  min-height: 600px; /* 确保内容区域有足够高度 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.placeholder-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.placeholder-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  color: #909399;
+}
+
+.placeholder-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  height: 100%;
+  min-height: 600px;
+}
+
+/* 问题和回答区域的高度分配 */
+.placeholder-content .content-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.placeholder-content .content-section:last-child {
+  border-bottom: none;
+}
+
+.placeholder-content .content-section .section-header {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.placeholder-content .content-section .section-content {
+  flex: 1;
+  margin: 0;
+}
+
+.placeholder-text {
+  background: #f8f9fa !important;
+  border: none !important;
+  color: #909399 !important;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.placeholder-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.placeholder-icon {
+  font-size: 24px;
+  color: #c0c4cc;
+}
+
+.placeholder-message span {
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 300px;
+}
+
+/* 填充内容样式 - 使用相同结构但不同样式 */
+.filled-content {
+  background: #fff !important;
+  border: 1px solid #ebeef5 !important;
+  color: #303133 !important;
+  min-height: 120px;
+  height: 100%; /* 充分利用分配的空间 */
+  padding: 16px;
+  line-height: 1.6;
+  word-break: break-word;
+  overflow-y: auto; /* 启用垂直滚动 */
+  overflow-x: hidden; /* 禁用水平滚动 */
+  box-sizing: border-box;
+  white-space: pre-wrap;
+}
+
+/* 自定义滚动条样式 */
+.filled-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filled-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.filled-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.filled-content::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 当前对话的元数据样式 */
+.current-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.chat-time {
+  color: #909399;
+}
+
+.chat-cost {
+  color: #f56c6c;
+  font-weight: 500;
 }
 
 .current-header {
@@ -329,33 +571,11 @@ defineExpose({
   padding: 0;
 }
 
-/* 历史记录控制按钮 */
-.history-controls {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  flex-shrink: 0;
-  margin-bottom: 16px; /* 与下方内容保持间距 */
-}
 
-.history-toggle-btn {
-  padding: 12px 24px;
-  font-size: 14px;
-  font-weight: 500;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  min-width: 200px; /* 确保按钮有足够宽度显示文字 */
-}
-
-.history-toggle-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
-}
 
 /* 历史记录面板 */
 .history-panel {
-  flex: 1;
-  min-height: 0;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -373,8 +593,7 @@ defineExpose({
   padding: 20px;
   overflow: hidden;
   min-height: 0;
-  /* 与左侧模型排名保持一致的高度 */
-  height: 600px;
+  height: calc(100% - 60px); /* 减去卡片头部高度 */
 }
 
 .history-header {
@@ -568,11 +787,12 @@ defineExpose({
 }
 
 .section-content {
-  padding: 12px;
-  border-radius: 6px;
   line-height: 1.6;
   font-size: 14px;
   word-break: break-word;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
 }
 
 .user-content {

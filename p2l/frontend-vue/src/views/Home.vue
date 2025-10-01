@@ -182,6 +182,8 @@ onMounted(() => {
   height: auto; /* 允许内容撑开高度 */
   display: flex;
   flex-direction: column;
+  overflow-x: hidden; /* 禁用水平滚动 */
+  box-sizing: border-box; /* 确保padding包含在宽度内 */
 }
 
 .main-content {
@@ -190,7 +192,10 @@ onMounted(() => {
   gap: 20px;
   flex: 1;
   min-height: 700px; /* 确保有足够的最小高度 */
-  overflow: visible; /* 允许内容显示 */
+  overflow-x: hidden; /* 禁用水平滚动 */
+  overflow-y: visible; /* 允许垂直内容显示 */
+  width: 100%; /* 确保不超出容器宽度 */
+  box-sizing: border-box;
 }
 
 .input-panel, .chat-panel {
@@ -198,7 +203,10 @@ onMounted(() => {
   flex-direction: column;
   gap: 20px;
   min-height: 700px; /* 确保有足够高度 */
-  overflow: visible; /* 允许内容显示 */
+  overflow-x: hidden; /* 禁用水平滚动 */
+  overflow-y: visible; /* 允许垂直内容显示 */
+  width: 100%; /* 确保不超出网格列宽度 */
+  box-sizing: border-box;
 }
 
 /* 确保子组件能够正确显示 */
