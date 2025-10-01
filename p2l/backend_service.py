@@ -128,6 +128,13 @@ class P2LBackendService:
                 "strengths": ["创意写作", "文学分析"],
                 "quality_score": 0.93
             },
+            "claude-3-7-sonnet-20250219": {
+                "provider": "anthropic",
+                "cost_per_1k": 0.025,
+                "avg_response_time": 2.5,
+                "strengths": ["创意写作", "分析", "编程", "推理"],
+                "quality_score": 0.95
+            },
             # Gemini 主流模型
             "gemini-1.5-pro": {
                 "provider": "google",

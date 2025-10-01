@@ -125,6 +125,7 @@ class EndpointP2LRouter(BaseRouter):
         "gemma-2-9b-it": 2,
         "gemma-2-2b-it": 2,
         "claude-3-5-sonnet-20241022": 4,
+        "claude-3-7-sonnet-20250219": 4,
         "claude-3-opus-20240229": 4,
         "claude-3-5-haiku-20241022": 4,
         "qwen2.5-72b-instruct": 2,
