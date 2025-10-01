@@ -137,8 +137,7 @@ const callLLM = async (modelName) => {
 
 const clearAll = () => {
   userPrompt.value = ''
-  p2lStore.clearChatHistory()
-  ElMessage.success('已清空所有结果')
+  ElMessage.success('已清空输入内容')
 }
 
 const clearChatHistory = () => {

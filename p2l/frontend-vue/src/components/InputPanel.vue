@@ -49,7 +49,7 @@
         :disabled="loading"
       >
         <el-icon><Delete /></el-icon>
-        清空结果
+        清空输入
       </el-button>
       <el-button 
         @click="handleShowExamples"
