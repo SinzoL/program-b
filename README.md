@@ -16,28 +16,33 @@ P2L (Prompt-to-LLM) 是一个智能的大语言模型路由系统，能够根据
 ```
 program-b/
 ├── README.md                       # 项目主文档
-├── .env.example                    # 环境变量配置示例
 ├── .gitignore                      # Git忽略文件
 ├── docker-compose.yml              # Docker编排配置
-├── p2l/                            # 🧠 P2L核心系统
+├── start-dev.sh                    # 🚀 一键启动开发环境
+├── stop-dev.sh                     # 🛑 一键停止开发环境
+├── backend/                        # 🔥 统一后端服务
+│   ├── main.py                     # 服务入口点
+│   ├── service.py                  # 主服务文件
+│   ├── config.py                   # 配置管理
+│   ├── llm_client.py               # LLM客户端
+│   ├── p2l_engine.py               # P2L推理引擎
+│   ├── task_analyzer.py            # 任务分析器
+│   ├── model_scorer.py             # 模型评分器
+│   ├── llm_handler.py              # LLM处理器
 │   ├── api_config.env              # 🔑 API密钥配置
+│   ├── requirements.txt            # 后端依赖
+│   └── start.sh                    # 后端启动脚本
+├── frontend/                       # 🎨 Vue前端界面
+│   ├── src/                        # Vue源码
+│   │   ├── components/             # Vue组件
+│   │   ├── stores/                 # Pinia状态管理
+│   │   └── views/                  # 页面视图
+│   ├── package.json                # 前端依赖
+│   ├── vite.config.js              # Vite配置
+│   └── start.sh                    # 前端启动脚本
+├── p2l/                            # 🧠 P2L核心系统
 │   ├── serve_requirements.txt      # 后端依赖
 │   ├── train_requirements.txt      # 训练依赖
-│   ├── backend/                    # 🔥 统一后端服务
-│   │   ├── service.py              # 主服务文件
-│   │   ├── config.py               # 配置管理
-│   │   ├── llm_client.py           # LLM客户端
-│   │   ├── p2l_engine.py           # P2L推理引擎
-│   │   ├── task_analyzer.py        # 任务分析器
-│   │   ├── model_scorer.py         # 模型评分器
-│   │   └── llm_handler.py          # LLM处理器
-│   ├── service-frontend/           # 🎨 Vue前端界面
-│   │   ├── src/                    # Vue源码
-│   │   │   ├── components/         # Vue组件
-│   │   │   ├── stores/             # Pinia状态管理
-│   │   │   └── views/              # 页面视图
-│   │   ├── package.json            # 前端依赖
-│   │   └── vite.config.js          # Vite配置
 │   ├── models/                     # 🤖 P2L模型存储
 │   │   ├── demo_model_list.json    # 演示模型配置
 │   │   └── p2l-0.5b-grk/           # P2L神经网络模型
@@ -55,10 +60,7 @@ program-b/
 │       ├── install.sh              # 安装脚本
 │       ├── start.sh                # 启动脚本
 │       └── stop.sh                 # 停止脚本
-└── scripts/                        # 🚀 部署脚本
-    ├── deploy-docker.sh            # Docker部署
-    ├── start-dev.sh                # 开发环境启动
-    └── stop-dev.sh                 # 开发环境停止
+└── scripts/                        # 🚀 部署脚本 (已废弃)
 ```
 
 ## 🚀 快速开始
@@ -70,24 +72,35 @@ program-b/
 - CUDA (可选，用于GPU加速)
 - 至少8GB内存（推荐16GB）
 
-### 方式一：统一后端服务 (推荐)
+### 方式一：一键启动脚本 (推荐)
+
+```bash
+# 🚀 一键启动前后端服务
+./start-dev.sh
+
+# 🛑 停止所有服务
+./stop-dev.sh
+```
+
+启动后访问：
+- 🎨 **前端界面**: http://localhost:3000
+- 🔧 **后端API**: http://localhost:8080
+- 📚 **API文档**: http://localhost:8080/docs
+
+### 方式二：手动启动
 
 #### 1. 配置API密钥
 
 ```bash
-# 复制配置文件模板
-cp p2l/api_config.env.example p2l/api_config.env
-
 # 编辑配置文件，添加你的API密钥
-vim p2l/api_config.env
+vim backend/api_config.env
 ```
 
 #### 2. 启动后端服务
 
 ```bash
-cd p2l/backend
-pip install -r ../serve_requirements.txt
-python3 service.py
+cd backend
+./start.sh
 ```
 
 后端服务将在 http://localhost:8080 启动
@@ -95,36 +108,22 @@ python3 service.py
 #### 3. 启动前端界面
 
 ```bash
-cd p2l/service-frontend
-npm install
-npm run dev
+cd frontend
+./start.sh
 ```
 
-前端界面将在 http://localhost:5173 启动
-
-### 方式二：一键启动脚本
-
-```bash
-# 开发环境一键启动
-./scripts/start-dev.sh
-
-# 停止服务
-./scripts/stop-dev.sh
-```
+前端界面将在 http://localhost:3000 启动
 
 ### 方式三：Docker部署
 
 ```bash
 # Docker一键部署
-./scripts/deploy-docker.sh
-
-# 或使用docker-compose
 docker-compose up -d
 ```
 
-### 🔧 API密钥配置
+## 🔧 API密钥配置
 
-在 `p2l/api_config.env` 文件中配置各厂商的API密钥：
+在 `backend/api_config.env` 文件中配置各厂商的API密钥：
 
 ```bash
 # OpenAI
@@ -144,6 +143,8 @@ DEEPSEEK_API_KEY=sk-your-deepseek-key
 # Google Gemini
 GOOGLE_API_KEY=your-google-api-key
 ```
+
+**首次使用请确保配置至少一个API密钥！**
 
 ## 📋 支持的模型
 
@@ -300,7 +301,7 @@ GOOGLE_API_KEY=your-google-api-key
 
 ### 后端配置
 
-在 `p2l/backend/config.py` 中可以配置：
+在 `backend/config.py` 中可以配置：
 
 - 支持的模型列表和参数
 - 服务端口和主机地址
@@ -309,7 +310,7 @@ GOOGLE_API_KEY=your-google-api-key
 
 ### 前端配置
 
-在 `p2l/service-frontend/src/stores/p2l.js` 中可以配置：
+在 `frontend/src/stores/p2l.js` 中可以配置：
 
 - 后端API地址
 - 默认优先级设置
@@ -333,29 +334,33 @@ python eval.py --model_path ../models/p2l-0.5b-grk
 
 ### 添加新的LLM模型
 
-1. 在 `p2l/backend/config.py` 的模型配置中添加新模型
-2. 在 `p2l/backend/llm_client.py` 中实现对应的API调用逻辑
-3. 更新 `p2l/backend/model_scorer.py` 中的评分规则
-4. 在前端 `p2l/service-frontend/src/components/ModelCard.vue` 中添加显示支持
+1. 在 `backend/config.py` 的模型配置中添加新模型
+2. 在 `backend/llm_client.py` 中实现对应的API调用逻辑
+3. 更新 `backend/model_scorer.py` 中的评分规则
+4. 在前端 `frontend/src/components/ModelCard.vue` 中添加显示支持
 
 ### 自定义评分算法
 
-在 `p2l/backend/model_scorer.py` 的 `ModelScorer.calculate_scores()` 方法中修改评分逻辑。
+在 `backend/model_scorer.py` 的 `ModelScorer.calculate_scores()` 方法中修改评分逻辑。
 
 ### 开发环境设置
 
 ```bash
+# 方式一：一键启动 (推荐)
+./start-dev.sh
+
+# 方式二：手动启动
 # 安装后端依赖
-cd p2l/backend
-pip install -r ../serve_requirements.txt
+cd backend
+pip install -r requirements.txt
 
 # 安装前端依赖
-cd p2l/service-frontend
+cd frontend
 npm install
 
 # 启动开发服务
-cd p2l/backend && python3 service.py &
-cd p2l/service-frontend && npm run dev
+cd backend && ./start.sh &
+cd frontend && ./start.sh
 ```
 
 ## 🚀 部署指南
@@ -365,7 +370,7 @@ cd p2l/service-frontend && npm run dev
 使用提供的脚本快速启动开发环境：
 
 ```bash
-./scripts/start-dev.sh
+./start-dev.sh
 ```
 
 ### 生产环境部署
@@ -373,10 +378,7 @@ cd p2l/service-frontend && npm run dev
 #### 方式一：Docker部署 (推荐)
 
 ```bash
-# 一键Docker部署
-./scripts/deploy-docker.sh
-
-# 或手动使用docker-compose
+# 使用docker-compose
 docker-compose up -d
 ```
 
@@ -384,14 +386,14 @@ docker-compose up -d
 
 1. **后端部署**:
 ```bash
-cd p2l/backend
-pip install -r ../serve_requirements.txt
+cd backend
+pip install -r requirements.txt
 gunicorn -w 4 -k uvicorn.workers.UvicornWorker service:app --bind 0.0.0.0:8080
 ```
 
 2. **前端部署**:
 ```bash
-cd p2l/service-frontend
+cd frontend
 npm install
 npm run build
 # 将dist目录部署到nginx或其他静态文件服务器
