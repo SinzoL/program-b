@@ -1,5 +1,16 @@
 <template>
-  <el-dialog v-model="visible" title="示例问题" width="600px" @close="handleClose">
+  <el-dialog 
+    v-model="visible" 
+    width="600px" 
+    @close="handleClose"
+    class="tech-dialog"
+  >
+    <template #header>
+      <div class="dialog-header">
+        <TechIcons name="database" :size="20" color="#00d4ff" />
+        <span>示例问题</span>
+      </div>
+    </template>
     <div class="examples-list">
       <div 
         v-for="example in exampleQuestions" 
@@ -7,7 +18,10 @@
         class="example-item"
         @click="handleUseExample(example.prompt)"
       >
-        <div class="example-category">{{ example.category }}</div>
+        <div class="example-header">
+          <TechIcons name="chip" :size="16" color="#00ff88" />
+          <div class="example-category">{{ example.category }}</div>
+        </div>
         <div class="example-prompt">{{ example.prompt }}</div>
         <div class="example-description">{{ example.description }}</div>
       </div>
@@ -17,6 +31,7 @@
 
 <script setup>
 import { ref, defineProps, defineEmits, watch } from 'vue'
+import TechIcons from './icons/TechIcons.vue'
 
 const props = defineProps({
   modelValue: {
@@ -82,38 +97,118 @@ const handleUseExample = (prompt) => {
 </script>
 
 <style scoped>
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  color: #00d4ff;
+}
+
 .examples-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* 自定义滚动条 */
+.examples-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.examples-list::-webkit-scrollbar-track {
+  background: rgba(0, 212, 255, 0.1);
+  border-radius: 3px;
+}
+
+.examples-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.5);
+  border-radius: 3px;
+}
+
+.examples-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.7);
 }
 
 .example-item {
   padding: 15px;
-  border: 1px solid #ebeef5;
+  border: 1px solid rgba(0, 212, 255, 0.3);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
+  position: relative;
+  overflow: hidden;
+}
+
+.example-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .example-item:hover {
-  border-color: #409eff;
-  background: #f0f9ff;
+  border-color: #00d4ff;
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2);
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
+}
+
+.example-item:hover::before {
+  opacity: 1;
+}
+
+.example-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .example-category {
   font-size: 12px;
-  color: #909399;
-  margin-bottom: 5px;
+  color: #00ff88;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .example-prompt {
   font-weight: bold;
-  margin-bottom: 5px;
+  color: #00d4ff;
+  margin-bottom: 8px;
+  line-height: 1.4;
 }
 
 .example-description {
-  font-size: 14px;
-  color: #606266;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.4;
+}
+</style>
+
+<style>
+.tech-dialog .el-dialog {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 212, 255, 0.2);
+}
+
+.tech-dialog .el-dialog__header {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
+  border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.tech-dialog .el-dialog__body {
+  background: rgba(15, 15, 35, 0.02);
 }
 </style>

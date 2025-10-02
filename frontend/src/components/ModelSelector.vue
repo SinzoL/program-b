@@ -6,19 +6,22 @@
     popper-class="model-selector-popover"
   >
     <template #reference>
-      <el-button type="primary" size="small" class="model-selector-btn">
-        <el-icon><Setting /></el-icon>
+      <el-button type="primary" size="small" class="model-selector-btn tech-button">
+        <TechIcons name="settings" :size="14" color="#ffffff" />
         已加载模型 ({{ enabledModelsCount }}/{{ totalModelsCount }})
       </el-button>
     </template>
 
     <div class="model-selector-content">
       <div class="selector-header">
-        <h4>模型选择器</h4>
+        <div class="header-title">
+          <TechIcons name="chip" :size="18" color="#00d4ff" />
+          <h4>模型选择器</h4>
+        </div>
         <div class="header-actions">
-          <el-button size="small" @click="selectAll">全选</el-button>
-          <el-button size="small" @click="selectNone">全不选</el-button>
-          <el-button size="small" type="primary" @click="selectRecommended">推荐配置</el-button>
+          <el-button size="small" @click="selectAll" class="tech-button">全选</el-button>
+          <el-button size="small" @click="selectNone" class="tech-button">全不选</el-button>
+          <el-button size="small" type="primary" @click="selectRecommended" class="tech-button primary-button">推荐配置</el-button>
         </div>
       </div>
 
@@ -89,7 +92,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, defineProps, defineEmits } from 'vue'
+import { ref, computed, watch } from 'vue'
+import TechIcons from './icons/TechIcons.vue'
 
 const props = defineProps({
   availableModels: {
@@ -229,12 +233,19 @@ const emitEnabledModels = () => {
   align-items: center;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.3);
 }
 
-.selector-header h4 {
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-title h4 {
   margin: 0;
-  color: #303133;
+  color: #00d4ff;
+  font-weight: bold;
 }
 
 .header-actions {
@@ -249,9 +260,23 @@ const emitEnabledModels = () => {
 }
 
 .provider-group {
-  border: 1px solid #ebeef5;
+  border: 1px solid rgba(0, 212, 255, 0.3);
   border-radius: 8px;
   padding: 12px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
+  position: relative;
+  overflow: hidden;
+}
+
+.provider-group::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  animation: scan 3s linear infinite;
 }
 
 .provider-header {
@@ -271,11 +296,15 @@ const emitEnabledModels = () => {
 .model-item {
   padding: 8px;
   border-radius: 6px;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
 }
 
 .model-item:hover {
-  background-color: #f5f7fa;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
+  border-color: rgba(0, 212, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.2);
 }
 
 .model-item.disabled {
@@ -290,7 +319,7 @@ const emitEnabledModels = () => {
 
 .model-name {
   font-weight: 500;
-  color: #303133;
+  color: #00d4ff;
 }
 
 .model-tags {
@@ -301,16 +330,59 @@ const emitEnabledModels = () => {
 .selector-footer {
   margin-top: 15px;
   padding-top: 15px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid rgba(0, 212, 255, 0.3);
 }
 
 .selector-footer :deep(.el-alert) {
   border-radius: 6px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.tech-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
+}
+
+.tech-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+  border-color: #00d4ff;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, #00d4ff, #00ff88);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+  color: white;
+}
+
+.primary-button:hover {
+  background: linear-gradient(135deg, #00ff88, #00d4ff);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+}
+
+@keyframes scan {
+  0% { left: -100%; }
+  100% { left: 100%; }
 }
 </style>
 
 <style>
 .model-selector-popover {
   padding: 16px !important;
+  background: linear-gradient(135deg, rgba(15, 15, 35, 0.95), rgba(26, 26, 46, 0.95)) !important;
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 212, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.model-selector-popover .el-popper__arrow::before {
+  background: rgba(15, 15, 35, 0.95) !important;
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
 }
 </style>

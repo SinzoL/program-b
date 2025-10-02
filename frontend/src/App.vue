@@ -35,7 +35,33 @@ onMounted(() => {
 <style scoped>
 .app-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%),
+    linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.app-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.02) 50%, transparent 100%),
+    linear-gradient(0deg, transparent 0%, rgba(255, 255, 255, 0.02) 50%, transparent 100%);
+  background-size: 100px 100px, 100px 100px;
+  animation: grid-move 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes grid-move {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(100px, 100px); }
 }
 
 .app-header {
@@ -87,5 +113,57 @@ onMounted(() => {
   padding: 0;
   max-width: 1200px;
   margin: 0 auto;
+}
+</style>
+
+<!-- 全局样式 - 科技风通知 -->
+<style>
+.tech-notification {
+  background: linear-gradient(135deg, 
+    rgba(0, 212, 255, 0.1) 0%, 
+    rgba(0, 255, 136, 0.1) 50%, 
+    rgba(255, 107, 107, 0.1) 100%) !important;
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 212, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+}
+
+.tech-notification .el-notification__title {
+  color: #00d4ff !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5) !important;
+}
+
+.tech-notification .el-notification__content {
+  color: #e8e8e8 !important;
+}
+
+.tech-notification .el-notification__icon {
+  color: #00ff88 !important;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 136, 0.6)) !important;
+}
+
+.tech-notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    transparent 30%, 
+    rgba(0, 212, 255, 0.1) 50%, 
+    transparent 70%);
+  animation: tech-notification-scan 2s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: 8px;
+}
+
+@keyframes tech-notification-scan {
+  0%, 100% { transform: translateX(-100%); opacity: 0; }
+  50% { transform: translateX(100%); opacity: 1; }
 }
 </style>

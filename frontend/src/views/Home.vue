@@ -109,8 +109,11 @@ const analyzePrompt = async () => {
     
     ElNotification({
       title: 'P2L分析完成',
-      message: `为您推荐了 ${enabledRecommendations.length} 个启用的模型`, // （共分析了 ${p2lStore.recommendations.length} 个模型）
-      type: 'success'
+      message: `为您推荐了 ${enabledRecommendations.length} 个启用的模型`,
+      type: 'success',
+      customClass: 'tech-notification',
+      duration: 4000,
+      dangerouslyUseHTMLString: true
     })
   } catch (error) {
     ElMessage.error(error.message)
@@ -123,7 +126,9 @@ const callLLM = async (modelName) => {
     ElNotification({
       title: '生成完成',
       message: `${modelName} 已生成回答`,
-      type: 'success'
+      type: 'success',
+      customClass: 'tech-notification',
+      duration: 4000
     })
     
     // 滚动到最新消息
@@ -256,4 +261,6 @@ onMounted(() => {
     gap: 15px;
   }
 }
+
+
 </style>

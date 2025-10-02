@@ -1,9 +1,8 @@
-
 <template>
-  <el-card v-if="analysis" class="analysis-card" shadow="hover">
+  <el-card v-if="analysis" class="analysis-card tech-card" shadow="hover">
     <template #header>
       <div class="card-header">
-        <el-icon class="header-icon"><DataAnalysis /></el-icon>
+        <TechIcons name="analytics" :size="20" color="#00d4ff" />
         <span>P2L智能分析</span>
       </div>
     </template>
@@ -11,27 +10,46 @@
     <div class="analysis-content">
       <!-- 任务特征 -->
       <div class="task-info">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="任务类型">
-            <el-tag>{{ analysis?.task_analysis?.task_type || '未知' }}</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="复杂度">
-            <el-tag :type="getComplexityType(analysis.complexity)">
-              {{ analysis?.task_analysis?.complexity || '未知' }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="语言">
-            <el-tag type="info">{{ analysis?.task_analysis?.language || '未知' }}</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="推荐模型">
-            <el-tag type="success">{{ analysis.recommended_model }}</el-tag>
-          </el-descriptions-item>
-        </el-descriptions>
+        <div class="tech-table">
+          <div class="table-row">
+            <div class="table-cell label">类型</div>
+            <div class="table-cell value">
+              <el-tooltip :content="analysis?.task_analysis?.task_type || '未知'" placement="top">
+                <el-tag class="tech-tag">{{ analysis?.task_analysis?.task_type || '未知' }}</el-tag>
+              </el-tooltip>
+            </div>
+            <div class="table-cell label">复杂度</div>
+            <div class="table-cell value">
+              <el-tooltip :content="analysis?.task_analysis?.complexity || '未知'" placement="top">
+                <el-tag class="tech-tag" :type="getComplexityType(analysis.complexity)">
+                  {{ analysis?.task_analysis?.complexity || '未知' }}
+                </el-tag>
+              </el-tooltip>
+            </div>
+          </div>
+          <div class="table-row">
+            <div class="table-cell label">语言</div>
+            <div class="table-cell value">
+              <el-tooltip :content="analysis?.task_analysis?.language || '未知'" placement="top">
+                <el-tag class="tech-tag" type="info">{{ analysis?.task_analysis?.language || '未知' }}</el-tag>
+              </el-tooltip>
+            </div>
+            <div class="table-cell label">推荐模型</div>
+            <div class="table-cell value">
+              <el-tooltip :content="analysis.recommended_model" placement="top">
+                <el-tag class="tech-tag recommended-model">{{ analysis.recommended_model }}</el-tag>
+              </el-tooltip>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 模型排名 -->
       <div class="rankings">
-        <h4>🏆 模型智能排名</h4>
+        <div class="rankings-header">
+          <TechIcons name="performance" :size="18" color="#00ff88" />
+          <h4>模型智能排名</h4>
+        </div>
         <div class="ranking-list">
           <div 
             v-for="(rec, index) in sortedRecommendations" 
@@ -77,46 +95,27 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue'
+import { computed } from 'vue'
+import TechIcons from './icons/TechIcons.vue'
 
 const props = defineProps({
-  analysis: {
-    type: Object,
-    default: null
-  },
-  recommendations: {
-    type: Array,
-    default: () => []
-  },
-  enabledModels: {
-    type: Array,
-    default: () => []
-  },
-  loading: {
-    type: Boolean,
-    default: false
-  },
-  getModelInfo: {
-    type: Function,
-    required: true
-  }
+  analysis: { type: Object, default: null },
+  recommendations: { type: Array, default: () => [] },
+  enabledModels: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
+  getModelInfo: { type: Function, required: true }
 })
 
 const emit = defineEmits(['call-llm'])
 
 const sortedRecommendations = computed(() => {
-  // 过滤出启用的模型，然后按分数排序
   return [...props.recommendations]
     .filter(rec => props.enabledModels.includes(rec.model))
     .sort((a, b) => b.score - a.score)
 })
 
 const getComplexityType = (complexity) => {
-  const types = {
-    '简单': 'success',
-    '中等': 'warning', 
-    '复杂': 'danger'
-  }
+  const types = { '简单': 'success', '中等': 'warning', '复杂': 'danger' }
   return types[complexity] || 'info'
 }
 
@@ -126,9 +125,7 @@ const getScoreColor = (score) => {
   return '#f56c6c'
 }
 
-const handleCallLLM = (modelName) => {
-  emit('call-llm', modelName)
-}
+const handleCallLLM = (modelName) => emit('call-llm', modelName)
 </script>
 
 <style scoped>
@@ -136,9 +133,34 @@ const handleCallLLM = (modelName) => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 700px; /* 设置最小高度确保有足够显示空间 */
+  min-height: 700px;
   height: 100%;
-  overflow: visible; /* 允许内容超出显示 */
+  overflow: visible;
+  border: 2px solid #00d4ff;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(0, 255, 136, 0.05) 100%);
+  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+  position: relative;
+}
+
+.analysis-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  animation: scan 3s infinite;
+}
+
+@keyframes scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.analysis-card :deep(.el-card__header) {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
+  border-bottom: 1px solid rgba(0, 212, 255, 0.3);
 }
 
 .analysis-card :deep(.el-card__body) {
@@ -146,8 +168,9 @@ const handleCallLLM = (modelName) => {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  overflow: visible; /* 允许内容超出显示 */
-  min-height: 600px; /* 确保卡片体有足够高度 */
+  overflow: visible;
+  min-height: 600px;
+  background: rgba(15, 15, 35, 0.02);
 }
 
 .card-header {
@@ -155,10 +178,7 @@ const handleCallLLM = (modelName) => {
   align-items: center;
   gap: 8px;
   font-weight: bold;
-}
-
-.header-icon {
-  font-size: 18px;
+  color: #00d4ff;
 }
 
 .analysis-content {
@@ -166,12 +186,115 @@ const handleCallLLM = (modelName) => {
   flex-direction: column;
   gap: 20px;
   height: 100%;
-  min-height: 600px; /* 确保内容区域有足够高度 */
+  min-height: 600px;
 }
 
 .task-info {
   flex-shrink: 0;
   margin-bottom: 20px;
+}
+
+.tech-table {
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
+  overflow: hidden;
+  position: relative;
+}
+
+.tech-table::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  animation: scan 3s linear infinite;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 120px 1fr;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-cell {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-right: 1px solid rgba(0, 212, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.table-cell:last-child {
+  border-right: none;
+}
+
+.table-cell.label {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
+  font-weight: bold;
+  color: #00d4ff;
+  font-size: 14px;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.table-cell.value {
+  background: linear-gradient(135deg, rgba(15, 15, 35, 0.02), rgba(0, 212, 255, 0.01));
+  color: #333;
+}
+
+.table-cell.label:hover {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 255, 136, 0.08));
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 3px rgba(0, 212, 255, 0.2);
+}
+
+.table-cell.value:hover {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(0, 255, 136, 0.05));
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 3px rgba(0, 212, 255, 0.1);
+}
+
+.tech-tag {
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05)) !important;
+  color: #00d4ff !important;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  max-width: 100px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  line-height: 1 !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.tech-tag:hover {
+  border-color: #00d4ff !important;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.recommended-model {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 212, 255, 0.1)) !important;
+  border-color: rgba(0, 255, 136, 0.5) !important;
+  color: #00ff88 !important;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+.recommended-model:hover {
+  box-shadow: 0 2px 12px rgba(0, 255, 136, 0.5);
 }
 
 .rankings {
@@ -181,14 +304,21 @@ const handleCallLLM = (modelName) => {
   flex-direction: column;
 }
 
-.rankings h4 {
-  margin: 0 0 15px 0;
-  color: #303133;
+.rankings-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
   flex-shrink: 0;
 }
 
+.rankings-header h4 {
+  margin: 0;
+  color: #00ff88;
+  font-weight: bold;
+}
+
 .ranking-list {
-  /* 增加高度显示更多模型，每个模型约80px高度 + 间距 */
   height: 440px;
   display: flex;
   flex-direction: column;
@@ -196,28 +326,27 @@ const handleCallLLM = (modelName) => {
   overflow-y: auto;
   padding: 12px;
   padding-right: 8px;
-  border: 1px solid #ebeef5;
+  border: 1px solid rgba(0, 212, 255, 0.3);
   border-radius: 8px;
-  background: #fafafa;
+  background: linear-gradient(135deg, rgba(15, 15, 35, 0.05), rgba(0, 212, 255, 0.02));
 }
 
-/* 自定义滚动条样式 */
 .ranking-list::-webkit-scrollbar {
   width: 6px;
 }
 
 .ranking-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: rgba(0, 212, 255, 0.1);
   border-radius: 3px;
 }
 
 .ranking-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: rgba(0, 212, 255, 0.5);
   border-radius: 3px;
 }
 
 .ranking-list::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: rgba(0, 212, 255, 0.7);
 }
 
 .ranking-item {
@@ -225,40 +354,66 @@ const handleCallLLM = (modelName) => {
   align-items: center;
   gap: 15px;
   padding: 15px;
-  border: 1px solid #ebeef5;
+  border: 1px solid rgba(0, 212, 255, 0.3);
   border-radius: 8px;
   transition: all 0.3s;
-  min-height: 80px; /* 固定最小高度 */
-  height: 80px; /* 固定高度 */
-  overflow: hidden; /* 防止内容溢出影响布局 */
-  position: relative; /* 为绝对定位做准备 */
+  min-height: 80px;
+  height: 80px;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(135deg, rgba(15, 15, 35, 0.05), rgba(0, 212, 255, 0.02));
+}
+
+.ranking-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .ranking-item:hover {
-  border-color: #409eff;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+  border-color: #00d4ff;
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.ranking-item:hover::before {
+  opacity: 1;
 }
 
 .top-recommendation {
-  border-color: #67c23a;
-  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-color: #00ff88;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 212, 255, 0.05));
+}
+
+.top-recommendation::before {
+  background: linear-gradient(90deg, transparent, #00ff88, transparent);
 }
 
 .rank-badge {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #409eff;
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+  border: 1px solid rgba(0, 212, 255, 0.5);
 }
 
 .top-recommendation .rank-badge {
-  background: #67c23a;
+  background: linear-gradient(135deg, #00ff88, #00cc66);
+  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+  border: 1px solid rgba(0, 255, 136, 0.5);
 }
 
 .model-info {
@@ -268,6 +423,7 @@ const handleCallLLM = (modelName) => {
 .model-name {
   font-weight: bold;
   margin-bottom: 5px;
+  color: #00d4ff;
 }
 
 .model-details {
@@ -281,10 +437,10 @@ const handleCallLLM = (modelName) => {
   align-items: center;
   gap: 8px;
   min-width: 120px;
-  width: 120px; /* 固定宽度 */
-  flex-shrink: 0; /* 防止被压缩 */
+  width: 120px;
+  flex-shrink: 0;
   position: absolute !important;
-  right: 118px !important; /* 按钮宽度88px + 右边距15px + 分数区域右边距15px */
+  right: 118px !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
   z-index: 1 !important;
@@ -299,16 +455,16 @@ const handleCallLLM = (modelName) => {
 .score-number {
   font-size: 24px;
   font-weight: bold;
-  color: #409eff;
+  color: #00ff88;
   line-height: 1;
+  text-shadow: 0 0 4px rgba(0, 255, 136, 0.5);
 }
 
 .score-label {
   font-size: 12px;
-  color: #909399;
+  color: #00d4ff;
 }
 
-/* 超级强制固定按钮样式 - 完全锁定尺寸和位置 */
 .call-model-btn {
   width: 88px !important;
   height: 32px !important;
@@ -336,10 +492,13 @@ const handleCallLLM = (modelName) => {
   overflow: hidden !important;
 }
 
-/* 强制覆盖Element Plus的所有按钮样式 */
+/* 按钮基础样式 */
+.call-model-btn,
 .call-model-btn.el-button,
 .call-model-btn.el-button--primary,
-.call-model-btn.el-button--small {
+.call-model-btn.el-button--small,
+.call-model-btn.is-loading,
+.call-model-btn[loading="true"] {
   width: 88px !important;
   height: 32px !important;
   min-width: 88px !important;
@@ -354,7 +513,12 @@ const handleCallLLM = (modelName) => {
   line-height: 1 !important;
 }
 
-/* 按钮内容完全固定 */
+.call-model-btn.is-loading,
+.call-model-btn[loading="true"] {
+  pointer-events: none !important;
+}
+
+/* 按钮文本样式 */
 .call-model-btn :deep(.el-button__text),
 .call-model-btn :deep(span) {
   display: flex !important;
@@ -371,28 +535,15 @@ const handleCallLLM = (modelName) => {
   padding: 0 !important;
 }
 
-/* 加载状态样式 */
-.call-model-btn.is-loading,
-.call-model-btn[loading="true"] {
-  width: 88px !important;
-  height: 32px !important;
-  background-color: #409eff !important;
-  border-color: #409eff !important;
-  pointer-events: none !important;
-}
-
-/* 加载图标样式 */
+/* 按钮图标样式 */
 .call-model-btn :deep(.el-icon.is-loading),
 .call-model-btn :deep(.el-icon) {
-  margin-right: 4px !important;
-  margin-left: 0 !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
+  margin: 0 4px 0 0 !important;
   font-size: 12px !important;
   animation: rotating 2s linear infinite !important;
 }
 
-/* 悬停和焦点状态 */
+/* 按钮悬停状态 */
 .call-model-btn:hover,
 .call-model-btn:focus,
 .call-model-btn:active,
@@ -406,17 +557,11 @@ const handleCallLLM = (modelName) => {
   box-shadow: none !important;
 }
 
-/* 加载动画 */
 @keyframes rotating {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* 确保按钮容器也是固定的 */
 .ranking-item > .call-model-btn {
   position: absolute !important;
   right: 15px !important;
@@ -425,8 +570,7 @@ const handleCallLLM = (modelName) => {
   z-index: 1 !important;
 }
 
-/* 为了给绝对定位的按钮和分数区域留出空间，调整ranking-item的padding */
 .ranking-item {
-  padding-right: 253px !important; /* 15px + 120px + 15px + 88px + 15px (分数区域 + 按钮区域) */
+  padding-right: 253px !important;
 }
 </style>

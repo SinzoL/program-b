@@ -1,12 +1,12 @@
 <template>
-  <el-card class="model-card" shadow="hover">
+  <el-card class="model-card tech-card" shadow="hover">
     <template #header>
       <div class="model-header">
         <div class="model-title">
-          <el-icon class="model-icon"><Cpu /></el-icon>
+          <TechIcons name="cpu" :size="18" color="#409eff" />
           <span>{{ model.name }}</span>
         </div>
-        <el-tag :type="getProviderType(model.provider)" size="small">
+        <el-tag :type="getProviderType(model.provider)" size="small" class="provider-tag">
           {{ model.provider }}
         </el-tag>
       </div>
@@ -44,13 +44,17 @@
           @click="$emit('select', model.name)"
           :loading="loading"
           size="small"
+          class="tech-button primary-button"
         >
+          <TechIcons name="robot" :size="14" color="#ffffff" />
           选择模型
         </el-button>
         <el-button 
           @click="$emit('info', model)"
           size="small"
+          class="tech-button"
         >
+          <TechIcons name="analyze" :size="14" color="#409eff" />
           详细信息
         </el-button>
       </div>
@@ -59,6 +63,8 @@
 </template>
 
 <script setup>
+import TechIcons from './icons/TechIcons.vue'
+
 defineProps({
   model: {
     type: Object,
@@ -117,6 +123,20 @@ const getScoreColor = (score) => {
 <style scoped>
 .model-card {
   height: 100%;
+  transition: all 0.3s ease;
+}
+
+.tech-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.tech-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border-color: rgba(64, 158, 255, 0.3);
 }
 
 .model-header {
@@ -130,10 +150,12 @@ const getScoreColor = (score) => {
   align-items: center;
   gap: 8px;
   font-weight: bold;
+  color: #2c3e50;
 }
 
-.model-icon {
-  font-size: 18px;
+.provider-tag {
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.1), rgba(103, 194, 58, 0.1));
+  border: 1px solid rgba(64, 158, 255, 0.3);
   color: #409eff;
 }
 
@@ -162,15 +184,35 @@ const getScoreColor = (score) => {
 }
 
 .score-section {
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 6px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.05), rgba(103, 194, 58, 0.05));
+  border-radius: 8px;
+  border: 1px solid rgba(64, 158, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.score-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
 }
 
 .score-label {
   font-size: 12px;
   color: #909399;
   margin-bottom: 8px;
+  font-weight: 500;
 }
 
 .score-value {
@@ -178,10 +220,36 @@ const getScoreColor = (score) => {
   font-weight: bold;
   color: #409eff;
   margin-top: 5px;
+  font-size: 16px;
 }
 
 .model-actions {
   display: flex;
   gap: 8px;
+}
+
+.tech-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(64, 158, 255, 0.3);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.tech-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.2);
+}
+
+.primary-button {
+  background: linear-gradient(135deg, #409eff, #67c23a);
+  border: none;
+  box-shadow: 0 4px 15px rgba(64, 158, 255, 0.3);
+}
+
+.primary-button:hover {
+  background: linear-gradient(135deg, #66b1ff, #85ce61);
+  box-shadow: 0 8px 25px rgba(64, 158, 255, 0.4);
 }
 </style>
