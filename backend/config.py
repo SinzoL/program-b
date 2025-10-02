@@ -271,7 +271,7 @@ SERVICE_CONFIG = {
 def load_env_config(env_file_path: str = None) -> None:
     """从环境配置文件加载配置"""
     if env_file_path is None:
-        env_file_path = os.path.join(os.path.dirname(__file__), '..', 'api_config.env')
+        env_file_path = os.path.join(os.path.dirname(__file__), 'api_config.env')
     
     if os.path.exists(env_file_path):
         with open(env_file_path, 'r', encoding='utf-8') as f:
