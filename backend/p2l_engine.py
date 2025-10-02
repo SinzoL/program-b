@@ -16,8 +16,16 @@ logger = logging.getLogger(__name__)
 
 # 导入P2L推理模块
 try:
-    from p2l.model import load_model as load_p2l_model, generate_text
-    from p2l.p2l_inference import P2LInferenceEngine
+    import sys
+    import os
+    # 添加项目根目录到Python路径
+    current_dir = os.path.dirname(os.path.abspath(__file__))  # backend目录
+    project_root = os.path.dirname(current_dir)  # program-b目录
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+    
+    from p2l.p2l.model import load_model as load_p2l_model, generate_text
+    from p2l.p2l.p2l_inference import P2LInferenceEngine
     P2L_AVAILABLE = True
 except ImportError as e:
     logging.warning(f"P2L模块导入失败: {e}")

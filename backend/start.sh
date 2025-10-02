@@ -18,15 +18,15 @@ if [ $? -ne 0 ]; then
 fi
 
 # 检查环境配置
-if [ ! -f "../api_config.env" ]; then
-    echo "❌ 未找到API配置文件: ../api_config.env"
+if [ ! -f "api_config.env" ]; then
+    echo "❌ 未找到API配置文件: api_config.env"
     exit 1
 fi
 
 # 停止已有服务
 echo "🛑 停止已有服务..."
 pkill -f "main.py" 2>/dev/null || true
-pkill -f "backend_service.py" 2>/dev/null || true
+pkill -f "service.py" 2>/dev/null || true
 
 # 等待端口释放
 sleep 2
