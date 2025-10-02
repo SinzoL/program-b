@@ -1,0 +1,27 @@
+# P2L Backend Service Requirements
+
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Machine Learning
+torch>=2.0.0
+transformers>=4.35.0
+
+# HTTP Client
+aiohttp>=3.9.0
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Utilities
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+
+# Logging
+loguru>=0.7.0
+
+# Optional: GPU Support
+# torch-audio  # Uncomment if needed
+# torchaudio   # Uncomment if needed

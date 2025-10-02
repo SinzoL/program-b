@@ -7,6 +7,8 @@
 from typing import Dict, List, Optional
 import logging
 
+from config import get_task_config, get_model_config
+
 logger = logging.getLogger(__name__)
 
 class ModelScorer:
@@ -14,6 +16,7 @@ class ModelScorer:
     
     def __init__(self, model_configs: Dict):
         self.model_configs = model_configs
+        self.task_config = get_task_config()
     
     def calculate_model_scores(self, task_analysis: Dict, priority: str, enabled_models: Optional[List[str]] = None) -> List[Dict]:
         """计算模型分数并排序 - 使用百分制评分"""

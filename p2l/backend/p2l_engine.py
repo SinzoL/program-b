@@ -10,6 +10,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from typing import Dict, Optional
 import logging
 
+from config import get_p2l_config
+
 logger = logging.getLogger(__name__)
 
 # 导入P2L推理模块
@@ -28,6 +30,7 @@ class P2LEngine:
         self.device = device
         self.p2l_models = {}
         self.p2l_inference_engine = None
+        self.config = get_p2l_config()
         
         # 加载P2L模型和推理引擎
         self._load_p2l_models()
@@ -36,9 +39,9 @@ class P2LEngine:
     
     def _load_p2l_models(self):
         """加载可用的P2L模型"""
-        models_dir = "./models"
-        if not os.path.exists(models_dir):
-            logger.warning("模型目录不存在")
+        model_path = self.config["model_path"]
+        if not os.path.exists(model_path):
+            logger.warning(f"P2L模型路径不存在: {model_path}")
             return
         
         for item in os.listdir(models_dir):

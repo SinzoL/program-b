@@ -7,13 +7,15 @@
 from typing import Dict
 import logging
 
+from config import get_task_config
+
 logger = logging.getLogger(__name__)
 
 class TaskAnalyzer:
     """任务分析器"""
     
     def __init__(self):
-        pass
+        self.config = get_task_config()
     
     def analyze_task(self, prompt: str, complexity_score: float = None, language_score: float = None) -> Dict:
         """综合任务分析"""
