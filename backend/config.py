@@ -212,9 +212,21 @@ TASK_ANALYSIS_CONFIG = {
 }
 
 # ================== P2L引擎配置 ==================
+def _get_model_path():
+    """智能获取模型路径，兼容本地和Docker环境"""
+    # 检查是否在Docker容器内运行
+    if os.path.exists('/app') and os.getcwd().startswith('/app'):
+        # Docker容器环境
+        model_path = "/app/models"
+    else:
+        # 本地开发环境
+        model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
+    
+    return model_path
+
 P2L_CONFIG = {
-    # 模型路径 - 使用绝对路径
-    "model_path": os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models"),
+    # 模型路径 - 智能检测环境
+    "model_path": _get_model_path(),
     
     # 推理参数
     "inference_params": {
