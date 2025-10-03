@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 # 导入P2L推理模块
 try:
     import sys
-    import os
     # 添加项目根目录到Python路径
     current_dir = os.path.dirname(os.path.abspath(__file__))  # backend目录
     project_root = os.path.dirname(current_dir)  # program-b目录
@@ -52,16 +51,17 @@ class P2LEngine:
             logger.warning(f"P2L模型路径不存在: {model_path}")
             return
         
-        for item in os.listdir(models_dir):
-            if item.startswith('p2l-') and os.path.isdir(os.path.join(models_dir, item)):
-                model_path = os.path.join(models_dir, item)
+        for item in os.listdir(model_path):
+            if item.startswith('p2l-') and os.path.isdir(os.path.join(model_path, item)):
+                full_model_path = os.path.join(model_path, item)
                 try:
                     logger.info(f"加载P2L模型: {item}")
-                    tokenizer = AutoTokenizer.from_pretrained(model_path)
+                    tokenizer = AutoTokenizer.from_pretrained(full_model_path)
                     model = AutoModelForCausalLM.from_pretrained(
-                        model_path,
-                        torch_dtype=torch.float32,
-                        device_map=None
+                        full_model_path,
+                        torch_dtype=torch.float16 if self.device.type == 'cuda' else torch.float32,
+                        device_map=None,
+                        trust_remote_code=True
                     )
                     model.to(self.device)
                     model.eval()
@@ -69,7 +69,7 @@ class P2LEngine:
                     self.p2l_models[item] = {
                         "tokenizer": tokenizer,
                         "model": model,
-                        "path": model_path
+                        "path": full_model_path
                     }
                     logger.info(f"✅ P2L模型 {item} 加载成功")
                     break  # 只加载第一个可用模型
@@ -81,8 +81,8 @@ class P2LEngine:
         try:
             logger.info("正在加载P2L推理引擎...")
             
-            # 尝试从models目录加载
-            models_dir = "./models"
+            # 使用配置中的模型路径
+            models_dir = self.config["model_path"]
             p2l_model_path = None
             
             if os.path.exists(models_dir):
@@ -156,12 +156,13 @@ class P2LEngine:
                 # 将统计特征映射到0-1范围
                 complexity_score = min(max((feature_std / (abs(feature_mean) + 1e-6)), 0), 1)
                 language_score = min(max((feature_max / (abs(feature_mean) + 1e-6)), 0), 1)
+                
+                logger.info(f"🔍 语义特征分析: mean={feature_mean:.3f}, std={feature_std:.3f}, max={feature_max:.3f}")
+                logger.info(f"🔍 计算得分: complexity_score={complexity_score:.3f}, language_score={language_score:.3f}")
             else:
                 complexity_score = 0.5
                 language_score = 0.5
-            
-            logger.info(f"🔍 语义特征分析: mean={feature_mean:.3f}, std={feature_std:.3f}, max={feature_max:.3f}")
-            logger.info(f"🔍 计算得分: complexity_score={complexity_score:.3f}, language_score={language_score:.3f}")
+                logger.info(f"🔍 使用默认得分: complexity_score={complexity_score:.3f}, language_score={language_score:.3f}")
             
             return complexity_score, language_score
             
