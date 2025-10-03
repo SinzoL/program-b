@@ -220,8 +220,8 @@ const formatResponse = (response) => {
   border: 1px solid rgba(0, 212, 255, 0.3);
   color: #303133;
   height: 300px;
-  max-height: 720px;
-  min-height: 720px;
+  max-height: 1000px;
+  min-height: 1000px;
   padding: 16px;
   line-height: 1.6;
   word-break: break-word;
