@@ -210,31 +210,67 @@ if [ "$UPGRADE_MODE" = false ]; then
 
     # 健康检查
     echo "🏥 健康检查..."
-    for i in {1..30}; do
-        if curl -s http://localhost:8080/health > /dev/null; then
-            echo "✅ 后端服务启动成功！"
-            break
-        fi
-        if [ $i -eq 30 ]; then
-            echo "❌ 后端服务启动失败"
-            docker-compose logs backend
-            exit 1
-        fi
-        sleep 2
-    done
+    
+    # 根据部署模式选择不同的健康检查方式
+    if [ "$1" = "production" ] || [ "$2" = "production" ]; then
+        # 生产环境：通过 Nginx 检查
+        echo "🔍 检查 Nginx 服务..."
+        for i in {1..30}; do
+            if curl -s http://localhost:80 > /dev/null 2>&1; then
+                echo "✅ Nginx 服务启动成功！"
+                break
+            fi
+            if [ $i -eq 30 ]; then
+                echo "❌ Nginx 服务启动失败"
+                docker-compose logs nginx
+                exit 1
+            fi
+            sleep 2
+        done
+        
+        echo "🔍 检查后端服务（通过 Nginx 代理）..."
+        for i in {1..30}; do
+            if curl -s http://localhost:80/health > /dev/null 2>&1; then
+                echo "✅ 后端服务（通过 Nginx）启动成功！"
+                break
+            fi
+            if [ $i -eq 30 ]; then
+                echo "❌ 后端服务启动失败"
+                docker-compose logs backend
+                exit 1
+            fi
+            sleep 2
+        done
+    else
+        # 开发环境：直接检查服务端口
+        echo "🔍 检查后端服务..."
+        for i in {1..30}; do
+            if curl -s http://localhost:8080/health > /dev/null; then
+                echo "✅ 后端服务启动成功！"
+                break
+            fi
+            if [ $i -eq 30 ]; then
+                echo "❌ 后端服务启动失败"
+                docker-compose logs backend
+                exit 1
+            fi
+            sleep 2
+        done
 
-    for i in {1..15}; do
-        if curl -s http://localhost:3000 > /dev/null; then
-            echo "✅ 前端服务启动成功！"
-            break
-        fi
-        if [ $i -eq 15 ]; then
-            echo "❌ 前端服务启动失败"
-            docker-compose logs frontend
-            exit 1
-        fi
-        sleep 2
-    done
+        echo "🔍 检查前端服务..."
+        for i in {1..15}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+                echo "✅ 前端服务启动成功！"
+                break
+            fi
+            if [ $i -eq 15 ]; then
+                echo "❌ 前端服务启动失败"
+                docker-compose logs frontend
+                exit 1
+            fi
+            sleep 2
+        done
+    fi
 fi
 
 # 显示服务状态
@@ -259,23 +295,40 @@ fi
 echo ""
 echo "🌐 访问地址："
 if [ "$1" = "production" ] || [ "$2" = "production" ]; then
-    echo "  主页: http://your-server-ip"
-    echo "  API: http://your-server-ip/api"
+    echo "  🏭 生产环境 (Nginx 反向代理)："
+    echo "    主页: http://43.136.17.170/"
+    echo "    API: http://43.136.17.170/api/"
+    echo "    健康检查: http://43.136.17.170/health"
+    echo "    API文档: http://43.136.17.170/docs"
+    echo ""
+    echo "  🔧 Nginx 配置："
+    echo "    - 前端: / → frontend:80"
+    echo "    - API: /api/ → backend:8080"
+    echo "    - 健康检查: /health → backend:8080/health"
+    echo "    - 文档: /docs → backend:8080/docs"
+    echo ""
+    echo "  ✅ 优势："
+    echo "    - 统一域名访问，无跨域问题"
+    echo "    - 只需开放 80 端口"
+    echo "    - 生产级 Nginx 反向代理"
 else
-    echo "  前端: http://localhost:3000"
-    echo "  后端: http://localhost:8080"
+    echo "  🚀 开发环境："
+    echo "    前端: http://localhost:3000"
+    echo "    后端: http://localhost:8080"
+    echo "    API文档: http://localhost:8080/docs"
 fi
-echo "  API文档: http://localhost:8080/docs"
 echo ""
 echo "📋 管理命令："
 echo "  查看日志: docker-compose logs -f"
 echo "  停止服务: docker-compose down"
 echo "  重启服务: docker-compose restart"
 echo "  查看状态: docker-compose ps"
+echo ""
+echo "🚀 部署命令："
+echo "  开发环境: ./deploy.sh"
+echo "  生产环境: ./deploy.sh production"
+echo "  平滑升级: ./deploy.sh upgrade"
+echo "  生产升级: ./deploy.sh production upgrade"
 if [ "$UPGRADE_MODE" = true ]; then
-    echo ""
-    echo "🔄 升级相关命令："
-    echo "  平滑升级: ./deploy.sh upgrade"
-    echo "  生产升级: ./deploy.sh production upgrade"
     echo "  查看备份: docker images | grep backup"
 fi
