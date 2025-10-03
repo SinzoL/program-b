@@ -24,6 +24,41 @@ if ! command -v docker-compose &> /dev/null; then
     exit 1
 fi
 
+# 检查 Docker 权限
+echo "🔐 检查 Docker 权限..."
+if ! docker ps &> /dev/null; then
+    echo "⚠️  Docker 权限不足，尝试修复..."
+    
+    # 检查当前用户是否在 docker 组中
+    if ! groups $USER | grep -q docker; then
+        echo "📝 将用户 $USER 添加到 docker 组..."
+        sudo usermod -aG docker $USER
+        echo "✅ 用户已添加到 docker 组"
+        echo ""
+        echo "🔄 请执行以下命令之一来刷新权限："
+        echo "   方法1: newgrp docker"
+        echo "   方法2: 退出并重新登录 SSH"
+        echo "   方法3: 使用 sudo 运行此脚本: sudo ./deploy.sh"
+        echo ""
+        read -p "现在刷新权限吗？(y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "🔄 刷新权限中..."
+            exec newgrp docker
+        else
+            echo "⏸️  请手动刷新权限后重新运行脚本"
+            exit 1
+        fi
+    else
+        echo "❌ 用户已在 docker 组中，但仍无权限。请尝试："
+        echo "   1. 重新登录 SSH"
+        echo "   2. 或使用 sudo 运行: sudo ./deploy.sh"
+        exit 1
+    fi
+fi
+
+echo "✅ Docker 权限检查通过"
+
 # 检查模型文件
 echo "🔍 检查模型文件..."
 if [ ! -d "models/p2l-0.5b-grk" ]; then
