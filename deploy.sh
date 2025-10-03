@@ -1,0 +1,246 @@
+#!/bin/bash
+# P2L 一键部署脚本 - 支持平滑升级
+
+set -e
+
+echo "🚀 P2L 项目部署"
+echo "==============="
+
+# 检查是否为升级模式
+UPGRADE_MODE=false
+if [ "$1" = "upgrade" ] || [ "$2" = "upgrade" ]; then
+    UPGRADE_MODE=true
+    echo "🔄 升级模式：将平滑更新现有服务"
+fi
+
+# 检查 Docker
+if ! command -v docker &> /dev/null; then
+    echo "❌ Docker 未安装，请先安装 Docker"
+    exit 1
+fi
+
+if ! command -v docker-compose &> /dev/null; then
+    echo "❌ Docker Compose 未安装，请先安装 Docker Compose"
+    exit 1
+fi
+
+# 检查模型文件
+echo "🔍 检查模型文件..."
+if [ ! -d "models/p2l-0.5b-grk" ]; then
+    echo "📥 下载 P2L 模型..."
+    pip3 install huggingface_hub --user
+    python3 -c "
+from huggingface_hub import snapshot_download
+import os
+os.makedirs('models', exist_ok=True)
+snapshot_download(
+    repo_id='lmarena-ai/p2l-0.5b-grk-01112025',
+    local_dir='./models/p2l-0.5b-grk',
+    repo_type='model'
+)
+print('✅ 模型下载完成')
+"
+fi
+
+# 检查配置文件
+echo "⚙️  检查配置文件..."
+if [ ! -f "backend/api_config.env" ]; then
+    echo "⚠️  未找到 backend/api_config.env，创建示例文件..."
+    cat > backend/api_config.env << EOF
+# API 配置示例
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+EOF
+    echo "请编辑 backend/api_config.env 添加您的 API 密钥"
+fi
+
+# 创建日志目录
+mkdir -p logs
+
+# 升级模式处理
+if [ "$UPGRADE_MODE" = true ]; then
+    echo "🔄 开始平滑升级..."
+    
+    # 检查当前运行的服务
+    if docker-compose ps | grep -q "Up"; then
+        echo "📊 当前服务状态："
+        docker-compose ps
+        
+        # 备份当前运行的容器（以防回滚）
+        echo "💾 创建服务备份..."
+        BACKUP_TAG=$(date +%Y%m%d_%H%M%S)
+        
+        # 为当前运行的镜像打标签备份
+        if docker images | grep -q "program-b[_-]backend"; then
+            docker tag program-b_backend:latest program-b_backend:backup_$BACKUP_TAG || true
+        fi
+        if docker images | grep -q "program-b[_-]frontend"; then
+            docker tag program-b_frontend:latest program-b_frontend:backup_$BACKUP_TAG || true
+        fi
+        
+        echo "✅ 备份完成，标签: backup_$BACKUP_TAG"
+        
+        # 构建新镜像（不停止服务）
+        echo "🔨 构建新版本镜像..."
+        if [ "$1" = "production" ] || [ "$2" = "production" ]; then
+            docker-compose --profile production build
+        else
+            docker-compose build
+        fi
+        
+        # 滚动更新：先更新后端
+        echo "🔄 更新后端服务..."
+        docker-compose up -d --no-deps backend
+        
+        # 等待后端健康检查
+        echo "⏳ 等待后端服务就绪..."
+        for i in {1..60}; do
+            if curl -s http://localhost:8080/health > /dev/null; then
+                echo "✅ 后端服务更新成功！"
+                break
+            fi
+            if [ $i -eq 60 ]; then
+                echo "❌ 后端服务更新失败，开始回滚..."
+                docker tag program-b_backend:backup_$BACKUP_TAG program-b_backend:latest
+                docker-compose up -d --no-deps backend
+                exit 1
+            fi
+            sleep 2
+        done
+        
+        # 更新前端服务
+        echo "🔄 更新前端服务..."
+        docker-compose up -d --no-deps frontend
+        
+        # 等待前端健康检查
+        echo "⏳ 等待前端服务就绪..."
+        for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+                echo "✅ 前端服务更新成功！"
+                break
+            fi
+            if [ $i -eq 30 ]; then
+                echo "❌ 前端服务更新失败，开始回滚..."
+                docker tag program-b_frontend:backup_$BACKUP_TAG program-b_frontend:latest
+                docker-compose up -d --no-deps frontend
+                exit 1
+            fi
+            sleep 2
+        done
+        
+        # 如果启用了nginx，也更新它
+        if [ "$1" = "production" ] || [ "$2" = "production" ]; then
+            echo "🔄 更新Nginx服务..."
+            docker-compose --profile production up -d --no-deps nginx
+        fi
+        
+        # 清理旧的备份镜像（保留最近3个）
+        echo "🧹 清理旧备份..."
+        docker images | grep "backup_" | tail -n +4 | awk '{print $1":"$2}' | xargs -r docker rmi || true
+        
+        echo "🎉 平滑升级完成！"
+        
+    else
+        echo "⚠️  未检测到运行中的服务，执行全新部署..."
+        UPGRADE_MODE=false
+    fi
+fi
+
+# 常规部署模式
+if [ "$UPGRADE_MODE" = false ]; then
+    # 停止现有服务
+    echo "🛑 停止现有服务..."
+    docker-compose down || true
+
+    # 清理旧镜像
+    echo "🧹 清理旧镜像..."
+    docker system prune -f
+
+    # 构建并启动服务
+    echo "🔨 构建并启动服务..."
+    if [ "$1" = "production" ] || [ "$2" = "production" ]; then
+        echo "🏭 启动生产环境（包含 Nginx）..."
+        docker-compose --profile production up -d --build
+    else
+        echo "🚀 启动开发环境..."
+        docker-compose up -d --build
+    fi
+fi
+
+# 健康检查（仅在非升级模式下执行，升级模式已经检查过了）
+if [ "$UPGRADE_MODE" = false ]; then
+    # 等待服务启动
+    echo "⏳ 等待服务启动..."
+    sleep 30
+
+    # 健康检查
+    echo "🏥 健康检查..."
+    for i in {1..30}; do
+        if curl -s http://localhost:8080/health > /dev/null; then
+            echo "✅ 后端服务启动成功！"
+            break
+        fi
+        if [ $i -eq 30 ]; then
+            echo "❌ 后端服务启动失败"
+            docker-compose logs backend
+            exit 1
+        fi
+        sleep 2
+    done
+
+    for i in {1..15}; do
+        if curl -s http://localhost:3000 > /dev/null; then
+            echo "✅ 前端服务启动成功！"
+            break
+        fi
+        if [ $i -eq 15 ]; then
+            echo "❌ 前端服务启动失败"
+            docker-compose logs frontend
+            exit 1
+        fi
+        sleep 2
+    done
+fi
+
+# 显示服务状态
+echo ""
+echo "📊 服务状态："
+docker-compose ps
+
+echo ""
+if [ "$UPGRADE_MODE" = true ]; then
+    echo "🎉 服务升级完成！"
+    echo ""
+    echo "📊 升级后服务状态："
+    docker-compose ps
+    echo ""
+    echo "💡 升级说明："
+    echo "  ✅ 服务已平滑升级，无停机时间"
+    echo "  ✅ 自动备份了旧版本镜像"
+    echo "  ✅ 如有问题可快速回滚"
+else
+    echo "🎉 部署完成！"
+fi
+echo ""
+echo "🌐 访问地址："
+if [ "$1" = "production" ] || [ "$2" = "production" ]; then
+    echo "  主页: http://your-server-ip"
+    echo "  API: http://your-server-ip/api"
+else
+    echo "  前端: http://localhost:3000"
+    echo "  后端: http://localhost:8080"
+fi
+echo "  API文档: http://localhost:8080/docs"
+echo ""
+echo "📋 管理命令："
+echo "  查看日志: docker-compose logs -f"
+echo "  停止服务: docker-compose down"
+echo "  重启服务: docker-compose restart"
+echo "  查看状态: docker-compose ps"
+if [ "$UPGRADE_MODE" = true ]; then
+    echo ""
+    echo "🔄 升级相关命令："
+    echo "  平滑升级: ./deploy.sh upgrade"
+    echo "  生产升级: ./deploy.sh production upgrade"
+    echo "  查看备份: docker images | grep backup"
+fi

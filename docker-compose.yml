@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
+    build: 
+      context: .
+      dockerfile: Dockerfile.backend
     container_name: p2l-backend
     ports:
       - "8080:8080"
@@ -10,29 +12,88 @@ services:
       - P2L_ENV=production
       - P2L_HOST=0.0.0.0
       - P2L_PORT=8080
+      # 内存优化配置
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+      - OMP_NUM_THREADS=2
     volumes:
       - ./models:/app/models:ro
+      - ./logs:/app/logs
+      - ./backend/api_config.env:/app/api_config.env:ro
     restart: unless-stopped
+    # 资源限制（适合轻量服务器）
+    deploy:
+      resources:
+        limits:
+          memory: 2.5G
+          cpus: '1.5'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 60s
+      timeout: 15s
       retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   frontend:
-    build: ./frontend
+    build: 
+      context: .
+      dockerfile: Dockerfile.frontend
     container_name: p2l-frontend
     ports:
       - "3000:80"
     depends_on:
       - backend
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.2'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 30s
+      interval: 60s
       timeout: 10s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Nginx 反向代理（可选，生产环境推荐）
+  nginx:
+    image: nginx:alpine
+    container_name: p2l-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    profiles:
+      - production  # 使用 --profile production 启用
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
 networks:
   default:
     name: p2l-network
+
+volumes:
+  logs:
+    driver: local
