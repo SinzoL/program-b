@@ -21,7 +21,7 @@
             <div class="table-cell label">复杂度</div>
             <div class="table-cell value">
               <el-tooltip :content="analysis?.task_analysis?.complexity || '未知'" placement="top">
-                <el-tag class="tech-tag" :type="getComplexityType(analysis.complexity)">
+                <el-tag class="tech-tag" :type="getComplexityType(analysis?.task_analysis?.complexity)">
                   {{ analysis?.task_analysis?.complexity || '未知' }}
                 </el-tag>
               </el-tooltip>
@@ -36,8 +36,37 @@
             </div>
             <div class="table-cell label">推荐模型</div>
             <div class="table-cell value">
-              <el-tooltip :content="analysis.recommended_model" placement="top">
-                <el-tag class="tech-tag recommended-model">{{ analysis.recommended_model }}</el-tag>
+              <el-tooltip :content="analysis?.recommended_model" placement="top">
+                <el-tag class="tech-tag recommended-model">{{ analysis?.recommended_model }}</el-tag>
+              </el-tooltip>
+            </div>
+          </div>
+          <!-- P2L神经网络分析结果 -->
+          <div class="table-row" v-if="analysis?.task_analysis?.p2l_scores">
+            <div class="table-cell label">P2L复杂度</div>
+            <div class="table-cell value">
+              <el-tooltip :content="`神经网络计算: ${(analysis.task_analysis.p2l_scores.complexity * 100).toFixed(1)}%`" placement="top">
+                <el-tag class="tech-tag p2l-score">{{ (analysis.task_analysis.p2l_scores.complexity * 100).toFixed(1) }}%</el-tag>
+              </el-tooltip>
+            </div>
+            <div class="table-cell label">P2L语言分数</div>
+            <div class="table-cell value">
+              <el-tooltip :content="`神经网络计算: ${(analysis.task_analysis.p2l_scores.language * 100).toFixed(1)}%`" placement="top">
+                <el-tag class="tech-tag p2l-score">{{ (analysis.task_analysis.p2l_scores.language * 100).toFixed(1) }}%</el-tag>
+              </el-tooltip>
+            </div>
+          </div>
+          <div class="table-row" v-if="analysis?.task_analysis?.p2l_scores">
+            <div class="table-cell label">中文识别</div>
+            <div class="table-cell value">
+              <el-tooltip :content="`中文比例: ${(analysis.task_analysis.p2l_scores.chinese_ratio * 100).toFixed(1)}%`" placement="top">
+                <el-tag class="tech-tag" type="success">{{ (analysis.task_analysis.p2l_scores.chinese_ratio * 100).toFixed(1) }}%</el-tag>
+              </el-tooltip>
+            </div>
+            <div class="table-cell label">处理时间</div>
+            <div class="table-cell value">
+              <el-tooltip :content="`神经网络处理: ${analysis.processing_time}秒`" placement="top">
+                <el-tag class="tech-tag" type="warning">{{ analysis.processing_time }}s</el-tag>
               </el-tooltip>
             </div>
           </div>
@@ -295,6 +324,19 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
 
 .recommended-model:hover {
   box-shadow: 0 2px 12px rgba(0, 255, 136, 0.5);
+}
+
+.p2l-score {
+  background: linear-gradient(135deg, rgba(255, 136, 0, 0.2), rgba(255, 68, 136, 0.1)) !important;
+  border-color: rgba(255, 136, 0, 0.5) !important;
+  color: #ff8800 !important;
+  font-weight: bold;
+  box-shadow: 0 0 8px rgba(255, 136, 0, 0.3);
+}
+
+.p2l-score:hover {
+  box-shadow: 0 2px 12px rgba(255, 136, 0, 0.5);
+  transform: translateY(-1px);
 }
 
 .rankings {

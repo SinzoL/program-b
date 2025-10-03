@@ -182,16 +182,12 @@ Thumbs.db
 # Logs
 logs
 *.log
-
-# Models (large files)
-models/*.bin
-models/*.safetensors
-models/*/pytorch_model.bin
-models/*/model.safetensors
-
 # Temporary files
 *.tmp
 *.temp
 
 # Docker
 .dockerignore
+
+
+models/

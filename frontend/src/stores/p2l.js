@@ -85,8 +85,8 @@ export const useP2LStore = defineStore('p2l', {
       try {
         const response = await api.post('/api/p2l/analyze', {
           prompt,
-          mode,
-          models: this.enabledModels.length > 0 ? this.enabledModels : this.availableModels.map(m => m.name)
+          priority: mode, // 修正参数名
+          enabled_models: this.enabledModels.length > 0 ? this.enabledModels : this.availableModels.map(m => m.name)
         })
         
         this.currentAnalysis = response.data

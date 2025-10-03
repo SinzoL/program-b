@@ -213,8 +213,8 @@ TASK_ANALYSIS_CONFIG = {
 
 # ================== P2L引擎配置 ==================
 P2L_CONFIG = {
-    # 模型路径
-    "model_path": "models/p2l-0.5b-grk",
+    # 模型路径 - 使用绝对路径
+    "model_path": os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models"),
     
     # 推理参数
     "inference_params": {
