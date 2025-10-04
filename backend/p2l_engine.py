@@ -49,17 +49,62 @@ class P2LEngine:
             self._load_p2l_inference_engine()
     
     def _load_p2l_models(self):
-        """加载可用的P2L模型"""
+        """加载可用的P2L模型 - 按配置优先级"""
+        # 导入配置常量
+        try:
+            import sys
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(current_dir)
+            if project_root not in sys.path:
+                sys.path.insert(0, project_root)
+            from constants import DEFAULT_MODEL, MODEL_MAPPING
+        except ImportError as e:
+            logger.error(f"无法导入配置常量: {e}")
+            return
+        
         model_path = self.config["model_path"]
         if not os.path.exists(model_path):
             logger.warning(f"P2L模型路径不存在: {model_path}")
             return
         
+        # 1. 优先加载配置指定的默认模型
+        if DEFAULT_MODEL in MODEL_MAPPING:
+            target_model = MODEL_MAPPING[DEFAULT_MODEL]["local_name"]
+            target_path = os.path.join(model_path, target_model)
+            
+            if os.path.exists(target_path):
+                logger.info(f"🎯 按配置加载指定模型: {target_model} (来自 {DEFAULT_MODEL})")
+                if self._load_single_model(target_model, target_path):
+                    logger.info(f"✅ 配置模型 {target_model} 加载成功，跳过其他模型")
+                    return
+                else:
+                    logger.warning(f"⚠️ 配置模型 {target_model} 加载失败，尝试备用方案")
+            else:
+                logger.warning(f"⚠️ 配置的模型路径不存在: {target_path}")
+        else:
+            logger.warning(f"⚠️ 配置的模型 {DEFAULT_MODEL} 不在映射表中")
+        
+        # 2. 备用方案：扫描所有可用模型（按字母顺序，但会警告）
+        logger.warning("🔍 配置的默认模型不可用，扫描所有可用模型...")
+        available_models = []
         for item in os.listdir(model_path):
             if item.startswith('p2l-') and os.path.isdir(os.path.join(model_path, item)):
-                full_model_path = os.path.join(model_path, item)
-                try:
-                    logger.info(f"🔄 正在加载P2L专用模型: {item}")
+                available_models.append(item)
+        
+        # 按字母顺序排序，但优先选择较小的模型
+        available_models.sort(key=lambda x: (x.split('-')[1] if len(x.split('-')) > 1 else 'zzz'))
+        
+        for item in available_models:
+            full_model_path = os.path.join(model_path, item)
+            logger.warning(f"⚠️ 尝试备用模型: {item}")
+            if self._load_single_model(item, full_model_path):
+                logger.info(f"✅ 备用模型 {item} 加载成功")
+                break
+        
+    def _load_single_model(self, item: str, full_model_path: str) -> bool:
+        """加载单个P2L模型"""
+        try:
+            logger.info(f"🔄 正在加载P2L专用模型: {item}")
                     
                     # 检查是否是P2L专用模型格式
                     config_path = os.path.join(full_model_path, "config.json")
@@ -141,7 +186,7 @@ class P2LEngine:
                             "is_p2l_model": True
                         }
                         logger.info(f"🎉 P2L专用模型 {item} 加载成功！")
-                        break
+                        return True
                     
                     else:
                         # 尝试标准transformers加载
@@ -163,26 +208,51 @@ class P2LEngine:
                             "is_p2l_model": False
                         }
                         logger.info(f"✅ 标准模型 {item} 加载成功")
-                        break
+                        return True
                         
-                except Exception as e:
-                    logger.error(f"❌ P2L模型 {item} 加载失败: {e}")
-                    import traceback
-                    logger.error(f"详细错误: {traceback.format_exc()}")
+        except Exception as e:
+            logger.error(f"❌ P2L模型 {item} 加载失败: {e}")
+            import traceback
+            logger.error(f"详细错误: {traceback.format_exc()}")
+            return False
     
     def _load_p2l_inference_engine(self):
-        """加载P2L推理引擎"""
+        """加载P2L推理引擎 - 按配置优先级"""
         try:
             logger.info("正在加载P2L推理引擎...")
+            
+            # 导入配置常量
+            try:
+                import sys
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                project_root = os.path.dirname(current_dir)
+                if project_root not in sys.path:
+                    sys.path.insert(0, project_root)
+                from constants import DEFAULT_MODEL, MODEL_MAPPING
+            except ImportError:
+                logger.warning("无法导入配置常量，使用默认扫描方式")
+                DEFAULT_MODEL = None
+                MODEL_MAPPING = {}
             
             # 使用配置中的模型路径
             models_dir = self.config["model_path"]
             p2l_model_path = None
             
-            if os.path.exists(models_dir):
+            # 1. 优先使用配置指定的模型
+            if DEFAULT_MODEL and DEFAULT_MODEL in MODEL_MAPPING:
+                target_model = MODEL_MAPPING[DEFAULT_MODEL]["local_name"]
+                target_path = os.path.join(models_dir, target_model)
+                if os.path.exists(target_path):
+                    p2l_model_path = target_path
+                    logger.info(f"🎯 推理引擎使用配置模型: {target_model}")
+            
+            # 2. 备用方案：扫描第一个可用模型
+            if not p2l_model_path and os.path.exists(models_dir):
+                logger.warning("推理引擎使用备用扫描方式")
                 for item in os.listdir(models_dir):
                     if item.startswith('p2l-') and os.path.isdir(os.path.join(models_dir, item)):
                         p2l_model_path = os.path.join(models_dir, item)
+                        logger.warning(f"⚠️ 推理引擎使用备用模型: {item}")
                         break
             
             # 使用P2L推理引擎
