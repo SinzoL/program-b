@@ -4,6 +4,13 @@ P2L Backend Package
 统一的后端服务包
 """
 
+import os
+import sys
+
+# 导入项目常量
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from constants import DEFAULT_MODEL, MODEL_MAPPING
+
 from .config import (
     MODEL_CONFIGS, API_CONFIG, TASK_ANALYSIS_CONFIG, 
     P2L_CONFIG, SERVICE_CONFIG,
@@ -41,7 +48,7 @@ def ensure_p2l_model():
         # 导入配置
         config = get_p2l_config()
         models_dir = config['model_path']
-        default_model = config.get('default_model', 'p2l-135m-grk-01112025')
+        default_model = config.get('default_model', DEFAULT_MODEL)
         available_models = config.get('available_models', [])
         
         # 查找默认模型对应的配置

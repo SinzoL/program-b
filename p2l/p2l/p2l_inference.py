@@ -42,6 +42,44 @@ def _add_backend_path():
 
 _add_backend_path()
 
+# 添加项目根路径以导入constants
+def _add_constants_path():
+    """智能添加项目根路径以导入constants"""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # 尝试多种可能的项目根路径
+    possible_paths = [
+        # 本地开发环境: p2l/p2l/p2l_inference.py -> ../../..
+        os.path.join(os.path.dirname(os.path.dirname(current_dir)), '..'),
+        # Docker环境: /app/p2l/p2l/p2l_inference.py -> /app
+        '/app',
+        # 相对路径备选
+        os.path.join(current_dir, '..', '..', '..'),
+        # 当前工作目录
+        os.getcwd()
+    ]
+    
+    for path in possible_paths:
+        abs_path = os.path.abspath(path)
+        constants_file = os.path.join(abs_path, 'constants.py')
+        if os.path.exists(constants_file) and abs_path not in sys.path:
+            sys.path.insert(0, abs_path)
+            return abs_path
+    
+    return None
+
+_add_constants_path()
+
+# 导入项目常量
+try:
+    from constants import DEFAULT_MODEL, MODEL_MAPPING
+    print("✅ P2L引擎成功导入项目常量")
+except ImportError as e:
+    print(f"⚠️  P2L引擎无法导入常量: {e}")
+    # 设置默认值
+    DEFAULT_MODEL = "p2l-0.5b-grk-01112025"
+    MODEL_MAPPING = {}
+
 logger = logging.getLogger(__name__)
 
 class P2LTaskClassifier(nn.Module):
@@ -138,7 +176,7 @@ class P2LInferenceEngine:
             
             self.config = {
                 "model_path": default_model_path, 
-                "default_model": "p2l-135m-grk-01112025",
+                "default_model": "p2l-0.5b-grk-01112025",
                 "available_models": []
             }
             print(f"🔧 使用默认配置，模型路径: {default_model_path}")
@@ -187,14 +225,14 @@ class P2LInferenceEngine:
             return model_path
         
         # 获取配置中的默认模型
-        default_model_name = self.config.get("default_model", "p2l-135m-grk-01112025")
+        default_model_name = self.config.get("default_model", DEFAULT_MODEL)
         
         # 查找对应的本地名称
-        local_name = "p2l-135m-grk"  # 默认值
+        local_name = "p2l-0.5b-grk"  # 默认值，对应新的默认模型
         available_models = self.config.get("available_models", [])
         for model in available_models:
             if model.get("name") == default_model_name:
-                local_name = model.get("local_name", "p2l-135m-grk")
+                local_name = model.get("local_name", "p2l-0.5b-grk")
                 break
         
         # 智能路径解析

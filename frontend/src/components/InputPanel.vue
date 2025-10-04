@@ -135,9 +135,9 @@ const fetchP2LModelInfo = async () => {
     }
   } catch (error) {
     console.warn('获取P2L模型信息失败:', error)
-    // 设置默认信息
+    // 设置默认信息 - 使用新的默认模型
     p2lModelInfo.value = {
-      model_name: 'P2L-135M-GRK',
+      model_name: 'P2L-0.5B-GRK',
       model_type: '未知',
       is_loaded: false
     }

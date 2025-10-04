@@ -15,6 +15,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 
+# 导入项目常量
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from constants import DEFAULT_MODEL, MODEL_MAPPING
+
 # 配置日志
 from config import get_service_config, load_env_config
 
@@ -279,6 +283,16 @@ def create_app() -> FastAPI:
     async def get_p2l_model_info():
         """获取P2L推理模型信息"""
         try:
+            # 获取当前配置的默认模型信息
+            current_model = DEFAULT_MODEL
+            
+            # 从MODEL_MAPPING获取local_name
+            if current_model in MODEL_MAPPING:
+                model_local_name = MODEL_MAPPING[current_model]["local_name"]
+            else:
+                # 备用方案：从模型名称推导local_name
+                model_local_name = current_model.replace("-01112025", "")
+            
             # 获取P2L推理引擎实例
             import sys
             import os
@@ -300,13 +314,17 @@ def create_app() -> FastAPI:
             
             # 获取模型详细信息
             model_info = {
-                "model_name": "P2L-135M-GRK",
+                "model_name": model_local_name,  # 直接使用local_name
                 "model_path": getattr(inference_engine, 'p2l_model_path', 'unknown'),
                 "model_type": type(inference_engine.model).__name__ if inference_engine.model else "未加载",
                 "tokenizer_type": type(inference_engine.tokenizer).__name__ if inference_engine.tokenizer else "未加载",
                 "is_loaded": inference_engine.model is not None,
-                "device": str(getattr(inference_engine, 'device', 'unknown'))
+                "device": str(getattr(inference_engine, 'device', 'unknown')),
+                "current_model_key": current_model
             }
+            
+            # 调试信息
+            logger.info(f"🔍 调试信息 - 设置的model_name: {model_local_name}")
             
             # 如果模型已加载，获取更多详细信息
             if inference_engine.model and hasattr(inference_engine.model, 'config'):
@@ -320,11 +338,15 @@ def create_app() -> FastAPI:
                     "max_position_embeddings": getattr(config, 'max_position_embeddings', 0)
                 })
                 
-                # 计算参数量
+                # 计算参数量（但不用于显示名称）
                 if hasattr(inference_engine.model, 'parameters'):
                     total_params = sum(p.numel() for p in inference_engine.model.parameters())
                     model_info["total_parameters"] = total_params
                     model_info["parameters_display"] = f"{total_params/1e6:.1f}M" if total_params > 1e6 else f"{total_params/1e3:.1f}K"
+            
+            # 确保model_name始终使用local_name，不被其他逻辑覆盖
+            model_info["model_name"] = model_local_name
+            logger.info(f"🔍 最终设置的model_name: {model_local_name}")
             
             return {
                 "status": "success",
@@ -334,14 +356,23 @@ def create_app() -> FastAPI:
             
         except Exception as e:
             logger.error(f"获取P2L模型信息失败: {e}")
+            
+            # 获取当前配置的默认模型信息作为备用
+            current_model = DEFAULT_MODEL
+            if current_model in MODEL_MAPPING:
+                model_local_name = MODEL_MAPPING[current_model]["local_name"]
+            else:
+                model_local_name = current_model.replace("-01112025", "")
+            
             return {
                 "status": "error",
                 "error": str(e),
                 "model_info": {
-                    "model_name": "P2L-135M-GRK",
+                    "model_name": model_local_name,  # 直接使用local_name
                     "model_type": "未知",
                     "is_loaded": False,
-                    "device": "unknown"
+                    "device": "unknown",
+                    "current_model_key": current_model
                 },
                 "timestamp": time.time()
             }

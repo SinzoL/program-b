@@ -5,7 +5,12 @@
 """
 
 import os
+import sys
 from typing import Dict, Any
+
+# 导入项目常量
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from constants import DEFAULT_MODEL, MODEL_MAPPING
 
 # ================== API配置 ==================
 API_CONFIG = {
@@ -281,7 +286,7 @@ P2L_CONFIG = {
     ],
     
     # 默认模型
-    "default_model": "p2l-135m-grk-01112025",
+    "default_model": DEFAULT_MODEL,
     
     # 推理参数
     "inference_params": {
