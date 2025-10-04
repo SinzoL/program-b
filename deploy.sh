@@ -59,23 +59,13 @@ fi
 
 echo "✅ Docker 权限检查通过"
 
-# 检查模型文件
-echo "🔍 检查模型文件..."
-if [ ! -d "models/p2l-0.5b-grk" ]; then
-    echo "📥 下载 P2L 模型..."
-    pip3 install huggingface_hub --user
-    python3 -c "
-from huggingface_hub import snapshot_download
-import os
-os.makedirs('models', exist_ok=True)
-snapshot_download(
-    repo_id='lmarena-ai/p2l-0.5b-grk-01112025',
-    local_dir='./models/p2l-0.5b-grk',
-    repo_type='model'
-)
-print('✅ 模型下载完成')
-"
-fi
+# 创建模型目录（模型将由backend服务自动下载）
+echo "📁 准备模型目录..."
+mkdir -p models
+echo "✅ 模型目录已准备"
+echo "💡 说明：backend服务启动时将自动检测并下载所需的P2L模型"
+echo "   - 模型配置由 constants.py 中的 DEFAULT_MODEL 决定"
+echo "   - 首次启动可能需要几分钟下载模型，请耐心等待"
 
 # 检查配置文件
 echo "⚙️  检查配置文件..."
@@ -320,6 +310,7 @@ fi
 echo ""
 echo "📋 管理命令："
 echo "  查看日志: docker-compose logs -f"
+echo "  查看后端日志: docker-compose logs -f backend"
 echo "  停止服务: docker-compose down"
 echo "  重启服务: docker-compose restart"
 echo "  查看状态: docker-compose ps"
@@ -332,3 +323,9 @@ echo "  生产升级: ./deploy.sh production upgrade"
 if [ "$UPGRADE_MODE" = true ]; then
     echo "  查看备份: docker images | grep backup"
 fi
+echo ""
+echo "🤖 模型管理："
+echo "  - 模型配置: 编辑 constants.py 中的 DEFAULT_MODEL"
+echo "  - 自动下载: backend服务启动时自动检测并下载模型"
+echo "  - 模型位置: ./models/ 目录"
+echo "  - 切换模型: 修改 constants.py 后重启服务即可"
