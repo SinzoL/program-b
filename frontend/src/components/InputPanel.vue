@@ -2,8 +2,23 @@
   <el-card shadow="hover" class="tech-card">
     <template #header>
       <div class="card-header">
-        <TechIcons name="brain" :size="20" color="#00d4ff" />
-        <span>智能提问</span>
+        <div class="header-left">
+          <TechIcons name="brain" :size="20" color="#00d4ff" />
+          <span>智能提问</span>
+        </div>
+        <div class="header-right">
+          <div class="model-info" v-if="p2lModelInfo">
+            <el-tooltip :content="getModelTooltip()" placement="top">
+              <div class="model-badge">
+                <TechIcons name="chip" :size="14" color="#10b981" />
+                <span class="model-text">{{ p2lModelInfo.model_name }}</span>
+                <span class="model-params" v-if="p2lModelInfo.parameters_display">
+                  {{ p2lModelInfo.parameters_display }}
+                </span>
+              </div>
+            </el-tooltip>
+          </div>
+        </div>
       </div>
     </template>
     
@@ -83,8 +98,9 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, ref, onMounted } from 'vue'
 import TechIcons from './icons/TechIcons.vue'
+import axios from 'axios'
 
 defineProps({
   prompt: {
@@ -106,6 +122,59 @@ defineProps({
 })
 
 const emit = defineEmits(['update:prompt', 'update:selectedMode', 'analyze', 'clear', 'show-examples'])
+
+// P2L模型信息
+const p2lModelInfo = ref(null)
+
+// 获取P2L模型信息
+const fetchP2LModelInfo = async () => {
+  try {
+    const response = await axios.get('/api/p2l/model-info')
+    if (response.data.status === 'success') {
+      p2lModelInfo.value = response.data.model_info
+    }
+  } catch (error) {
+    console.warn('获取P2L模型信息失败:', error)
+    // 设置默认信息
+    p2lModelInfo.value = {
+      model_name: 'P2L-135M-GRK',
+      model_type: '未知',
+      is_loaded: false
+    }
+  }
+}
+
+// 生成模型提示信息
+const getModelTooltip = () => {
+  if (!p2lModelInfo.value) return ''
+  
+  const info = p2lModelInfo.value
+  let tooltip = `P2L推理模型信息:\n`
+  tooltip += `• 模型: ${info.model_name}\n`
+  tooltip += `• 架构: ${info.architecture || info.model_type}\n`
+  
+  if (info.parameters_display) {
+    tooltip += `• 参数量: ${info.parameters_display}\n`
+  }
+  
+  if (info.hidden_size) {
+    tooltip += `• 隐藏层: ${info.hidden_size}维\n`
+  }
+  
+  if (info.num_layers) {
+    tooltip += `• 层数: ${info.num_layers}层\n`
+  }
+  
+  tooltip += `• 设备: ${info.device}\n`
+  tooltip += `• 状态: ${info.is_loaded ? '已加载' : '未加载'}`
+  
+  return tooltip
+}
+
+// 组件挂载时获取模型信息
+onMounted(() => {
+  fetchP2LModelInfo()
+})
 
 const handlePromptChange = (value) => {
   emit('update:prompt', value)
@@ -165,9 +234,59 @@ const handleShowExamples = () => {
 .card-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   font-weight: bold;
   color: #00d4ff;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.model-info {
+  margin-left: 16px;
+}
+
+.model-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  font-size: 12px;
+  color: #10b981;
+  cursor: help;
+  transition: all 0.3s ease;
+}
+
+.model-badge:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.08));
+  border-color: #10b981;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+.model-text {
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.model-params {
+  font-size: 10px;
+  opacity: 0.8;
+  background: rgba(16, 185, 129, 0.2);
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin-left: 2px;
 }
 
 .priority-section, .input-section {

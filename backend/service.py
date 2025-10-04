@@ -275,6 +275,77 @@ def create_app() -> FastAPI:
             "total": len(service.all_models)
         }
     
+    @app.get("/api/p2l/model-info")
+    async def get_p2l_model_info():
+        """获取P2L推理模型信息"""
+        try:
+            # 获取P2L推理引擎实例
+            import sys
+            import os
+            
+            # 添加P2L模块路径
+            p2l_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'p2l')
+            if p2l_path not in sys.path:
+                sys.path.append(p2l_path)
+            
+            # 尝试导入P2L推理引擎
+            try:
+                from p2l.p2l_inference import P2LInferenceEngine
+            except ImportError:
+                # 如果上面失败，尝试直接导入
+                import p2l.p2l_inference
+                P2LInferenceEngine = p2l.p2l_inference.P2LInferenceEngine
+            
+            inference_engine = P2LInferenceEngine()
+            
+            # 获取模型详细信息
+            model_info = {
+                "model_name": "P2L-135M-GRK",
+                "model_path": getattr(inference_engine, 'p2l_model_path', 'unknown'),
+                "model_type": type(inference_engine.model).__name__ if inference_engine.model else "未加载",
+                "tokenizer_type": type(inference_engine.tokenizer).__name__ if inference_engine.tokenizer else "未加载",
+                "is_loaded": inference_engine.model is not None,
+                "device": str(getattr(inference_engine, 'device', 'unknown'))
+            }
+            
+            # 如果模型已加载，获取更多详细信息
+            if inference_engine.model and hasattr(inference_engine.model, 'config'):
+                config = inference_engine.model.config
+                model_info.update({
+                    "architecture": getattr(config, 'architectures', ['未知'])[0] if hasattr(config, 'architectures') else "未知",
+                    "hidden_size": getattr(config, 'hidden_size', 0),
+                    "num_layers": getattr(config, 'num_hidden_layers', 0),
+                    "num_attention_heads": getattr(config, 'num_attention_heads', 0),
+                    "vocab_size": getattr(config, 'vocab_size', 0),
+                    "max_position_embeddings": getattr(config, 'max_position_embeddings', 0)
+                })
+                
+                # 计算参数量
+                if hasattr(inference_engine.model, 'parameters'):
+                    total_params = sum(p.numel() for p in inference_engine.model.parameters())
+                    model_info["total_parameters"] = total_params
+                    model_info["parameters_display"] = f"{total_params/1e6:.1f}M" if total_params > 1e6 else f"{total_params/1e3:.1f}K"
+            
+            return {
+                "status": "success",
+                "model_info": model_info,
+                "timestamp": time.time()
+            }
+            
+        except Exception as e:
+            logger.error(f"获取P2L模型信息失败: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "model_info": {
+                    "model_name": "P2L-135M-GRK",
+                    "model_type": "未知",
+                    "is_loaded": False,
+                    "device": "unknown"
+                },
+                "timestamp": time.time()
+            }
+    
     # 兼容性路由 (保持向后兼容)
     @app.post("/analyze")
     async def analyze_prompt_compat(request: P2LAnalysisRequest):

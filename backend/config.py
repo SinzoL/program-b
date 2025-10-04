@@ -281,7 +281,7 @@ P2L_CONFIG = {
     ],
     
     # 默认模型
-    "default_model": "p2l-0.5b-grk-01112025",
+    "default_model": "p2l-135m-grk-01112025",
     
     # 推理参数
     "inference_params": {
