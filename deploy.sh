@@ -59,14 +59,37 @@ fi
 
 echo "✅ Docker 权限检查通过"
 
-# 创建模型目录（模型将由容器启动时自动下载）
+# 创建模型目录并预下载模型
 echo "📁 准备模型目录..."
 mkdir -p models
 echo "✅ 模型目录已准备"
-echo "💡 说明：容器启动时将自动检测并下载所需的P2L模型"
+
+# 预下载模型（在容器启动前）
+echo "🚀 预下载P2L模型..."
+if [ -f "download_current_model.py" ]; then
+    # 检查Python环境
+    if command -v python3 &> /dev/null; then
+        echo "⬇️  开始预下载模型..."
+        if python3 download_current_model.py; then
+            echo "✅ 模型预下载成功！"
+            echo "🚀 Docker容器启动将更快"
+        else
+            echo "⚠️  模型预下载失败，将在容器启动时重试"
+        fi
+    else
+        echo "⚠️  未找到Python3，跳过预下载"
+        echo "💡 说明：容器启动时将自动下载模型"
+    fi
+else
+    echo "⚠️  未找到下载脚本，跳过预下载"
+    echo "💡 说明：容器启动时将自动下载模型"
+fi
+
+echo "💡 说明：模型下载策略"
+echo "   - 优先使用预下载的模型"
+echo "   - 容器启动时会自动检测并补充缺失的模型"
 echo "   - 模型配置由 constants.py 中的 DEFAULT_MODEL 决定"
-echo "   - 首次启动可能需要几分钟下载模型，请耐心等待"
-echo "   - 模型下载进度可通过日志查看: docker-compose logs -f backend"
+echo "   - 下载进度可通过日志查看: docker-compose logs -f backend"
 
 # 检查配置文件
 echo "⚙️  检查配置文件..."

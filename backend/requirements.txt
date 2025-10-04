@@ -7,6 +7,7 @@ uvicorn[standard]>=0.24.0
 # Machine Learning
 torch>=2.0.0
 transformers>=4.35.0
+huggingface_hub>=0.19.0
 
 # HTTP Client
 aiohttp>=3.9.0
