@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r re
 # 复制后端应用代码
 COPY backend/ .
 
+# 复制项目常量文件（重要：backend服务需要这个文件）
+COPY constants.py .
+
 # 创建必要目录
 RUN mkdir -p /app/models /app/logs
 
