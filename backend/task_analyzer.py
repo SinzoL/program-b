@@ -7,7 +7,7 @@
 from typing import Dict
 import logging
 
-from config import get_task_config
+from .config import get_task_config
 
 logger = logging.getLogger(__name__)
 

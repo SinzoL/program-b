@@ -7,7 +7,7 @@
 from typing import Dict, List, Optional
 import logging
 
-from config import get_task_config, get_model_config
+from .config import get_task_config, get_model_config
 
 logger = logging.getLogger(__name__)
 

@@ -191,3 +191,8 @@ logs
 
 
 models/
+
+download_135m_model.py
+download_current_model.py
+
+auto_download_model.py

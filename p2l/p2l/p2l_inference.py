@@ -77,7 +77,7 @@ try:
 except ImportError as e:
     print(f"⚠️  P2L引擎无法导入常量: {e}")
     # 设置默认值
-    DEFAULT_MODEL = "p2l-0.5b-grk-01112025"
+    DEFAULT_MODEL = "p2l-135m-grk-01112025"
     MODEL_MAPPING = {}
 
 logger = logging.getLogger(__name__)
@@ -176,7 +176,7 @@ class P2LInferenceEngine:
             
             self.config = {
                 "model_path": default_model_path, 
-                "default_model": "p2l-0.5b-grk-01112025",
+                "default_model": DEFAULT_MODEL,
                 "available_models": []
             }
             print(f"🔧 使用默认配置，模型路径: {default_model_path}")
@@ -211,12 +211,25 @@ class P2LInferenceEngine:
         
         # 加载或初始化模型
         if self.p2l_model_path and os.path.exists(self.p2l_model_path):
-            print(f"📂 找到P2L模型: {self.p2l_model_path}")
+            print("=" * 50)
+            print("🎯 P2L模型加载")
+            print("=" * 50)
+            print(f"📂 模型路径: {self.p2l_model_path}")
+            print("⏳ 正在加载模型，请稍候...")
             self.load_model(self.p2l_model_path)
+            print("✅ P2L模型加载完成")
+            print("=" * 50)
         else:
-            print(f"⚠️  P2L模型路径不存在: {self.p2l_model_path}")
-            print("💡 请确保模型文件已下载到正确位置")
-            print("🔍 正在初始化备用模型...")
+            print("=" * 50)
+            print("⚠️  P2L模型未找到")
+            print("=" * 50)
+            print(f"🔍 查找路径: {self.p2l_model_path}")
+            print("💡 建议操作:")
+            print("   1. 检查模型是否已下载")
+            print("   2. 运行 python download_current_model.py 下载模型")
+            print("   3. 或等待backend服务自动下载")
+            print("🔄 正在初始化备用模式...")
+            print("=" * 50)
             self._initialize_model()
     
     def _resolve_model_path(self, model_path: Optional[str] = None) -> str:
@@ -228,12 +241,19 @@ class P2LInferenceEngine:
         default_model_name = self.config.get("default_model", DEFAULT_MODEL)
         
         # 查找对应的本地名称
-        local_name = "p2l-0.5b-grk"  # 默认值，对应新的默认模型
-        available_models = self.config.get("available_models", [])
-        for model in available_models:
-            if model.get("name") == default_model_name:
-                local_name = model.get("local_name", "p2l-0.5b-grk")
-                break
+        # 首先从MODEL_MAPPING获取
+        if default_model_name in MODEL_MAPPING:
+            local_name = MODEL_MAPPING[default_model_name]["local_name"]
+            print(f"✅ 从MODEL_MAPPING获取local_name: {local_name}")
+        else:
+            # 备用方案：从配置文件查找
+            local_name = "p2l-135m-grk"  # 最终备用值
+            available_models = self.config.get("available_models", [])
+            for model in available_models:
+                if model.get("name") == default_model_name:
+                    local_name = model.get("local_name", "p2l-135m-grk")
+                    break
+            print(f"⚠️  从配置文件获取local_name: {local_name}")
         
         # 智能路径解析
         base_model_path = self.config.get("model_path", "./models")

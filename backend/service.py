@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from constants import DEFAULT_MODEL, MODEL_MAPPING
 
 # 配置日志
-from config import get_service_config, load_env_config
+from .config import get_service_config, load_env_config
 
 # 加载环境配置
 load_env_config()
@@ -34,15 +34,25 @@ logger = logging.getLogger(__name__)
 
 # 导入后端模块
 try:
-    from config import get_all_models, get_model_config
-    from p2l_engine import P2LEngine
-    from task_analyzer import TaskAnalyzer
-    from model_scorer import ModelScorer
-    from llm_client import LLMClient
+    # 尝试相对导入
+    from .config import get_all_models, get_model_config
+    from .p2l_engine import P2LEngine
+    from .task_analyzer import TaskAnalyzer
+    from .model_scorer import ModelScorer
+    from .llm_client import LLMClient
     logger.info("✅ 所有后端模块导入成功")
 except ImportError as e:
-    logger.error(f"❌ 后端模块导入失败: {e}")
-    sys.exit(1)
+    # 如果相对导入失败，尝试绝对导入（兼容直接运行）
+    try:
+        from config import get_all_models, get_model_config
+        from p2l_engine import P2LEngine
+        from task_analyzer import TaskAnalyzer
+        from model_scorer import ModelScorer
+        from llm_client import LLMClient
+        logger.info("✅ 所有后端模块导入成功 (绝对导入)")
+    except ImportError as e2:
+        logger.error(f"❌ 后端模块导入失败: {e2}")
+        sys.exit(1)
 
 # 请求模型
 class P2LAnalysisRequest(BaseModel):
