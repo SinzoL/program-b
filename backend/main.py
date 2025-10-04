@@ -29,5 +29,8 @@ if __name__ == "__main__":
     print("=" * 50)
     
     # 启动服务
-    from service import main
+    try:
+        from .service import main
+    except ImportError:
+        from service import main
     main()
