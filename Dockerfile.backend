@@ -7,15 +7,12 @@ WORKDIR /app
 # 跳过系统包安装，使用 Python 内置的 urllib 进行健康检查
 # 这样可以避免网络连接问题导致的构建失败
 
-# 复制后端代码和依赖（使用国内 pip 镜像加速）
-COPY backend/requirements.txt .
+# 复制依赖文件
+COPY requirements.txt .
 RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
-# 复制后端应用代码
-COPY backend/ .
-
-# 复制项目常量文件（重要：backend服务需要这个文件）
-COPY constants.py .
+# 复制整个项目结构以支持相对导入
+COPY . .
 
 # 创建必要目录
 RUN mkdir -p /app/models /app/logs
@@ -33,5 +30,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
 
-# 启动命令
-CMD ["python", "main.py"]
+# 启动命令 - 使用包模式运行
+CMD ["python", "-m", "backend.main"]

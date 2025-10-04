@@ -43,7 +43,10 @@ __all__ = [
 # ================== P2L模型自动下载 ==================
 
 # 使用统一的模型管理器
-from .model_manager import print_model_status
-
-# 在backend包导入时显示模型状态
-print_model_status()
+try:
+    from .model_manager import print_model_status
+    # 在backend包导入时显示模型状态
+    print_model_status()
+except ImportError as e:
+    print(f"⚠️  模型管理器导入失败: {e}")
+    print("💡 服务将以基础模式启动")
