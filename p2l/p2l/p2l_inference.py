@@ -13,6 +13,10 @@ import numpy as np
 import logging
 import json
 import os
+import sys
+
+# 添加backend路径以导入配置
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'backend'))
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +94,17 @@ class P2LInferenceEngine:
         self.model = None
         self.tokenizer = None
         
+        # 导入配置
+        try:
+            from config import get_p2l_config
+            self.config = get_p2l_config()
+        except ImportError:
+            # 如果无法导入配置，使用默认值
+            self.config = {"model_path": "/Users/sinzol/Desktop/program-b/models", "default_model": "p2l-0.5b-grk-01112025"}
+        
+        # 选择P2L模型
+        self.p2l_model_path = model_path or self._select_p2l_model()
+        
         # 任务类型映射
         self.task_types = [
             "编程", "创意写作", "翻译", "数学", "分析", "问答", "总结", "通用"
@@ -106,9 +121,9 @@ class P2LInferenceEngine:
         
         # LLM模型列表
         self.llm_models = [
-            "gpt-4o", "gpt-4o-mini", "claude-3-5-sonnet-20241022", 
-            "claude-3-7-sonnet-20250219", "claude-3-5-haiku-20241022", 
-            "gemini-1.5-pro-002", "gemini-1.5-flash-002", "qwen2.5-72b-instruct", 
+            "gpt-4o", "gpt-4o-mini", "claude-3-5-sonnet-20241022",
+            "claude-3-7-sonnet-20250219", "claude-3-5-haiku-20241022",
+            "gemini-1.5-pro-002", "gemini-1.5-flash-002", "qwen2.5-72b-instruct",
             "llama-3.1-70b-instruct", "deepseek-v3"
         ]
         
@@ -116,8 +131,8 @@ class P2LInferenceEngine:
         self.model_configs = self._load_model_configs()
         
         # 加载或初始化模型
-        if model_path and os.path.exists(model_path):
-            self.load_model(model_path)
+        if self.p2l_model_path and os.path.exists(self.p2l_model_path):
+            self.load_model(self.p2l_model_path)
         else:
             self._initialize_model()
     
@@ -131,6 +146,71 @@ class P2LInferenceEngine:
             else:
                 return torch.device("cpu")
         return torch.device(device)
+    
+    def _select_p2l_model(self) -> Optional[str]:
+        """选择可用的P2L模型"""
+        try:
+            models_dir = self.config.get("model_path", "./models")
+            
+            # 检查本地是否有P2L模型
+            if os.path.exists(models_dir):
+                for item in os.listdir(models_dir):
+                    item_path = os.path.join(models_dir, item)
+                    if os.path.isdir(item_path) and item.startswith("p2l-"):
+                        # 检查是否有必要的模型文件
+                        if (os.path.exists(os.path.join(item_path, "config.json")) and 
+                            (os.path.exists(os.path.join(item_path, "model.safetensors")) or 
+                             os.path.exists(os.path.join(item_path, "pytorch_model.bin")))):
+                            logger.info(f"🎯 找到本地P2L模型: {item}")
+                            return item_path
+            
+            # 如果没有本地模型，尝试下载默认模型
+            default_model = self.config.get("default_model", "p2l-0.5b-grk-01112025")
+            return self._download_p2l_model(default_model)
+            
+        except Exception as e:
+            logger.error(f"选择P2L模型失败: {e}")
+            return None
+    
+    def _download_p2l_model(self, model_name: str) -> Optional[str]:
+        """下载P2L模型"""
+        try:
+            from huggingface_hub import snapshot_download
+            
+            # 查找模型配置
+            available_models = self.config.get("available_models", [])
+            model_config = None
+            for model in available_models:
+                if model["name"] == model_name:
+                    model_config = model
+                    break
+            
+            if not model_config:
+                logger.error(f"未找到模型配置: {model_name}")
+                return None
+            
+            models_dir = self.config.get("model_path", "./models")
+            local_path = os.path.join(models_dir, model_config["local_name"])
+            
+            # 如果本地已存在，直接返回
+            if os.path.exists(local_path):
+                return local_path
+            
+            logger.info(f"📥 下载P2L模型: {model_name}")
+            
+            # 下载模型
+            downloaded_path = snapshot_download(
+                repo_id=model_config["repo_id"],
+                local_dir=local_path,
+                local_dir_use_symlinks=False
+            )
+            
+            logger.info(f"✅ P2L模型下载成功: {downloaded_path}")
+            return downloaded_path
+            
+        except Exception as e:
+            logger.error(f"下载P2L模型失败: {e}")
+            return None
     
     def _load_model_configs(self) -> Dict:
         """加载模型配置"""
@@ -230,6 +310,21 @@ class P2LInferenceEngine:
         try:
             logger.info(f"加载P2L模型: {model_path}")
             
+            # 检查是否为SafeTensors格式
+            if os.path.exists(os.path.join(model_path, "model.safetensors")):
+                logger.info("🔒 检测到SafeTensors格式，使用Transformers加载")
+                from transformers import AutoModel, AutoTokenizer
+                
+                # 加载tokenizer和模型
+                self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+                self.model = AutoModel.from_pretrained(model_path)
+                self.model.to(self.device)
+                self.model.eval()
+                
+                logger.info("✅ P2L模型(SafeTensors)加载成功")
+                return
+            
+            # 传统pytorch_model.bin格式
             # 加载tokenizer
             self.tokenizer = AutoTokenizer.from_pretrained(model_path)
             
