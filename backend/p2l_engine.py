@@ -105,110 +105,110 @@ class P2LEngine:
         """加载单个P2L模型"""
         try:
             logger.info(f"🔄 正在加载P2L专用模型: {item}")
-                    
-                    # 检查是否是P2L专用模型格式
-                    config_path = os.path.join(full_model_path, "config.json")
-                    training_config_path = os.path.join(full_model_path, "training_config.json")
-                    
-                    if os.path.exists(training_config_path):
-                        logger.info("🎯 检测到P2L训练模型，使用P2L专用加载器")
-                        # 使用P2L专用模型加载器
-                        from p2l.p2l.model import get_p2l_model, get_tokenizer
-                        import json
-                        
-                        # 读取训练配置
-                        with open(training_config_path, 'r') as f:
-                            training_config = json.load(f)
-                        
-                        # 读取模型配置
-                        with open(config_path, 'r') as f:
-                            model_config = json.load(f)
-                        
-                        # 创建P2L模型
-                        model_type = training_config.get("model_type", "qwen2")
-                        loss_type = training_config.get("loss_type", "grk")
-                        head_type = training_config.get("head_type", "rk")
-                        
-                        logger.info(f"📋 P2L模型配置: {model_type}/{loss_type}/{head_type}")
-                        
-                        # 获取P2L模型类
-                        P2LModel = get_p2l_model(model_type, loss_type, head_type)
-                        
-                        # 加载tokenizer
-                        tokenizer = get_tokenizer(
-                            full_model_path,
-                            chat_template=None,
-                            pad_token_if_none="<|pad|>",
-                            cls_token_if_none="<|cls|>"
-                        )
-                        
-                        # 创建模型配置对象
-                        from transformers import AutoConfig
-                        config = AutoConfig.from_pretrained(full_model_path)
-                        
-                        # 初始化P2L模型 - 从权重文件推断正确的类别数
-                        model_weights_path = os.path.join(full_model_path, "model.safetensors")
-                        num_classes = 10  # 默认值
-                        
-                        if os.path.exists(model_weights_path):
-                            import safetensors.torch
-                            state_dict = safetensors.torch.load_file(model_weights_path)
-                            # 从权重文件推断类别数
-                            if 'head.head.weight' in state_dict:
-                                num_classes = state_dict['head.head.weight'].shape[0]
-                                logger.info(f"📊 从权重文件推断类别数: {num_classes}")
-                        
-                        model = P2LModel(
-                            config=config,
-                            CLS_id=tokenizer.cls_token_id,
-                            num_models=num_classes,  # 使用推断的类别数
-                            linear_head_downsize_factor=training_config.get("linear_head_downsize_factor"),
-                            head_kwargs=training_config.get("head_kwargs", {})
-                        )
-                        
-                        # 加载权重
-                        if os.path.exists(model_weights_path):
-                            model.load_state_dict(state_dict, strict=False)
-                            logger.info("✅ P2L模型权重加载成功")
-                        else:
-                            logger.warning("⚠️ 未找到模型权重文件，使用随机初始化")
-                        
-                        model.to(self.device)
-                        model.eval()
-                        
-                        self.p2l_models[item] = {
-                            "tokenizer": tokenizer,
-                            "model": model,
-                            "path": full_model_path,
-                            "model_type": model_type,
-                            "loss_type": loss_type,
-                            "head_type": head_type,
-                            "is_p2l_model": True
-                        }
-                        logger.info(f"🎉 P2L专用模型 {item} 加载成功！")
-                        return True
-                    
-                    else:
-                        # 尝试标准transformers加载
-                        logger.info("🔄 尝试标准transformers加载...")
-                        tokenizer = AutoTokenizer.from_pretrained(full_model_path, trust_remote_code=True)
-                        model = AutoModelForCausalLM.from_pretrained(
-                            full_model_path,
-                            torch_dtype=torch.float16 if self.device.type == 'cuda' else torch.float32,
-                            device_map=None,
-                            trust_remote_code=True
-                        )
-                        model.to(self.device)
-                        model.eval()
-                        
-                        self.p2l_models[item] = {
-                            "tokenizer": tokenizer,
-                            "model": model,
-                            "path": full_model_path,
-                            "is_p2l_model": False
-                        }
-                        logger.info(f"✅ 标准模型 {item} 加载成功")
-                        return True
+            
+            # 检查是否是P2L专用模型格式
+            config_path = os.path.join(full_model_path, "config.json")
+            training_config_path = os.path.join(full_model_path, "training_config.json")
+            
+            if os.path.exists(training_config_path):
+                logger.info("🎯 检测到P2L训练模型，使用P2L专用加载器")
+                # 使用P2L专用模型加载器
+                from p2l.p2l.model import get_p2l_model, get_tokenizer
+                import json
+                
+                # 读取训练配置
+                with open(training_config_path, 'r') as f:
+                    training_config = json.load(f)
+                
+                # 读取模型配置
+                with open(config_path, 'r') as f:
+                    model_config = json.load(f)
+                
+                # 创建P2L模型
+                model_type = training_config.get("model_type", "qwen2")
+                loss_type = training_config.get("loss_type", "grk")
+                head_type = training_config.get("head_type", "rk")
+                
+                logger.info(f"📋 P2L模型配置: {model_type}/{loss_type}/{head_type}")
+                
+                # 获取P2L模型类
+                P2LModel = get_p2l_model(model_type, loss_type, head_type)
+                
+                # 加载tokenizer
+                tokenizer = get_tokenizer(
+                    full_model_path,
+                    chat_template=None,
+                    pad_token_if_none="<|pad|>",
+                    cls_token_if_none="<|cls|>"
+                )
+                
+                # 创建模型配置对象
+                from transformers import AutoConfig
+                config = AutoConfig.from_pretrained(full_model_path)
+                
+                # 初始化P2L模型 - 从权重文件推断正确的类别数
+                model_weights_path = os.path.join(full_model_path, "model.safetensors")
+                num_classes = 10  # 默认值
+                
+                if os.path.exists(model_weights_path):
+                    import safetensors.torch
+                    state_dict = safetensors.torch.load_file(model_weights_path)
+                    # 从权重文件推断类别数
+                    if 'head.head.weight' in state_dict:
+                        num_classes = state_dict['head.head.weight'].shape[0]
+                        logger.info(f"📊 从权重文件推断类别数: {num_classes}")
+                
+                model = P2LModel(
+                    config=config,
+                    CLS_id=tokenizer.cls_token_id,
+                    num_models=num_classes,  # 使用推断的类别数
+                    linear_head_downsize_factor=training_config.get("linear_head_downsize_factor"),
+                    head_kwargs=training_config.get("head_kwargs", {})
+                )
+                
+                # 加载权重
+                if os.path.exists(model_weights_path):
+                    model.load_state_dict(state_dict, strict=False)
+                    logger.info("✅ P2L模型权重加载成功")
+                else:
+                    logger.warning("⚠️ 未找到模型权重文件，使用随机初始化")
+                
+                model.to(self.device)
+                model.eval()
+                
+                self.p2l_models[item] = {
+                    "tokenizer": tokenizer,
+                    "model": model,
+                    "path": full_model_path,
+                    "model_type": model_type,
+                    "loss_type": loss_type,
+                    "head_type": head_type,
+                    "is_p2l_model": True
+                }
+                logger.info(f"🎉 P2L专用模型 {item} 加载成功！")
+                return True
+            
+            else:
+                # 尝试标准transformers加载
+                logger.info("🔄 尝试标准transformers加载...")
+                tokenizer = AutoTokenizer.from_pretrained(full_model_path, trust_remote_code=True)
+                model = AutoModelForCausalLM.from_pretrained(
+                    full_model_path,
+                    torch_dtype=torch.float16 if self.device.type == 'cuda' else torch.float32,
+                    device_map=None,
+                    trust_remote_code=True
+                )
+                model.to(self.device)
+                model.eval()
+                
+                self.p2l_models[item] = {
+                    "tokenizer": tokenizer,
+                    "model": model,
+                    "path": full_model_path,
+                    "is_p2l_model": False
+                }
+                logger.info(f"✅ 标准模型 {item} 加载成功")
+                return True
                         
         except Exception as e:
             logger.error(f"❌ P2L模型 {item} 加载失败: {e}")
