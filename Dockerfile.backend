@@ -8,7 +8,7 @@ WORKDIR /app
 # 这样可以避免网络连接问题导致的构建失败
 
 # 复制依赖文件
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
 # 复制整个项目结构以支持相对导入
