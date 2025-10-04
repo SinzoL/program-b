@@ -66,23 +66,17 @@ echo "✅ 模型目录已准备"
 
 # 预下载模型（在容器启动前）
 echo "🚀 预下载P2L模型..."
-if [ -f "download_current_model.py" ]; then
-    # 检查Python环境
-    if command -v python3 &> /dev/null; then
-        echo "⬇️  开始预下载模型..."
-        if python3 download_current_model.py; then
-            echo "✅ 模型预下载成功！"
-            echo "🚀 Docker容器启动将更快"
-        else
-            echo "⚠️  模型预下载失败，将在容器启动时重试"
-        fi
+
+# 简单检查：如果有Python环境和必要文件，就尝试预下载
+if command -v python3 &> /dev/null && [ -f "download_current_model.py" ] && [ -f "model_utils.py" ] && [ -f "constants.py" ]; then
+    echo "⬇️  尝试预下载模型..."
+    if timeout 300 python3 download_current_model.py 2>/dev/null; then
+        echo "✅ 模型预下载成功！容器启动将更快"
     else
-        echo "⚠️  未找到Python3，跳过预下载"
-        echo "💡 说明：容器启动时将自动下载模型"
+        echo "⚠️  预下载失败或超时，容器启动时将重试"
     fi
 else
-    echo "⚠️  未找到下载脚本，跳过预下载"
-    echo "💡 说明：容器启动时将自动下载模型"
+    echo "⚠️  跳过预下载（缺少Python环境或项目文件）"
 fi
 
 echo "💡 说明：模型下载策略"
