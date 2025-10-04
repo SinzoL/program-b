@@ -14,7 +14,7 @@ services:
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
       - OMP_NUM_THREADS=2
     volumes:
-      - ./models:/app/models:ro
+      - ./models:/app/models
       - ./p2l:/app/p2l:ro
       - ./logs:/app/logs
       - ./backend/api_config.env:/app/api_config.env:ro
