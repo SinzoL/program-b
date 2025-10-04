@@ -100,7 +100,7 @@
 <script setup>
 import { defineProps, defineEmits, ref, onMounted } from 'vue'
 import TechIcons from './icons/TechIcons.vue'
-import axios from 'axios'
+import { p2lApi } from '@/utils/api'
 
 defineProps({
   prompt: {
@@ -126,21 +126,23 @@ const emit = defineEmits(['update:prompt', 'update:selectedMode', 'analyze', 'cl
 // P2L模型信息
 const p2lModelInfo = ref(null)
 
-// 获取P2L模型信息
+// 获取P2L模型信息 - 兼容Docker和本地开发环境
 const fetchP2LModelInfo = async () => {
   try {
-    const response = await axios.get('/api/p2l/model-info')
+    const response = await p2lApi.getModelInfo()
     if (response.data.status === 'success') {
       p2lModelInfo.value = response.data.model_info
+      console.log('✅ P2L模型信息获取成功:', response.data.model_info.model_name)
     }
   } catch (error) {
     console.warn('获取P2L模型信息失败:', error)
-    // 设置默认信息 - 使用新的默认模型
+    // 设置默认信息 - 使用当前配置的默认模型
     p2lModelInfo.value = {
-      model_name: 'P2L-0.5B-GRK',
+      model_name: 'P2L-135M-GRK',
       model_type: '未知',
       is_loaded: false
     }
+    console.log('🔄 使用默认模型信息:', p2lModelInfo.value.model_name)
   }
 }
 

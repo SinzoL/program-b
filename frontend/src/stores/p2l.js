@@ -1,10 +1,5 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
-
-const api = axios.create({
-  baseURL: process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:8080',
-  timeout: 60000
-})
+import { p2lApi } from '@/utils/api'
 
 export const useP2LStore = defineStore('p2l', {
   state: () => ({
@@ -69,7 +64,7 @@ export const useP2LStore = defineStore('p2l', {
     // 检查后端健康状态
     async checkBackendHealth() {
       try {
-        const response = await api.get('/health')
+        const response = await p2lApi.get('/health')
         this.backendHealth = response.status === 200
         return this.backendHealth
       } catch (error) {
@@ -83,7 +78,7 @@ export const useP2LStore = defineStore('p2l', {
     async analyzeWithP2L(prompt, mode = 'balanced') {
       this.loading = true
       try {
-        const response = await api.post('/api/p2l/analyze', {
+        const response = await p2lApi.post('/p2l/analyze', {
           prompt,
           priority: mode, // 修正参数名
           enabled_models: this.enabledModels.length > 0 ? this.enabledModels : this.availableModels.map(m => m.name)
@@ -105,7 +100,7 @@ export const useP2LStore = defineStore('p2l', {
     async generateWithLLM(model, prompt) {
       this.loading = true
       try {
-        const response = await api.post('/api/llm/generate', {
+        const response = await p2lApi.post('/llm/generate', {
           model,
           prompt,
           max_tokens: 2000

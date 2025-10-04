@@ -331,6 +331,11 @@ def create_app() -> FastAPI:
         """健康检查接口"""
         return service.get_health_status()
     
+    @app.get("/api/health")
+    async def api_health_check():
+        """API健康检查接口 (带/api前缀)"""
+        return service.get_health_status()
+    
     @app.post("/api/p2l/analyze")
     async def analyze_prompt(request: P2LAnalysisRequest):
         """P2L智能分析接口"""
