@@ -11,7 +11,10 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from typing import Dict, Optional
 import logging
 
-from .config import get_p2l_config
+try:
+    from .config import get_p2l_config
+except ImportError:
+    from config import get_p2l_config
 
 logger = logging.getLogger(__name__)
 

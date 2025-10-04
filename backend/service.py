@@ -20,7 +20,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from constants import DEFAULT_MODEL, MODEL_MAPPING
 
 # 配置日志
-from .config import get_service_config, load_env_config
+try:
+    from .config import get_service_config, load_env_config
+except ImportError:
+    from config import get_service_config, load_env_config
 
 # 加载环境配置
 load_env_config()
@@ -52,7 +55,12 @@ except ImportError as e:
         logger.info("✅ 所有后端模块导入成功 (绝对导入)")
     except ImportError as e2:
         logger.error(f"❌ 后端模块导入失败: {e2}")
-        sys.exit(1)
+        # 设置默认值以避免NameError
+        P2LEngine = None
+        TaskAnalyzer = None
+        ModelScorer = None
+        LLMClient = None
+        logger.warning("⚠️  部分模块导入失败，服务可能功能受限")
 
 # 请求模型
 class P2LAnalysisRequest(BaseModel):
@@ -78,16 +86,22 @@ class P2LBackendService:
         self.device = self._detect_device()
         logger.info(f"🖥️  使用设备: {self.device}")
         
-        # 初始化各个模块
+        # 初始化各个模块（不加载P2L模型）
         self.all_models = get_all_models()
-        self.p2l_engine = P2LEngine(self.device)
+        self.p2l_engine = None  # 延迟初始化
         self.task_analyzer = TaskAnalyzer()
         self.model_scorer = ModelScorer(self.all_models)
         
         # 初始化LLM客户端
         self.llm_client = None
         
-        logger.info("🚀 P2L后端服务初始化完成")
+        # 模型加载状态
+        self.p2l_loading = False
+        self.p2l_loaded = False
+        
+        logger.info("🚀 P2L后端服务初始化完成（P2L模型将在后台加载）")
+        
+        # 注意：不在这里启动异步任务，而是在FastAPI启动时处理
     
     def _detect_device(self) -> torch.device:
         """检测可用设备"""
@@ -102,6 +116,28 @@ class P2LBackendService:
             logger.info("💻 使用CPU运行")
         return device
     
+    async def _load_p2l_model_async(self):
+        """异步加载P2L模型"""
+        try:
+            self.p2l_loading = True
+            logger.info("🔄 开始后台加载P2L模型...")
+            
+            # 在后台线程中加载模型，避免阻塞主线程
+            loop = asyncio.get_event_loop()
+            self.p2l_engine = await loop.run_in_executor(
+                None, lambda: P2LEngine(self.device)
+            )
+            
+            self.p2l_loaded = True
+            self.p2l_loading = False
+            logger.info("✅ P2L模型加载完成")
+            
+        except Exception as e:
+            self.p2l_loading = False
+            self.p2l_loaded = False
+            logger.error(f"❌ P2L模型加载失败: {e}")
+            logger.info("💡 服务将以降级模式运行，部分功能可能不可用")
+    
     async def _get_llm_client(self) -> LLMClient:
         """获取LLM客户端实例"""
         if self.llm_client is None:
@@ -112,6 +148,13 @@ class P2LBackendService:
         """P2L智能分析主接口"""
         logger.info(f"📝 收到P2L分析请求: {request.prompt[:50]}...")
         start_time = time.time()
+        
+        # 检查P2L模型状态
+        if not self.p2l_loaded:
+            if self.p2l_loading:
+                raise HTTPException(status_code=503, detail="P2L模型正在加载中，请稍后重试")
+            else:
+                raise HTTPException(status_code=503, detail="P2L模型未加载，服务暂时不可用")
         
         try:
             # 1. P2L语义分析
@@ -216,6 +259,13 @@ class P2LBackendService:
         """P2L推理接口"""
         logger.info(f"🧠 P2L推理请求")
         
+        # 检查P2L模型状态
+        if not self.p2l_loaded:
+            if self.p2l_loading:
+                raise HTTPException(status_code=503, detail="P2L模型正在加载中，请稍后重试")
+            else:
+                raise HTTPException(status_code=503, detail="P2L模型未加载，服务暂时不可用")
+        
         try:
             result = self.p2l_engine.code_inference(
                 request.code,
@@ -230,14 +280,22 @@ class P2LBackendService:
     
     def get_health_status(self) -> Dict:
         """健康检查"""
-        p2l_models = self.p2l_engine.get_loaded_models()
+        if self.p2l_loaded and self.p2l_engine:
+            p2l_models = self.p2l_engine.get_loaded_models()
+            p2l_models_count = len(p2l_models["p2l_models"])
+            p2l_available = p2l_models["p2l_available"]
+        else:
+            p2l_models_count = 0
+            p2l_available = False
         
         return {
             "status": "healthy",
-            "p2l_models_loaded": len(p2l_models["p2l_models"]),
+            "p2l_models_loaded": p2l_models_count,
             "llm_models_available": len(self.all_models),
             "device": str(self.device),
-            "p2l_available": p2l_models["p2l_available"],
+            "p2l_available": p2l_available,
+            "p2l_loading": self.p2l_loading,
+            "p2l_loaded": self.p2l_loaded,
             "llm_client_available": True,
             "real_api_enabled": True
         }
@@ -259,6 +317,13 @@ def create_app() -> FastAPI:
     
     # 初始化服务
     service = P2LBackendService()
+    
+    # 启动事件：开始异步加载P2L模型
+    @app.on_event("startup")
+    async def startup_event():
+        """应用启动时的异步任务"""
+        if service.p2l_engine is None and not service.p2l_loading:
+            asyncio.create_task(service._load_p2l_model_async())
     
     # API路由
     @app.get("/health")

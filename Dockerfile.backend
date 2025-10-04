@@ -17,6 +17,9 @@ COPY . .
 # 创建必要目录
 RUN mkdir -p /app/models /app/logs
 
+# 确保脚本可执行
+RUN chmod +x /app/ensure_model.py /app/model_utils.py
+
 # 设置环境变量
 ENV PYTHONPATH=/app
 ENV P2L_ENV=production
@@ -27,8 +30,8 @@ ENV P2L_PORT=8080
 EXPOSE 8080
 
 # 健康检查（使用 Python 而不是 curl）
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=60s --timeout=15s --start-period=300s --retries=5 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
 
-# 启动命令 - 使用包模式运行
-CMD ["python", "-m", "backend.main"]
+# 启动命令 - 先检查模型再启动服务
+CMD ["/bin/bash", "-c", "echo '🐳 P2L Backend容器启动' && echo '检查P2L模型...' && python3 ensure_model.py && echo '🚀 启动backend服务...' && python -m backend.main"]

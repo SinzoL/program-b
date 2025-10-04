@@ -29,11 +29,11 @@ services:
           memory: 1G
           cpus: '0.5'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 60s
       timeout: 15s
-      retries: 3
-      start_period: 120s
+      retries: 5
+      start_period: 300s  # 增加启动等待时间，因为可能需要下载模型
     logging:
       driver: "json-file"
       options:

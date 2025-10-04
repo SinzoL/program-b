@@ -7,7 +7,10 @@
 from typing import Dict, List, Optional
 import logging
 
-from .config import get_task_config, get_model_config
+try:
+    from .config import get_task_config, get_model_config
+except ImportError:
+    from config import get_task_config, get_model_config
 
 logger = logging.getLogger(__name__)
 
