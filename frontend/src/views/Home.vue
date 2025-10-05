@@ -148,12 +148,24 @@ const callLLM = async (modelName) => {
 
 const clearAll = () => {
   userPrompt.value = ''
-  ElMessage.success('已清空输入内容')
+  ElNotification({
+    title: '输入内容',
+    message: '已清空输入内容',
+    type: 'success',
+    customClass: 'tech-notification',
+    duration: 4000
+  })
 }
 
 const clearChatHistory = () => {
   p2lStore.clearChatHistory()
-  ElMessage.success('已清空对话历史')
+  ElNotification({
+    title: '对话历史',
+    message: '已清空对话历史',
+    type: 'success',
+    customClass: 'tech-notification',
+    duration: 4000
+  })
 }
 
 const showExamples = () => {
@@ -162,12 +174,24 @@ const showExamples = () => {
 
 const useExample = (prompt) => {
   userPrompt.value = prompt
-  ElMessage.success('已填入示例问题')
+  ElNotification({
+    title: '示例问题',
+    message: '示例问题已填入',
+    type: 'success',
+    customClass: 'tech-notification',
+    duration: 4000
+  })
 }
 
 const handleEnabledModelsChange = (enabledModels) => {
   p2lStore.setEnabledModels(enabledModels)
-  ElMessage.success(`已更新模型配置，当前启用 ${enabledModels.length} 个模型`)
+  ElNotification({
+    title: '模型更新',
+    message: `已更新模型配置，当前启用 ${enabledModels.length} 个模型`,
+    type: 'success',
+    customClass: 'tech-notification',
+    duration: 4000
+  })
 }
 
 // 辅助方法

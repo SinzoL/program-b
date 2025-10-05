@@ -246,13 +246,30 @@ class P2LBackendService:
             
         except Exception as e:
             logger.error(f"❌ LLM调用失败: {e}")
+            
+            # 根据错误类型提供更详细的错误信息
+            error_message = str(e)
+            if "timeout" in error_message.lower():
+                error_message = f"请求超时：{request.model} 正在处理复杂问题，请稍后重试"
+            elif "rate limit" in error_message.lower():
+                error_message = f"API调用频率限制：{request.model} 请稍后重试"
+            elif "quota" in error_message.lower():
+                error_message = f"API配额不足：{request.model} 请检查账户余额"
+            elif "unauthorized" in error_message.lower():
+                error_message = f"API密钥无效：{request.model} 请检查配置"
+            else:
+                error_message = f"API暂时不可用: {error_message}"
+            
             return {
-                "content": f"API暂时不可用: {str(e)}",
+                "content": error_message,
+                "response": error_message,  # 兼容前端
                 "model": request.model,
                 "tokens_used": 0,
                 "cost": 0.0,
                 "response_time": 0.0,
-                "provider": "error"
+                "provider": "error",
+                "error_type": "api_error",
+                "original_error": str(e)
             }
     
     async def p2l_inference(self, request: P2LInferenceRequest) -> Dict:

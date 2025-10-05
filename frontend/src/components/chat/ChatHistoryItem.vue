@@ -11,6 +11,7 @@
           <span class="item-time">{{ formatTime(chat.timestamp) }}</span>
           <span class="item-cost">${{ chat.cost.toFixed(4) }}</span>
           <span class="item-tokens">{{ chat.tokens }} tokens</span>
+          <span class="item-response-time">{{ formatResponseTime(chat.responseTime) }}</span>
         </div>
       </div>
       <TechIcons 
@@ -85,6 +86,13 @@ const formatTime = (timestamp) => {
   if (diffDays < 7) return `${diffDays}天前`
   
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+}
+
+const formatResponseTime = (responseTime) => {
+  if (!responseTime || responseTime === 0) {
+    return '--'
+  }
+  return `${responseTime.toFixed(2)}s`
 }
 
 const formatResponse = (response) => {
@@ -196,6 +204,14 @@ const formatResponse = (response) => {
   color: #00ff88;
   font-weight: 500;
   text-shadow: 0 0 4px rgba(0, 255, 136, 0.5);
+}
+
+.item-response-time {
+  color: #ffa500;
+  font-weight: 500;
+  text-shadow: 0 0 4px rgba(255, 165, 0, 0.5);
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 11px;
 }
 
 .expand-icon {

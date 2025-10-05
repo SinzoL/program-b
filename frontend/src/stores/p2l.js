@@ -106,6 +106,11 @@ export const useP2LStore = defineStore('p2l', {
           max_tokens: 2000
         })
         
+        // 检查后端是否返回了错误状态
+        if (response.data.provider === 'error') {
+          throw new Error(response.data.content || response.data.response || 'LLM服务调用失败')
+        }
+        
         const result = {
           id: Date.now(),
           prompt,
@@ -113,14 +118,24 @@ export const useP2LStore = defineStore('p2l', {
           response: response.data.response || response.data.content || '暂无回复内容',
           timestamp: new Date(),
           cost: response.data.cost || 0,
-          tokens: response.data.tokens || response.data.tokens_used || 0
+          tokens: response.data.tokens || response.data.tokens_used || 0,
+          provider: response.data.provider || 'unknown',
+          responseTime: response.data.response_time || 0  // 添加响应时间
         }
         
         this.chatHistory.push(result)
         return result
       } catch (error) {
         console.error('LLM调用失败:', error)
-        throw new Error(`${model} 服务暂时不可用`)
+        
+        // 如果是网络错误或超时，提供更详细的错误信息
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+          throw new Error(`${model} 响应超时，编程问题可能需要更长时间处理，请稍后重试`)
+        } else if (error.response?.status >= 500) {
+          throw new Error(`${model} 服务器内部错误，请稍后重试`)
+        } else {
+          throw new Error(error.message || `${model} 服务暂时不可用`)
+        }
       } finally {
         this.loading = false
       }

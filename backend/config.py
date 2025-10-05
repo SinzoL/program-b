@@ -35,8 +35,8 @@ API_CONFIG = {
     # 请求超时配置
     "timeouts": {
         "connect": 30,
-        "total": 60,
-        "read": 45
+        "total": 180,  # 增加到180秒，适应复杂编程问题
+        "read": 150    # 增加读取超时
     },
     
     # 连接池配置

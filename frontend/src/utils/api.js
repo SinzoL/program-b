@@ -6,7 +6,7 @@ import axios from 'axios'
 // 创建统一的API实例
 const createApiInstance = () => {
   const config = {
-    timeout: 10000,
+    timeout: 120000, // 增加到120秒，适应复杂编程问题
     headers: {
       'Content-Type': 'application/json'
     }

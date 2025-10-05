@@ -6,6 +6,7 @@
           <TechIcons name="brain" :size="20" color="#00ff88" />
           <span>当前对话</span>
           <el-tag size="small" type="success" class="tech-tag">{{ chat.model }}</el-tag>
+          <el-tag size="small" type="info" class="time-tag">{{ formatResponseTime(chat.responseTime) }}</el-tag>
         </div>
         <div class="current-meta">
           <span class="chat-time">{{ formatTime(chat.timestamp) }}</span>
@@ -62,6 +63,13 @@ const formatTime = (timestamp) => {
   if (diffDays < 7) return `${diffDays}天前`
   
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+}
+
+const formatResponseTime = (responseTime) => {
+  if (!responseTime || responseTime === 0) {
+    return '耗时: --'
+  }
+  return `耗时: ${responseTime.toFixed(2)}s`
 }
 
 const formatResponse = (response) => {
@@ -133,6 +141,15 @@ const formatResponse = (response) => {
   color: white;
   border: none;
   box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+}
+
+.time-tag {
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  color: white;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 11px;
 }
 
 .current-meta {
