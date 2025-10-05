@@ -192,6 +192,10 @@ logs
 
 models/
 
-download_135m_model.py
 
-auto_download_model.py
+do-not-go-to.icu_nginx
+
+start-dev.sh
+stop-dev.sh 
+
+ssl/

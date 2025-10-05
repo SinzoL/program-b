@@ -97,6 +97,21 @@ EOF
     echo "请编辑 backend/api_config.env 添加您的 API 密钥"
 fi
 
+# 检查SSL证书（生产环境）
+if [ "$1" = "production" ] || [ "$2" = "production" ]; then
+    echo "🔒 检查SSL证书..."
+    if [ -d "ssl" ] && [ -f "ssl/cert.pem" ] && [ -f "ssl/privkey.pem" ]; then
+        echo "✅ SSL证书已配置"
+        SSL_ENABLED=true
+    else
+        echo "⚠️  SSL证书未找到，将使用HTTP模式"
+        echo "💡 要启用HTTPS，请确保ssl/目录包含cert.pem和privkey.pem文件"
+        SSL_ENABLED=false
+    fi
+else
+    SSL_ENABLED=false
+fi
+
 # 创建日志目录
 mkdir -p logs
 
@@ -308,20 +323,42 @@ echo ""
 echo "🌐 访问地址："
 if [ "$1" = "production" ] || [ "$2" = "production" ]; then
     echo "  🏭 生产环境 (Nginx 反向代理)："
-    echo "    主页: http://43.136.17.170/"
-    echo "    API: http://43.136.17.170/api/"
-    echo "    健康检查: http://43.136.17.170/health"
-    echo "    API文档: http://43.136.17.170/docs"
+    if [ "$SSL_ENABLED" = true ]; then
+        echo "    🔒 HTTPS (推荐):"
+        echo "      主页: https://do-not-go-to.icu/"
+        echo "      API: https://do-not-go-to.icu/api/"
+        echo "      健康检查: https://do-not-go-to.icu/health"
+        echo "      API文档: https://do-not-go-to.icu/docs"
+        echo ""
+        echo "    🔓 HTTP (自动重定向到HTTPS):"
+        echo "      主页: http://do-not-go-to.icu/"
+        echo "      IP访问: http://43.136.17.170/"
+    else
+        echo "    🔓 HTTP 模式:"
+        echo "      主页: http://43.136.17.170/"
+        echo "      API: http://43.136.17.170/api/"
+        echo "      健康检查: http://43.136.17.170/health"
+        echo "      API文档: http://43.136.17.170/docs"
+    fi
     echo ""
     echo "  🔧 Nginx 配置："
     echo "    - 前端: / → frontend:80"
     echo "    - API: /api/ → backend:8080"
     echo "    - 健康检查: /health → backend:8080/health"
     echo "    - 文档: /docs → backend:8080/docs"
+    if [ "$SSL_ENABLED" = true ]; then
+        echo "    - SSL证书: /etc/nginx/ssl/"
+        echo "    - HTTP → HTTPS 自动重定向"
+    fi
     echo ""
     echo "  ✅ 优势："
     echo "    - 统一域名访问，无跨域问题"
-    echo "    - 只需开放 80 端口"
+    if [ "$SSL_ENABLED" = true ]; then
+        echo "    - HTTPS 安全加密传输"
+        echo "    - 只需开放 80/443 端口"
+    else
+        echo "    - 只需开放 80 端口"
+    fi
     echo "    - 生产级 Nginx 反向代理"
 else
     echo "  🚀 开发环境："
