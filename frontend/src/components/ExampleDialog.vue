@@ -49,7 +49,7 @@ const exampleQuestions = ref([
   {
     id: 1,
     category: '技术解释',
-    prompt: '你是谁？',
+    prompt: '你好，你是谁，你擅长什么？',
     description: '解释类问题，测试知识整理能力'
   },
   {
@@ -60,9 +60,9 @@ const exampleQuestions = ref([
   },
   {
     id: 3,
-    category: '数据分析',
-    prompt: '分析电商网站用户行为数据的关键指标',
-    description: '分析类问题，测试逻辑推理能力'
+    category: '编程开发',
+    prompt: '用JS完成编程题寻找到无序数组中第K大的数',
+    description: '编程问题，测试代码编写能力'
   },
   {
     id: 4,

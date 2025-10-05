@@ -199,7 +199,7 @@ const formatResponse = (response) => {
 .question-content {
   background: linear-gradient(135deg, rgba(0, 255, 136, 0.05), rgba(0, 212, 255, 0.05));
   border: 1px solid rgba(0, 255, 136, 0.3);
-  color: #303133;
+  color: #fff;
   min-height: 100px;
   max-height: 300px;
   height: auto;
@@ -218,10 +218,10 @@ const formatResponse = (response) => {
 .answer-content {
   background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.05));
   border: 1px solid rgba(0, 212, 255, 0.3);
-  color: #303133;
+  color: #fff;
   height: 300px;
-  max-height: 1000px;
-  min-height: 1000px;
+  max-height: 900px;
+  min-height: 900px;
   padding: 16px;
   line-height: 1.6;
   word-break: break-word;

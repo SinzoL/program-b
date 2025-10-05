@@ -159,7 +159,7 @@ const formatResponse = (response) => {
 
 .item-title {
   font-weight: 500;
-  color: #303133;
+  color: #fff;
   margin-bottom: 8px;
   line-height: 1.4;
   word-break: break-word;
@@ -244,11 +244,13 @@ const formatResponse = (response) => {
 
 .question-content {
   max-height: 200px;
+  color: #fff;
   overflow-y: auto;
 }
 
 .answer-content {
   max-height: 300px;
+  color: #fff;
   overflow-y: auto;
 }
 

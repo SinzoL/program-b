@@ -80,9 +80,15 @@ const checkHealth = async () => {
   healthChecking.value = true
   try {
     const isHealthy = await p2lStore.checkBackendHealth()
-    ElMessage({
+    ElNotification({
+      title: isHealthy ? '🚀 连接成功' : '⚠️ 连接失败',
+      message: isHealthy ? 
+        '<div class="tech-message-content">P2L服务连接正常，所有系统就绪</div>' : 
+        '<div class="tech-message-content">P2L服务连接失败，请检查后端服务</div>',
       type: isHealthy ? 'success' : 'error',
-      message: isHealthy ? 'P2L服务连接正常' : 'P2L服务连接失败'
+      customClass: 'tech-notification',
+      duration: 4000,
+      dangerouslyUseHTMLString: true
     })
   } finally {
     healthChecking.value = false

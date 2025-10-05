@@ -375,8 +375,6 @@ const handleShowExamples = () => {
   border-radius: 6px;
 }
 
-
-
 .tech-input-wrapper::before {
   content: '';
   position: absolute;
@@ -393,14 +391,14 @@ const handleShowExamples = () => {
 }
 
 .tech-input-wrapper:hover::before {
-  opacity: 1;
-  animation-duration: 2s;
+  opacity: 0.8;
+  animation-duration: 3s;
 }
 
 .tech-input-wrapper:focus-within::before {
   opacity: 1;
-  animation-duration: 1.5s;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  animation-duration: 2s;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
 }
 
 @keyframes techBorderFlow {
@@ -463,89 +461,79 @@ const handleShowExamples = () => {
   background: transparent;
 }
 
-.tech-input :deep(.el-textarea .el-textarea__inner) {
-  position: relative;
-  z-index: 1;
-  background: rgba(255, 255, 255, 0.8) !important;
-}
-
 .tech-input :deep(.el-textarea__inner) {
   background: 
-    linear-gradient(135deg, rgba(15, 15, 35, 0.05), rgba(0, 212, 255, 0.02)),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92)),
     linear-gradient(45deg, 
-      rgba(0, 212, 255, 0.04) 0%, 
-      rgba(0, 255, 136, 0.03) 25%, 
-      rgba(0, 212, 255, 0.02) 50%, 
-      rgba(0, 255, 136, 0.03) 75%, 
-      rgba(0, 212, 255, 0.04) 100%
+      rgba(0, 212, 255, 0.08) 0%, 
+      rgba(15, 23, 42, 0.95) 20%, 
+      rgba(15, 23, 42, 0.95) 80%, 
+      rgba(0, 255, 136, 0.08) 100%
     ) !important;
-  background-size: 100% 100%, 300% 300% !important;
-  background-position: 0 0, 0% 0% !important;
+  background-size: 100% 100%, 200% 200% !important;
+  backdrop-filter: blur(15px);
   border: none !important;
   border-radius: 6px;
-  color: #e8e8e8 !important;
+  color: #e2e8f0 !important;
   font-size: 14px;
   line-height: 1.6;
   padding: 12px 16px;
-  transition: color 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
-  animation: backgroundFlow 6s ease-in-out infinite !important;
+  transition: all 0.3s ease;
+  box-shadow: 
+    inset 0 2px 8px rgba(0, 212, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 4px 12px rgba(0, 0, 0, 0.15);
   position: relative;
   overflow: hidden;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  animation: subtleBackgroundFlow 8s ease-in-out infinite !important;
 }
-
-
 
 .tech-input :deep(.el-textarea__inner):hover {
   background: 
-    linear-gradient(135deg, rgba(15, 15, 35, 0.05), rgba(0, 212, 255, 0.02)),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.97), rgba(30, 41, 59, 0.94)),
     linear-gradient(45deg, 
-      rgba(0, 212, 255, 0.06) 0%, 
-      rgba(0, 255, 136, 0.04) 25%, 
-      rgba(0, 212, 255, 0.03) 50%, 
-      rgba(0, 255, 136, 0.04) 75%, 
-      rgba(0, 212, 255, 0.06) 100%
-    );
-  background-size: 100% 100%, 300% 300%;
-  animation-duration: 4s;
+      rgba(0, 212, 255, 0.12) 0%, 
+      rgba(15, 23, 42, 0.97) 20%, 
+      rgba(15, 23, 42, 0.97) 80%, 
+      rgba(0, 255, 136, 0.12) 100%
+    ) !important;
+  background-size: 100% 100%, 200% 200% !important;
+  color: #f1f5f9 !important;
+  box-shadow: 
+    inset 0 2px 12px rgba(0, 212, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 6px 20px rgba(0, 212, 255, 0.2);
+  transform: translateY(-1px);
+  animation-duration: 6s !important;
 }
 
 .tech-input :deep(.el-textarea__inner):focus {
   background: 
-    linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(0, 255, 136, 0.03)),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.96)),
     linear-gradient(45deg, 
-      rgba(0, 212, 255, 0.08) 0%, 
-      rgba(0, 255, 136, 0.05) 25%, 
-      rgba(0, 212, 255, 0.04) 50%, 
-      rgba(0, 255, 136, 0.05) 75%, 
-      rgba(0, 212, 255, 0.08) 100%
-    );
-  background-size: 100% 100%, 300% 300%;
-  color:rgb(221, 221, 221) !important;
+      rgba(0, 212, 255, 0.15) 0%, 
+      rgba(15, 23, 42, 0.98) 25%, 
+      rgba(15, 23, 42, 0.98) 75%, 
+      rgba(0, 255, 136, 0.15) 100%
+    ) !important;
+  background-size: 100% 100%, 150% 150% !important;
+  color: #ffffff !important;
   box-shadow: 
-    inset 0 2px 12px rgba(0, 212, 255, 0.1),
-    inset 0 0 0 1px rgba(0, 212, 255, 0.2);
-  animation-duration: 3s;
-}
-
-@keyframes backgroundFlow {
-  0%, 100% { 
-    background-position: 0 0, 0% 0%; 
-  }
-  25% { 
-    background-position: 0 0, 100% 25%; 
-  }
-  50% { 
-    background-position: 0 0, 50% 100%; 
-  }
-  75% { 
-    background-position: 0 0, 0% 75%; 
-  }
+    inset 0 2px 15px rgba(0, 212, 255, 0.2),
+    inset 0 0 0 2px rgba(0, 212, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 8px 25px rgba(0, 212, 255, 0.3);
+  transform: translateY(-2px);
+  animation: focusBackgroundFlow 4s ease-in-out infinite !important;
 }
 
 .tech-input :deep(.el-textarea__inner)::placeholder {
-  color: rgba(0, 0, 0, 0.6);
+  color: #94a3b8;
+  opacity: 0.9;
   font-style: italic;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .tech-input :deep(.el-input__count) {
@@ -588,6 +576,50 @@ const handleShowExamples = () => {
     width: 200%;
     height: 200%;
     opacity: 0;
+  }
+}
+
+@keyframes subtleBackgroundFlow {
+  0%, 100% { 
+    background-position: 0 0, 0% 0%; 
+  }
+  50% { 
+    background-position: 0 0, 100% 100%; 
+  }
+}
+
+@keyframes focusBackgroundFlow {
+  0%, 100% { 
+    background-position: 0 0, 0% 0%; 
+  }
+  25% { 
+    background-position: 0 0, 50% 25%; 
+  }
+  75% { 
+    background-position: 0 0, 50% 75%; 
+  }
+}
+
+/* 用户偏好：减少动画 */
+@media (prefers-reduced-motion: reduce) {
+  .tech-input-wrapper::before,
+  .input-scan-line,
+  .tech-input :deep(.el-textarea__inner) {
+    animation: none !important;
+  }
+}
+
+/* 为有视觉障碍的用户提供高对比度选项 */
+@media (prefers-contrast: high) {
+  .tech-input :deep(.el-textarea__inner) {
+    background: linear-gradient(135deg, #000000, #1a1a1a) !important;
+    color: #ffffff !important;
+    border: 2px solid #ffffff !important;
+    text-shadow: none !important;
+  }
+  
+  .tech-input :deep(.el-textarea__inner)::placeholder {
+    color: #cccccc !important;
   }
 }
 </style>
