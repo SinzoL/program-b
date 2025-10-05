@@ -4,7 +4,7 @@
       <div class="current-header">
         <div class="current-title">
           <TechIcons name="brain" :size="20" color="#00ff88" />
-          <span>{{ conversation.title || '新对话' }}</span>
+          <span>对话</span>
           <el-tag size="small" type="success" class="tech-tag">
             {{ conversation.messages.length }} 条消息
           </el-tag>

@@ -346,6 +346,19 @@ const clearAllConversations = async () => {
   box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
 }
 
+.tech-input :deep(.el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+  border: none !important;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.tech-input :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-style: italic;
+}
+
 .conversations-list {
   flex: 1;
   overflow: hidden;

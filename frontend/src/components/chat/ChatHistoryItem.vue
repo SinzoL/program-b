@@ -11,7 +11,7 @@
         <div class="item-title">{{ conversation.title || '新对话' }}</div>
         <div class="item-meta">
           <el-tag size="small" type="info" class="tech-tag">
-            {{ conversation.messages.length }} 条消息
+            {{ getUserQuestionCount() }} 个问题
           </el-tag>
           <span class="item-time">{{ formatTime(conversation.updatedAt) }}</span>
           <span class="item-tokens">{{ getTotalTokens() }} tokens</span>
@@ -76,7 +76,7 @@
                   :color="message.role === 'user' ? '#00d4ff' : '#00ff88'" 
                 />
                 <span class="preview-role">
-                  {{ message.role === 'user' ? '用户' : (message.model || 'AI助手') }}
+                  {{ message.role === 'user' ? '用户' : message.model }}
                 </span>
                 <span class="preview-time">{{ formatTime(message.timestamp) }}</span>
               </div>
@@ -169,6 +169,11 @@ const getTotalCost = () => {
   }, 0)
 }
 
+const getUserQuestionCount = () => {
+  if (!props.conversation || !props.conversation.messages) return 0
+  return props.conversation.messages.filter(msg => msg.role === 'user').length
+}
+
 const getConversationPreview = () => {
   if (props.conversation.messages.length === 0) {
     return '空对话'
@@ -184,7 +189,8 @@ const getConversationPreview = () => {
 
 const getPreviewMessages = () => {
   // 显示最多3条消息的预览
-  return props.conversation.messages.slice(0, 3)
+  // 第一条消息是初始问题，不该统计
+  return props.conversation.messages.slice(1, 3)
 }
 </script>
 
