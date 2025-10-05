@@ -193,3 +193,5 @@ logs
 models/
 
 ssl/
+
+.codebuddy/

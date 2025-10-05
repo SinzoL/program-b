@@ -88,7 +88,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
+import { ElMessageBox, ElNotification } from 'element-plus'
 import TechIcons from '../icons/TechIcons.vue'
 import ChatHistoryItem from './ChatHistoryItem.vue'
 import CubeLogo from '../icons/CubeLogo.vue'
@@ -162,27 +162,42 @@ const deleteConversation = async (conversationId) => {
     const conversationTitle = conversation?.title || '未命名对话'
     
     await ElMessageBox.confirm(
-      `确定要删除对话"${conversationTitle}"吗？此操作不可恢复。`,
+      `删除对话"${conversationTitle}", 此操作不可恢复。`,
       '删除对话',
       {
         confirmButtonText: '确定删除',
         cancelButtonText: '取消',
         type: 'warning',
-        confirmButtonClass: 'el-button--danger'
+        confirmButtonClass: 'el-button--danger',
+        customClass: 'tech-message-box',
+        showClose: false,
+        center: true
       }
     )
     
     emit('delete-conversation', conversationId)
     expandedItems.value.delete(conversationId)
     
-    ElMessage.success('对话已删除')
+    ElNotification({
+      title: '操作成功',
+      message: '对话已删除',
+      type: 'success',
+      customClass: 'tech-notification',
+      duration: 3000
+    })
   } catch (error) {
     // 用户取消删除
     if (error === 'cancel') {
       return
     }
     console.error('删除对话失败:', error)
-    ElMessage.error('删除对话失败，请重试')
+    ElNotification({
+      title: '操作失败',
+      message: '删除对话失败，请重试',
+      type: 'error',
+      customClass: 'tech-notification',
+      duration: 4000
+    })
   }
 }
 
@@ -190,13 +205,16 @@ const deleteConversation = async (conversationId) => {
 const clearAllConversations = async () => {
   try {
     await ElMessageBox.confirm(
-      `确定要清空所有对话吗？这将删除 ${props.conversations.length} 个对话窗口，此操作不可恢复。`,
+      `将删除 ${props.conversations.length} 个对话窗口, 此操作不可恢复`,
       '清空所有对话',
       {
         confirmButtonText: '确定清空',
         cancelButtonText: '取消',
         type: 'warning',
-        confirmButtonClass: 'el-button--danger'
+        confirmButtonClass: 'el-button--danger',
+        customClass: 'tech-message-box',
+        showClose: false,
+        center: true
       }
     )
     
@@ -204,14 +222,26 @@ const clearAllConversations = async () => {
     expandedItems.value.clear()
     searchKeyword.value = ''
     
-    ElMessage.success('所有对话已清空')
+    ElNotification({
+      title: '操作成功',
+      message: '所有对话已清空',
+      type: 'success',
+      customClass: 'tech-notification',
+      duration: 3000
+    })
   } catch (error) {
     // 用户取消清空
     if (error === 'cancel') {
       return
     }
     console.error('清空对话失败:', error)
-    ElMessage.error('清空对话失败，请重试')
+    ElNotification({
+      title: '操作失败',
+      message: '清空对话失败，请重试',
+      type: 'error',
+      customClass: 'tech-notification',
+      duration: 4000
+    })
   }
 }
 </script>
@@ -456,5 +486,130 @@ const clearAllConversations = async () => {
   .history-actions {
     align-self: flex-end;
   }
+}
+</style>
+
+<style>
+/* 全局样式 - 科技主题确认框 */
+.tech-message-box {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.92)) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 2px solid rgba(0, 212, 255, 0.4) !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 212, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.tech-message-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  animation: tech-scan 3s infinite;
+}
+
+@keyframes tech-scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.tech-message-box .el-message-box__header {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05)) !important;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.3) !important;
+  padding: 20px 24px 16px !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.tech-message-box .el-message-box__title {
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5) !important;
+}
+
+.tech-message-box .el-message-box__content {
+  padding: 20px 24px !important;
+  background: rgba(15, 15, 35, 0.02) !important;
+}
+
+.tech-message-box .el-message-box__message {
+  color: #e2e8f0 !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+.tech-message-box .el-message-box__btns {
+  padding: 16px 24px 20px !important;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02)) !important;
+  border-top: 1px solid rgba(0, 212, 255, 0.2) !important;
+  border-radius: 0 0 12px 12px !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: center !important;
+}
+
+.tech-message-box .el-button {
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  border: 1px solid transparent !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.tech-message-box .el-button--default {
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.1), rgba(148, 163, 184, 0.05)) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+.tech-message-box .el-button--default:hover {
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.2), rgba(148, 163, 184, 0.1)) !important;
+  color: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(148, 163, 184, 0.3) !important;
+}
+
+.tech-message-box .el-button--danger {
+  background: linear-gradient(135deg, #ff6b6b, #ff5252) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4) !important;
+}
+
+.tech-message-box .el-button--danger:hover {
+  background: linear-gradient(135deg, #ff5252, #ff4444) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5) !important;
+}
+
+.tech-message-box .el-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.tech-message-box .el-button:hover::before {
+  left: 100%;
+}
+
+/* 警告图标样式 */
+.tech-message-box .el-message-box__status.el-icon {
+  color: #fbbf24 !important;
+  font-size: 24px !important;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6)) !important;
 }
 </style>

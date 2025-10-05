@@ -9,7 +9,7 @@
             <TechIcons name="brain" :size="16" color="#00d4ff" />
             当前对话
             <el-badge v-if="currentConversation && currentConversation.messages.length > 0" 
-                      :value="currentConversation.messages.length" 
+                      :value="getUserQuestionCount(currentConversation)" 
                       class="tab-badge tech-badge" />
           </span>
         </template>
@@ -75,6 +75,12 @@ const currentConversation = computed(() => {
   if (!currentConversationId.value) return null
   return conversations.value.find(conv => conv.id === currentConversationId.value)
 })
+
+// 计算用户问题数量
+const getUserQuestionCount = (conversation) => {
+  if (!conversation || !conversation.messages) return 0
+  return conversation.messages.filter(msg => msg.role === 'user').length
+}
 
 // 初始化对话管理器
 const initializeConversations = async () => {

@@ -107,7 +107,7 @@
 
 <script setup>
 import { defineProps, defineEmits, ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElNotification } from 'element-plus'
 import TechIcons from './icons/TechIcons.vue'
 import { p2lApi } from '@/utils/api'
 import { conversationManager } from '@/utils/conversationManager'
@@ -210,6 +210,22 @@ const handleShowExamples = () => {
 
 const handleNewConversation = async () => {
   try {
+    // 检查当前对话是否为空
+    const currentConversation = conversationManager.getCurrentConversation()
+    
+    // 如果当前对话存在且为空（没有消息），则不创建新对话
+    if (currentConversation && (!currentConversation.messages || currentConversation.messages.length === 0)) {
+      console.log('🔄 当前对话为空，无需创建新对话')
+      ElNotification({
+        title: '对话状态',
+        message: '当前对话为空，无需创建新对话',
+        type: 'info',
+        customClass: 'tech-notification',
+        duration: 3000
+      })
+      return
+    }
+    
     // 创建新对话
     const newConversation = await conversationManager.createConversation()
     console.log('✅ 创建新对话:', newConversation.id)
@@ -221,7 +237,13 @@ const handleNewConversation = async () => {
     emit('clear')
   } catch (error) {
     console.error('❌ 创建新对话失败:', error)
-    ElMessage.error('创建新对话失败，请重试')
+    ElNotification({
+      title: '操作失败',
+      message: '创建新对话失败，请重试',
+      type: 'error',
+      customClass: 'tech-notification',
+      duration: 4000
+    })
   }
 }
 </script>

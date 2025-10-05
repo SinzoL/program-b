@@ -82,7 +82,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useP2LStore } from '../stores/p2l'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElNotification } from 'element-plus'
 
 // 导入组件
 import SystemStatus from '../components/SystemStatus.vue'
@@ -123,12 +123,24 @@ const checkHealth = async () => {
 
 const analyzePrompt = async () => {
   if (!userPrompt.value.trim()) {
-    ElMessage.warning('请输入问题内容')
+    ElNotification({
+      title: '输入提示',
+      message: '请输入问题内容',
+      type: 'warning',
+      customClass: 'tech-notification',
+      duration: 3000
+    })
     return
   }
   
   if (!p2lStore.backendHealth) {
-    ElMessage.error('P2L服务未连接，请检查后端服务')
+    ElNotification({
+      title: '连接错误',
+      message: 'P2L服务未连接，请检查后端服务',
+      type: 'error',
+      customClass: 'tech-notification',
+      duration: 4000
+    })
     return
   }
 
@@ -148,7 +160,13 @@ const analyzePrompt = async () => {
       dangerouslyUseHTMLString: true
     })
   } catch (error) {
-    ElMessage.error(error.message)
+    ElNotification({
+      title: '操作失败',
+      message: error.message,
+      type: 'error',
+      customClass: 'tech-notification',
+      duration: 4000
+    })
   }
 }
 
@@ -209,7 +227,13 @@ const callLLM = async (modelName) => {
       duration: 4000
     })
   } catch (error) {
-    ElMessage.error(error.message)
+    ElNotification({
+      title: '请求失败',
+      message: error.message,
+      type: 'error',
+      customClass: 'tech-notification',
+      duration: 4000
+    })
   }
 }
 
