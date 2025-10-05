@@ -10,7 +10,7 @@ from typing import Dict, Any
 
 # 导入项目常量
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from constants import DEFAULT_MODEL, MODEL_MAPPING
+from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
 
 # ================== API配置 ==================
 API_CONFIG = {

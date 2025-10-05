@@ -1,46 +1,31 @@
 #!/usr/bin/env python3
 """
-P2L模型管理器 - 简化版
-只负责模型检查，不处理下载逻辑
+Backend模型管理器 - 简化包装器
+使用p2l_core作为唯一依赖
 """
 
 import os
 import sys
-from pathlib import Path
+from typing import Dict
 
-def check_model_exists():
-    """
-    快速检查默认模型文件是否存在
-    
-    Returns:
-        bool: 模型文件是否存在
-    """
+# 添加根目录到路径
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
+
+def check_model_exists() -> bool:
+    """快速检查默认模型文件是否存在"""
     try:
-        # 使用外部模型管理工具
-        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from model_utils import ModelManager
-        from constants import DEFAULT_MODEL
-        
-        manager = ModelManager()
-        return manager.check_model_exists(DEFAULT_MODEL)
-        
+        from p2l_core import check_model_exists as _check
+        return _check()
     except Exception:
         return False
 
-def get_model_status():
-    """
-    获取当前模型状态
-    
-    Returns:
-        dict: 模型状态信息
-    """
+def get_model_status() -> Dict:
+    """获取当前模型状态"""
     try:
-        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        from model_utils import ModelManager
-        
-        manager = ModelManager()
-        return manager.get_model_status()
-        
+        from p2l_core import get_model_status as _get_status
+        return _get_status()
     except Exception as e:
         return {
             'status': 'error',
@@ -48,19 +33,16 @@ def get_model_status():
         }
 
 def print_model_status():
-    """打印模型状态信息"""
-    status = get_model_status()
-    
-    print("\n" + "🚀 " + "=" * 50)
-    print("🚀 Backend服务初始化")
-    print("=" * 52)
-    
-    if status.get('default_exists'):
-        print("✅ 服务状态: 完全就绪")
-        print("🎉 P2L模型已加载，所有功能可正常使用")
-    else:
-        print("⚠️  服务状态: 降级模式")
-        print("💡 说明: P2L模型未准备就绪，部分功能可能受限")
-        print("🔧 建议: 运行 python ensure_model.py 下载模型")
-    
-    print("=" * 52 + "\n")
+    """打印后端模型状态信息"""
+    try:
+        from p2l_core import print_backend_status
+        print_backend_status()
+    except Exception as e:
+        print(f"❌ 无法获取模型状态: {e}")
+
+# 为了保持向后兼容，导入核心类
+try:
+    from p2l_core import P2LModelManager as ModelManager, get_manager
+    __all__ = ['ModelManager', 'get_manager', 'check_model_exists', 'get_model_status', 'print_model_status']
+except ImportError:
+    __all__ = ['check_model_exists', 'get_model_status', 'print_model_status']

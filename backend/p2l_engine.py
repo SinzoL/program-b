@@ -57,7 +57,7 @@ class P2LEngine:
             project_root = os.path.dirname(current_dir)
             if project_root not in sys.path:
                 sys.path.insert(0, project_root)
-            from constants import DEFAULT_MODEL, MODEL_MAPPING
+            from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
         except ImportError as e:
             logger.error(f"无法导入配置常量: {e}")
             return
@@ -228,7 +228,7 @@ class P2LEngine:
                 project_root = os.path.dirname(current_dir)
                 if project_root not in sys.path:
                     sys.path.insert(0, project_root)
-                from constants import DEFAULT_MODEL, MODEL_MAPPING
+                from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
             except ImportError:
                 logger.warning("无法导入配置常量，使用默认扫描方式")
                 DEFAULT_MODEL = None

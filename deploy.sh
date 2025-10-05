@@ -68,9 +68,9 @@ echo "✅ 模型目录已准备"
 echo "🚀 预下载P2L模型..."
 
 # 简单检查：如果有Python环境和必要文件，就尝试预下载
-if command -v python3 &> /dev/null && [ -f "download_current_model.py" ] && [ -f "model_utils.py" ] && [ -f "constants.py" ]; then
+if command -v python3 &> /dev/null && [ -f "p2l_tools.py" ] && [ -f "p2l_core.py" ]; then
     echo "⬇️  尝试预下载模型..."
-    if timeout 300 python3 download_current_model.py 2>/dev/null; then
+    if timeout 300 python3 p2l_tools.py download 2>/dev/null; then
         echo "✅ 模型预下载成功！容器启动将更快"
     else
         echo "⚠️  预下载失败或超时，容器启动时将重试"
@@ -82,7 +82,7 @@ fi
 echo "💡 说明：模型下载策略"
 echo "   - 优先使用预下载的模型"
 echo "   - 容器启动时会自动检测并补充缺失的模型"
-echo "   - 模型配置由 constants.py 中的 DEFAULT_MODEL 决定"
+echo "   - 模型配置由 p2l_core.py 中的 DEFAULT_MODEL 决定"
 echo "   - 下载进度可通过日志查看: docker-compose logs -f backend"
 
 # 检查配置文件
@@ -347,7 +347,8 @@ if [ "$UPGRADE_MODE" = true ]; then
 fi
 echo ""
 echo "🤖 模型管理："
-echo "  - 模型配置: 编辑 constants.py 中的 DEFAULT_MODEL"
+echo "  - 模型配置: 编辑 p2l_core.py 中的 DEFAULT_MODEL"
+echo "  - 手动管理: python3 p2l_tools.py [check|download|list|ensure]"
 echo "  - 自动下载: backend服务启动时自动检测并下载模型"
 echo "  - 模型位置: ./models/ 目录"
-echo "  - 切换模型: 修改 constants.py 后重启服务即可"
+echo "  - 切换模型: 修改 p2l_core.py 后重启服务即可"

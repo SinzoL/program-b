@@ -7,9 +7,9 @@ P2L Backend Package
 import os
 import sys
 
-# 导入项目常量
+# 导入项目核心模块（唯一依赖）
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from constants import DEFAULT_MODEL, MODEL_MAPPING
+from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
 
 from .config import (
     MODEL_CONFIGS, API_CONFIG, TASK_ANALYSIS_CONFIG, 

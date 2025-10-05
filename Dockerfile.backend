@@ -18,7 +18,7 @@ COPY . .
 RUN mkdir -p /app/models /app/logs
 
 # 确保脚本可执行
-RUN chmod +x /app/ensure_model.py /app/model_utils.py
+RUN chmod +x /app/p2l_tools.py /app/p2l_core.py
 
 # 设置环境变量
 ENV PYTHONPATH=/app
@@ -34,4 +34,4 @@ HEALTHCHECK --interval=60s --timeout=15s --start-period=300s --retries=5 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
 
 # 启动命令 - 先检查模型再启动服务
-CMD ["/bin/bash", "-c", "echo '🐳 P2L Backend容器启动' && echo '🔍 检查P2L模型...' && python3 ensure_model.py && echo '🚀 启动backend服务...' && python -m backend.main"]
+CMD ["/bin/bash", "-c", "echo '🐳 P2L Backend容器启动' && echo '🔍 检查P2L模型...' && python3 p2l_tools.py ensure && echo '🚀 启动backend服务...' && python -m backend.main"]

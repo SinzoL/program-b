@@ -72,7 +72,7 @@ _add_constants_path()
 
 # 导入项目常量
 try:
-    from constants import DEFAULT_MODEL, MODEL_MAPPING
+    from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
     print("✅ P2L引擎成功导入项目常量")
 except ImportError as e:
     print(f"⚠️  P2L引擎无法导入常量: {e}")
