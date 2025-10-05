@@ -93,14 +93,24 @@
         <TechIcons name="database" :size="16" color="#409eff" />
         示例问题
       </el-button>
+      <el-button 
+        @click="handleNewConversation"
+        :disabled="loading"
+        class="tech-button new-conversation-button"
+      >
+        <TechIcons name="brain" :size="16" color="#10b981" />
+        新建对话
+      </el-button>
     </div>
   </el-card>
 </template>
 
 <script setup>
 import { defineProps, defineEmits, ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import TechIcons from './icons/TechIcons.vue'
 import { p2lApi } from '@/utils/api'
+import { conversationManager } from '@/utils/conversationManager'
 
 defineProps({
   prompt: {
@@ -121,7 +131,7 @@ defineProps({
   }
 })
 
-const emit = defineEmits(['update:prompt', 'update:selectedMode', 'analyze', 'clear', 'show-examples'])
+const emit = defineEmits(['update:prompt', 'update:selectedMode', 'analyze', 'clear', 'show-examples', 'new-conversation'])
 
 // P2L模型信息
 const p2lModelInfo = ref(null)
@@ -196,6 +206,23 @@ const handleClear = () => {
 
 const handleShowExamples = () => {
   emit('show-examples')
+}
+
+const handleNewConversation = async () => {
+  try {
+    // 创建新对话
+    const newConversation = await conversationManager.createConversation()
+    console.log('✅ 创建新对话:', newConversation.id)
+    
+    // 通知父组件切换到新对话
+    emit('new-conversation', newConversation)
+    
+    // 清空当前输入
+    emit('clear')
+  } catch (error) {
+    console.error('❌ 创建新对话失败:', error)
+    ElMessage.error('创建新对话失败，请重试')
+  }
 }
 </script>
 
@@ -366,6 +393,19 @@ const handleShowExamples = () => {
 .primary-button:hover {
   background: linear-gradient(135deg, #00ff88, #00d4ff);
   box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
+}
+
+.new-conversation-button {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.new-conversation-button:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.08));
+  border-color: #10b981;
+  color: #10b981;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.2);
 }
 
 /* 科技风格输入框 */

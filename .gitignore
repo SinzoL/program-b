@@ -192,10 +192,4 @@ logs
 
 models/
 
-
-do-not-go-to.icu_nginx
-
-start-dev.sh
-stop-dev.sh 
-
 ssl/

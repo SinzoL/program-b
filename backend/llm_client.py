@@ -111,9 +111,14 @@ class LLMClient:
             'Content-Type': 'application/json'
         }
         
+        # 构建消息列表，优先使用传入的messages参数
+        messages = kwargs.get('messages')
+        if not messages:
+            messages = [{'role': 'user', 'content': prompt}]
+        
         data = {
             'model': model,
-            'messages': [{'role': 'user', 'content': prompt}],
+            'messages': messages,
             'max_tokens': kwargs.get('max_tokens', model_config.get('max_tokens', 2000)),
             'temperature': kwargs.get('temperature', 0.7)
         }
@@ -186,11 +191,44 @@ class LLMClient:
             'anthropic-version': '2023-06-01'
         }
         
+        # 构建消息列表，优先使用传入的messages参数
+        raw_messages = kwargs.get('messages')
+        if not raw_messages:
+            messages = [{'role': 'user', 'content': prompt}]
+        else:
+            # Claude API要求：
+            # 1. 消息必须严格按照user/assistant交替
+            # 2. 最后一条消息必须是user
+            # 3. 不能有连续的相同角色消息
+            messages = []
+            last_role = None
+            
+            for msg in raw_messages:
+                current_role = msg.get('role')
+                content = msg.get('content', '')
+                
+                if not content.strip():
+                    continue
+                    
+                # 如果有连续的相同角色，合并内容
+                if current_role == last_role and messages:
+                    messages[-1]['content'] += '\n\n' + content
+                else:
+                    messages.append({
+                        'role': current_role,
+                        'content': content
+                    })
+                    last_role = current_role
+            
+            # 确保最后一条消息是user角色
+            if messages and messages[-1]['role'] != 'user':
+                messages.append({'role': 'user', 'content': prompt})
+        
         data = {
             'model': model,
             'max_tokens': kwargs.get('max_tokens', model_config.get('max_tokens', 2000)),
             'temperature': kwargs.get('temperature', 0.7),
-            'messages': [{'role': 'user', 'content': prompt}]
+            'messages': messages
         }
         
         try:
@@ -235,9 +273,28 @@ class LLMClient:
             'Content-Type': 'application/json'
         }
         
+        # 构建消息列表，优先使用传入的messages参数
+        raw_messages = kwargs.get('messages')
+        if not raw_messages:
+            messages = [{'role': 'user', 'content': prompt}]
+        else:
+            # 中转服务通常使用OpenAI格式，但也需要确保消息格式正确
+            messages = []
+            for msg in raw_messages:
+                content = msg.get('content', '')
+                if content.strip():  # 只添加非空消息
+                    messages.append({
+                        'role': msg.get('role'),
+                        'content': content
+                    })
+            
+            # 如果处理后没有消息，添加当前prompt
+            if not messages:
+                messages = [{'role': 'user', 'content': prompt}]
+        
         data = {
             'model': model,
-            'messages': [{'role': 'user', 'content': prompt}],
+            'messages': messages,
             'max_tokens': kwargs.get('max_tokens', 2000),
             'temperature': kwargs.get('temperature', 0.7)
         }
@@ -314,9 +371,14 @@ class LLMClient:
             'Content-Type': 'application/json'
         }
         
+        # 构建消息列表，优先使用传入的messages参数
+        messages = kwargs.get('messages')
+        if not messages:
+            messages = [{'role': 'user', 'content': prompt}]
+        
         data = {
             'model': model,
-            'messages': [{'role': 'user', 'content': prompt}],
+            'messages': messages,
             'max_tokens': kwargs.get('max_tokens', 2000),
             'temperature': kwargs.get('temperature', 0.7)
         }
@@ -364,9 +426,14 @@ class LLMClient:
         # 千问模型映射
         qwen_model = model if model.startswith('qwen') else 'qwen2.5-72b-instruct'
         
+        # 构建消息列表，优先使用传入的messages参数
+        messages = kwargs.get('messages')
+        if not messages:
+            messages = [{'role': 'user', 'content': prompt}]
+        
         data = {
             'model': qwen_model,
-            'messages': [{'role': 'user', 'content': prompt}],
+            'messages': messages,
             'max_tokens': kwargs.get('max_tokens', model_config.get('max_tokens', 2000)),
             'temperature': kwargs.get('temperature', 0.7),
             'top_p': kwargs.get('top_p', 0.8),
@@ -422,9 +489,14 @@ class LLMClient:
             'Content-Type': 'application/json'
         }
         
+        # 构建消息列表，优先使用传入的messages参数
+        messages = kwargs.get('messages')
+        if not messages:
+            messages = [{'role': 'user', 'content': prompt}]
+        
         data = {
             'model': model,
-            'messages': [{'role': 'user', 'content': prompt}],
+            'messages': messages,
             'max_tokens': kwargs.get('max_tokens', 2000),
             'temperature': kwargs.get('temperature', 0.7)
         }

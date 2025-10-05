@@ -5,18 +5,19 @@
         <div class="history-header">
           <div class="history-title">
             <TechIcons name="database" :size="20" color="#00d4ff" />
-            <span>历史对话记录</span>
-            <el-badge :value="historicalChats.length" class="history-badge tech-badge" />
+            <span>对话窗口管理</span>
+            <el-badge :value="conversations.length" class="history-badge tech-badge" />
           </div>
           <div class="history-actions">
             <el-button 
               type="text" 
               size="small"
-              @click="clearHistory"
+              @click="clearAllConversations"
               class="clear-btn tech-btn"
+              :disabled="conversations.length === 0"
             >
               <TechIcons name="settings" :size="14" color="#ff6b6b" />
-              清空历史
+              清空全部
             </el-button>
           </div>
         </div>
@@ -26,7 +27,7 @@
       <div class="search-section">
         <el-input
           v-model="searchKeyword"
-          placeholder="搜索历史对话..."
+          placeholder="搜索对话窗口..."
           size="default"
           class="search-input tech-input"
           clearable
@@ -37,21 +38,21 @@
         </el-input>
       </div>
       
-      <!-- 历史记录列表 -->
-      <div class="history-list">
-        <div v-if="filteredHistoricalChats.length === 0" class="no-results">
+      <!-- 对话窗口列表 -->
+      <div class="conversations-list">
+        <div v-if="filteredConversations.length === 0" class="no-results">
           <div class="empty-state">
             <div class="empty-icon-container">
               <CubeLogo :size="48" color="#4A90E2" variant="default" :animate="true" class="empty-icon" />
               <div class="empty-glow"></div>
             </div>
             <h3 class="empty-title">
-              {{ searchKeyword ? '未找到匹配记录' : '暂无对话历史' }}
+              {{ searchKeyword ? '未找到匹配的对话' : '暂无对话窗口' }}
             </h3>
             <p class="empty-description">
               {{ searchKeyword 
                 ? '尝试调整搜索关键词或清空搜索条件' 
-                : '开始您的第一次对话，创建智能交互体验' 
+                : '点击"新建对话"按钮开始您的第一次智能对话' 
               }}
             </p>
             <div class="empty-actions" v-if="searchKeyword">
@@ -68,13 +69,16 @@
           </div>
         </div>
         
-        <div v-else class="history-items">
+        <div v-else class="conversations-items">
           <ChatHistoryItem
-            v-for="chat in filteredHistoricalChats"
-            :key="chat.id"
-            :chat="chat"
-            :is-expanded="expandedItems.has(chat.id)"
+            v-for="conversation in filteredConversations"
+            :key="conversation.id"
+            :conversation="conversation"
+            :is-expanded="expandedItems.has(conversation.id)"
+            :is-current-conversation="conversation.id === currentConversationId"
             @toggle-expansion="toggleItemExpansion"
+            @switch-conversation="switchConversation"
+            @delete-conversation="deleteConversation"
           />
         </div>
       </div>
@@ -84,55 +88,131 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import TechIcons from '../icons/TechIcons.vue'
 import ChatHistoryItem from './ChatHistoryItem.vue'
 import CubeLogo from '../icons/CubeLogo.vue'
 
 const props = defineProps({
-  chatHistory: {
+  conversations: {
     type: Array,
     default: () => []
+  },
+  currentConversationId: {
+    type: String,
+    default: null
   }
 })
 
-const emit = defineEmits(['clear-history'])
+const emit = defineEmits(['switch-conversation', 'delete-conversation', 'clear-all-conversations'])
 
 const searchKeyword = ref('')
 const expandedItems = ref(new Set())
 
-// 历史对话（所有对话记录，按时间倒序）
-const historicalChats = computed(() => {
-  if (props.chatHistory.length === 0) return []
-  return [...props.chatHistory].reverse()
+// 按更新时间排序的对话列表
+const sortedConversations = computed(() => {
+  return [...props.conversations].sort((a, b) => {
+    const timeA = new Date(a.updatedAt || a.createdAt)
+    const timeB = new Date(b.updatedAt || b.createdAt)
+    return timeB - timeA // 最新的在前
+  })
 })
 
-// 过滤的历史记录（搜索功能）
-const filteredHistoricalChats = computed(() => {
+// 过滤的对话列表（搜索功能）
+const filteredConversations = computed(() => {
   if (!searchKeyword.value.trim()) {
-    return historicalChats.value
+    return sortedConversations.value
   }
   
   const keyword = searchKeyword.value.toLowerCase()
-  return historicalChats.value.filter(chat => 
-    chat.prompt.toLowerCase().includes(keyword) ||
-    chat.response.toLowerCase().includes(keyword) ||
-    chat.model.toLowerCase().includes(keyword)
-  )
+  return sortedConversations.value.filter(conversation => {
+    // 搜索对话标题
+    if (conversation.title && conversation.title.toLowerCase().includes(keyword)) {
+      return true
+    }
+    
+    // 搜索消息内容
+    return conversation.messages.some(message => 
+      message.content.toLowerCase().includes(keyword) ||
+      (message.model && message.model.toLowerCase().includes(keyword))
+    )
+  })
 })
 
 // 切换列表项展开状态
-const toggleItemExpansion = (itemId) => {
-  if (expandedItems.value.has(itemId)) {
-    expandedItems.value.delete(itemId)
+const toggleItemExpansion = (conversationId) => {
+  if (expandedItems.value.has(conversationId)) {
+    expandedItems.value.delete(conversationId)
   } else {
-    expandedItems.value.add(itemId)
+    expandedItems.value.add(conversationId)
   }
 }
 
-// 清空历史记录
-const clearHistory = () => {
-  emit('clear-history')
-  expandedItems.value.clear()
+// 切换对话
+const switchConversation = (conversationId) => {
+  emit('switch-conversation', conversationId)
+  // 展开当前对话的详情
+  expandedItems.value.add(conversationId)
+}
+
+// 删除对话
+const deleteConversation = async (conversationId) => {
+  try {
+    const conversation = props.conversations.find(conv => conv.id === conversationId)
+    const conversationTitle = conversation?.title || '未命名对话'
+    
+    await ElMessageBox.confirm(
+      `确定要删除对话"${conversationTitle}"吗？此操作不可恢复。`,
+      '删除对话',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+    
+    emit('delete-conversation', conversationId)
+    expandedItems.value.delete(conversationId)
+    
+    ElMessage.success('对话已删除')
+  } catch (error) {
+    // 用户取消删除
+    if (error === 'cancel') {
+      return
+    }
+    console.error('删除对话失败:', error)
+    ElMessage.error('删除对话失败，请重试')
+  }
+}
+
+// 清空所有对话
+const clearAllConversations = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要清空所有对话吗？这将删除 ${props.conversations.length} 个对话窗口，此操作不可恢复。`,
+      '清空所有对话',
+      {
+        confirmButtonText: '确定清空',
+        cancelButtonText: '取消',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+    
+    emit('clear-all-conversations')
+    expandedItems.value.clear()
+    searchKeyword.value = ''
+    
+    ElMessage.success('所有对话已清空')
+  } catch (error) {
+    // 用户取消清空
+    if (error === 'cancel') {
+      return
+    }
+    console.error('清空对话失败:', error)
+    ElMessage.error('清空对话失败，请重试')
+  }
 }
 </script>
 
@@ -201,11 +281,16 @@ const clearHistory = () => {
   gap: 4px;
 }
 
-.clear-btn:hover {
+.clear-btn:hover:not(:disabled) {
   color: #ff6b6b;
   background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.1));
   box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
   transform: translateY(-1px);
+}
+
+.clear-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .search-section {
@@ -231,7 +316,7 @@ const clearHistory = () => {
   box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
 }
 
-.history-list {
+.conversations-list {
   flex: 1;
   overflow: hidden;
   display: flex;
@@ -335,28 +420,28 @@ const clearHistory = () => {
   transform: translateY(0);
 }
 
-.history-items {
+.conversations-items {
   flex: 1;
   overflow-y: auto;
   padding-right: 8px;
 }
 
 /* 自定义滚动条 */
-.history-items::-webkit-scrollbar {
+.conversations-items::-webkit-scrollbar {
   width: 6px;
 }
 
-.history-items::-webkit-scrollbar-track {
+.conversations-items::-webkit-scrollbar-track {
   background: rgba(0, 212, 255, 0.1);
   border-radius: 3px;
 }
 
-.history-items::-webkit-scrollbar-thumb {
+.conversations-items::-webkit-scrollbar-thumb {
   background: rgba(0, 212, 255, 0.5);
   border-radius: 3px;
 }
 
-.history-items::-webkit-scrollbar-thumb:hover {
+.conversations-items::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 212, 255, 0.7);
 }
 

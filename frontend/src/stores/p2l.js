@@ -97,12 +97,34 @@ export const useP2LStore = defineStore('p2l', {
     },
 
     // 调用LLM生成回答
-    async generateWithLLM(model, prompt) {
+    async generateWithLLM(model, prompt, conversationHistory = []) {
       this.loading = true
       try {
+        // 构建消息历史，包含完整的对话上下文
+        const messages = []
+        
+        // 添加历史对话记录
+        conversationHistory.forEach(item => {
+          messages.push({
+            role: 'user',
+            content: item.prompt
+          })
+          messages.push({
+            role: 'assistant', 
+            content: item.response
+          })
+        })
+        
+        // 添加当前用户问题
+        messages.push({
+          role: 'user',
+          content: prompt
+        })
+        
         const response = await p2lApi.post('/llm/generate', {
           model,
           prompt,
+          messages, // 传递完整的对话历史
           max_tokens: 2000
         })
         

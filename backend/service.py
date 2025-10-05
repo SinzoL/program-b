@@ -71,6 +71,9 @@ class P2LAnalysisRequest(BaseModel):
 class LLMRequest(BaseModel):
     model: str
     prompt: str
+    messages: Optional[List[dict]] = None
+    max_tokens: Optional[int] = 2000
+    temperature: Optional[float] = 0.7
 
 class P2LInferenceRequest(BaseModel):
     code: str
@@ -230,9 +233,20 @@ class P2LBackendService:
         try:
             client = await self._get_llm_client()
             async with client:
+                # 构建kwargs参数
+                kwargs = {
+                    'max_tokens': request.max_tokens,
+                    'temperature': request.temperature
+                }
+                
+                # 如果有messages参数，传递给客户端
+                if request.messages:
+                    kwargs['messages'] = request.messages
+                
                 response = await client.generate_response(
                     request.model, 
-                    request.prompt
+                    request.prompt,
+                    **kwargs
                 )
                 
                 return {

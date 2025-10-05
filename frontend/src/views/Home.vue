@@ -45,6 +45,7 @@
           @analyze="analyzePrompt"
           @clear="clearAll"
           @show-examples="showExamples"
+          @new-conversation="handleNewConversation"
         />
 
         <!-- P2L分析结果 -->
@@ -65,6 +66,7 @@
           :chat-history="p2lStore.chatHistory"
           @show-examples="showExamples"
           @clear-history="clearChatHistory"
+          @conversation-switched="handleConversationSwitched"
         />
       </div>
     </div>
@@ -152,7 +154,53 @@ const analyzePrompt = async () => {
 
 const callLLM = async (modelName) => {
   try {
-    const result = await p2lStore.generateWithLLM(modelName, userPrompt.value)
+    // 获取当前对话历史
+    let conversationHistory = []
+    if (chatHistoryRef.value) {
+      const currentConversation = chatHistoryRef.value.getCurrentConversation()
+      if (currentConversation?.messages) {
+        // 转换消息格式为API需要的格式
+        conversationHistory = currentConversation.messages.map(msg => ({
+          prompt: msg.role === 'user' ? msg.content : '',
+          response: msg.role === 'assistant' ? msg.content : '',
+          model: msg.model || ''
+        })).filter(item => item.prompt || item.response)
+      }
+    }
+    
+    const result = await p2lStore.generateWithLLM(modelName, userPrompt.value, conversationHistory)
+    
+    // 添加消息到当前对话
+    if (chatHistoryRef.value) {
+      // 添加用户消息（如果还没有）
+      const currentConversation = chatHistoryRef.value.getCurrentConversation()
+      const hasUserMessage = currentConversation?.messages.some(msg => 
+        msg.role === 'user' && msg.content === userPrompt.value
+      )
+      
+      if (!hasUserMessage) {
+        await chatHistoryRef.value.addMessageToCurrentConversation({
+          role: 'user',
+          content: userPrompt.value,
+          timestamp: new Date().toISOString()
+        })
+      }
+      
+      // 添加AI回复
+      await chatHistoryRef.value.addMessageToCurrentConversation({
+        role: 'assistant',
+        content: result.response,
+        model: modelName,
+        tokens: result.tokens || 0,
+        cost: result.cost || 0,
+        responseTime: result.responseTime || 0,
+        timestamp: new Date().toISOString()
+      })
+      
+      // 滚动到最新消息
+      chatHistoryRef.value.scrollToBottom()
+    }
+    
     ElNotification({
       title: '生成完成',
       message: `${modelName} 已生成回答`,
@@ -160,11 +208,6 @@ const callLLM = async (modelName) => {
       customClass: 'tech-notification',
       duration: 4000
     })
-    
-    // 滚动到最新消息
-    if (chatHistoryRef.value) {
-      chatHistoryRef.value.scrollToBottom()
-    }
   } catch (error) {
     ElMessage.error(error.message)
   }
@@ -215,6 +258,36 @@ const handleEnabledModelsChange = (enabledModels) => {
     type: 'success',
     customClass: 'tech-notification',
     duration: 4000
+  })
+}
+
+// 新对话管理相关函数
+const handleNewConversation = (conversation) => {
+  console.log('✅ 新对话已创建:', conversation.id)
+  
+  // 通知ChatHistory组件处理新对话
+  if (chatHistoryRef.value) {
+    chatHistoryRef.value.handleNewConversation(conversation)
+  }
+  
+  ElNotification({
+    title: '新对话',
+    message: '已创建新的对话窗口',
+    type: 'success',
+    customClass: 'tech-notification',
+    duration: 3000
+  })
+}
+
+const handleConversationSwitched = (conversationId) => {
+  console.log('✅ 切换到对话:', conversationId)
+  
+  ElNotification({
+    title: '对话切换',
+    message: '已切换到选定的对话窗口',
+    type: 'info',
+    customClass: 'tech-notification',
+    duration: 2000
   })
 }
 
