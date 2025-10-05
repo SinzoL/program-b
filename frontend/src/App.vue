@@ -5,7 +5,12 @@
       <el-header class="app-header">
         <div class="header-content">
           <div class="logo">
-            <el-icon class="logo-icon"><Cpu /></el-icon>
+            <CubeLogo 
+              :size="28" 
+              color="#4A90E2" 
+              variant="light"
+              class="logo-icon"
+            />
             <span class="logo-text">P2L智能路由系统</span>
           </div>
         </div>
@@ -22,6 +27,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useP2LStore } from './stores/p2l'
+import CubeLogo from './components/icons/CubeLogo.vue'
 
 const p2lStore = useP2LStore()
 const modelCount = ref(9)
@@ -89,8 +95,8 @@ onMounted(() => {
 }
 
 .logo-icon {
-  font-size: 24px;
-  margin-right: 10px;
+  margin-right: 12px;
+  filter: drop-shadow(0 2px 4px rgba(74, 144, 226, 0.3));
 }
 
 .logo-text {

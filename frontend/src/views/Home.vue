@@ -1,5 +1,28 @@
 <template>
   <div class="home-container">
+    <!-- 品牌展示区域 -->
+    <div class="brand-showcase" v-if="!p2lStore.currentAnalysis && p2lStore.chatHistory.length === 0">
+      <div class="brand-content">
+        <CubeLogo :size="64" color="#4A90E2" variant="gradient" :animate="true" class="brand-logo" />
+        <h1 class="brand-title">P2L智能路由系统</h1>
+        <p class="brand-subtitle">集成多个大模型的助手平台，分析问题并推荐合适模型</p>
+        <div class="brand-features">
+          <div class="feature-item">
+            <CubeLogo :size="20" color="#00d4ff" />
+            <span style="color: #fff;">智能路由分析</span>
+          </div>
+          <div class="feature-item">
+            <CubeLogo :size="20" color="#00ff88" />
+            <span style="color: #fff;">多模型支持</span>
+          </div>
+          <div class="feature-item">
+            <CubeLogo :size="20" color="#ff6b6b" />
+            <span style="color: #fff;">实时对话</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 系统状态卡片 -->
     <SystemStatus 
       :backend-health="p2lStore.backendHealth"
@@ -65,6 +88,7 @@ import InputPanel from '../components/InputPanel.vue'
 import AnalysisResult from '../components/AnalysisResult.vue'
 import ChatHistory from '../components/ChatHistory.vue'
 import ExampleDialog from '../components/ExampleDialog.vue'
+import CubeLogo from '../components/icons/CubeLogo.vue'
 
 const p2lStore = useP2LStore()
 
@@ -218,6 +242,107 @@ onMounted(() => {
   flex-direction: column;
   overflow-x: hidden; /* 禁用水平滚动 */
   box-sizing: border-box; /* 确保padding包含在宽度内 */
+}
+
+.brand-showcase {
+  background: linear-gradient(135deg, 
+    rgba(74, 144, 226, 0.1) 0%, 
+    rgba(0, 212, 255, 0.1) 50%, 
+    rgba(0, 255, 136, 0.1) 100%);
+  border: 2px solid rgba(74, 144, 226, 0.2);
+  border-radius: 16px;
+  padding: 40px 20px;
+  margin-bottom: 20px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-showcase::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.1), transparent);
+  animation: brand-shimmer 4s infinite;
+}
+
+@keyframes brand-shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.brand-content {
+  position: relative;
+  z-index: 1;
+}
+
+.brand-logo {
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 12px rgba(74, 144, 226, 0.4));
+}
+
+.brand-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  background: linear-gradient(45deg, #4A90E2, #00d4ff, #00ff88);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0 0 16px 0;
+  text-shadow: 0 2px 4px rgba(74, 144, 226, 0.3);
+}
+
+.brand-subtitle {
+  font-size: 1.1rem;
+  color: #888;
+  margin: 0 0 32px 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
+}
+
+.brand-features {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-weight: 500;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+}
+
+@media (max-width: 768px) {
+  .brand-title {
+    font-size: 2rem;
+  }
+  
+  .brand-features {
+    gap: 16px;
+  }
+  
+  .feature-item {
+    font-size: 0.9rem;
+  }
 }
 
 .main-content {

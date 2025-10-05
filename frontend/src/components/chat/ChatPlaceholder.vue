@@ -19,8 +19,8 @@
         </div>
         <div class="section-content placeholder-text">
           <div class="placeholder-message">
-            <TechIcons name="brain" :size="32" color="#00d4ff" class="placeholder-icon" />
-            <span>请在左侧输入您的问题，然后选择合适的模型进行分析...</span>
+            <CubeLogo :size="32" color="#00d4ff" variant="default" class="placeholder-icon" />
+            <span>在左侧输入问题，分析后选择合适模型解答</span>
           </div>
         </div>
       </div>
@@ -33,8 +33,8 @@
         </div>
         <div class="section-content placeholder-text">
           <div class="placeholder-message">
-            <TechIcons name="chip" :size="32" color="#00d4ff" class="placeholder-icon loading-pulse" />
-            <span>模型的回答将在这里显示...</span>
+            <CubeLogo :size="32" color="#00d4ff" variant="default" :animate="true" class="placeholder-icon loading-pulse" />
+            <span>模型的回答将在此展示</span>
           </div>
         </div>
       </div>
@@ -44,6 +44,7 @@
 
 <script setup>
 import TechIcons from '../icons/TechIcons.vue'
+import CubeLogo from '../icons/CubeLogo.vue'
 </script>
 
 <style scoped>

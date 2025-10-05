@@ -40,11 +40,32 @@
       <!-- 历史记录列表 -->
       <div class="history-list">
         <div v-if="filteredHistoricalChats.length === 0" class="no-results">
-          <el-empty description="没有找到匹配的历史记录">
-            <template #image>
-              <TechIcons name="database" :size="64" color="#666" />
-            </template>
-          </el-empty>
+          <div class="empty-state">
+            <div class="empty-icon-container">
+              <CubeLogo :size="48" color="#4A90E2" variant="default" :animate="true" class="empty-icon" />
+              <div class="empty-glow"></div>
+            </div>
+            <h3 class="empty-title">
+              {{ searchKeyword ? '未找到匹配记录' : '暂无对话历史' }}
+            </h3>
+            <p class="empty-description">
+              {{ searchKeyword 
+                ? '尝试调整搜索关键词或清空搜索条件' 
+                : '开始您的第一次对话，创建智能交互体验' 
+              }}
+            </p>
+            <div class="empty-actions" v-if="searchKeyword">
+              <el-button 
+                type="primary" 
+                size="small" 
+                @click="searchKeyword = ''"
+                class="tech-button"
+              >
+                <TechIcons name="analytics" :size="14" />
+                清空搜索
+              </el-button>
+            </div>
+          </div>
         </div>
         
         <div v-else class="history-items">
@@ -65,6 +86,7 @@
 import { ref, computed } from 'vue'
 import TechIcons from '../icons/TechIcons.vue'
 import ChatHistoryItem from './ChatHistoryItem.vue'
+import CubeLogo from '../icons/CubeLogo.vue'
 
 const props = defineProps({
   chatHistory: {
@@ -221,6 +243,96 @@ const clearHistory = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 40px 20px;
+}
+
+.empty-state {
+  text-align: center;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.empty-icon-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 24px;
+}
+
+.empty-icon {
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 4px 12px rgba(74, 144, 226, 0.4));
+}
+
+.empty-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(74, 144, 226, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: empty-glow-pulse 3s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes empty-glow-pulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.3;
+  }
+}
+
+.empty-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #4A90E2;
+  margin: 0 0 12px 0;
+  background: linear-gradient(45deg, #4A90E2, #00d4ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.empty-description {
+  font-size: 0.9rem;
+  color: #888;
+  line-height: 1.5;
+  margin: 0 0 24px 0;
+}
+
+.empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.tech-button {
+  background: linear-gradient(135deg, #4A90E2, #00d4ff);
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  color: white;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+}
+
+.tech-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(74, 144, 226, 0.4);
+  background: linear-gradient(135deg, #5BA0F2, #10E4FF);
+}
+
+.tech-button:active {
+  transform: translateY(0);
 }
 
 .history-items {

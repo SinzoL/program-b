@@ -1,0 +1,29 @@
+<svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- 立方体logo - favicon版本 -->
+  <!-- 顶面 -->
+  <path 
+    d="M20 30 L50 15 L80 30 L50 45 Z" 
+    fill="#4A90E2"
+    stroke="#3A7BC8"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+  
+  <!-- 左面 -->
+  <path 
+    d="M20 30 L20 70 L50 85 L50 45 Z" 
+    fill="#3A7BC8"
+    stroke="#2E6BA8"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+  
+  <!-- 右面 -->
+  <path 
+    d="M50 45 L50 85 L80 70 L80 30 Z" 
+    fill="#2E6BA8"
+    stroke="#1E4B78"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+</svg>
