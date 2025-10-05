@@ -475,6 +475,27 @@ def create_app() -> FastAPI:
             "models": list(service.all_models.keys()),
             "total": len(service.all_models)
         }
+
+    # Nginx代理路由 (去掉/api前缀后的路由)
+    @app.post("/p2l/analyze")
+    async def p2l_analyze_nginx(request: P2LAnalysisRequest):
+        """P2L智能分析接口 (Nginx代理)"""
+        return await service.analyze_prompt(request)
+
+    @app.post("/llm/generate")
+    async def llm_generate_nginx(request: LLMRequest):
+        """LLM响应生成接口 (Nginx代理)"""
+        return await service.generate_llm_response(request)
+
+    @app.post("/p2l/inference")
+    async def p2l_inference_nginx(request: P2LInferenceRequest):
+        """P2L推理接口 (Nginx代理)"""
+        return await service.p2l_inference(request)
+
+    @app.get("/p2l/model-info")
+    async def p2l_model_info_nginx():
+        """获取P2L推理模型信息 (Nginx代理)"""
+        return await get_p2l_model_info()
     
     return app
 
