@@ -321,9 +321,9 @@ const getModelInfo = (modelName) => {
 }
 
 // 生命周期
-onMounted(() => {
+onMounted(async () => {
   // 初始化启用的模型
-  p2lStore.initializeEnabledModels()
+  await p2lStore.initializeEnabledModels()
   checkHealth()
 })
 </script>

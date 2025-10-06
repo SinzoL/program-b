@@ -22,50 +22,64 @@ def _add_backend_path():
     
     # 尝试多种可能的backend路径
     possible_paths = [
-        # 本地开发环境: p2l/p2l/p2l_inference.py -> ../../../backend
-        os.path.join(os.path.dirname(os.path.dirname(current_dir)), '..', 'backend'),
         # Docker环境: /app/p2l/p2l/p2l_inference.py -> /app/backend
         '/app/backend',
+        # 本地开发环境: p2l/p2l/p2l_inference.py -> ../../../backend
+        os.path.join(os.path.dirname(os.path.dirname(current_dir)), '..', 'backend'),
         # 相对路径备选
         os.path.join(current_dir, '..', '..', '..', 'backend'),
         # 当前目录的backend
-        os.path.join(os.getcwd(), 'backend')
+        os.path.join(os.getcwd(), 'backend'),
+        # PYTHONPATH环境变量路径
+        os.path.join(os.environ.get('PYTHONPATH', ''), 'backend') if os.environ.get('PYTHONPATH') else None
     ]
+    
+    # 过滤掉None值
+    possible_paths = [p for p in possible_paths if p is not None]
     
     for path in possible_paths:
         abs_path = os.path.abspath(path)
         if os.path.exists(abs_path) and abs_path not in sys.path:
             sys.path.insert(0, abs_path)
+            print(f"✅ 成功添加backend路径: {abs_path}")
             return abs_path
     
+    print("⚠️  未找到backend路径")
     return None
 
 _add_backend_path()
 
-# 添加项目根路径以导入constants
+# 添加项目根路径以导入p2l_core
 def _add_constants_path():
-    """智能添加项目根路径以导入constants"""
+    """智能添加项目根路径以导入p2l_core，兼容Docker和本地环境"""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
     # 尝试多种可能的项目根路径
     possible_paths = [
-        # 本地开发环境: p2l/p2l/p2l_inference.py -> ../../..
-        os.path.join(os.path.dirname(os.path.dirname(current_dir)), '..'),
         # Docker环境: /app/p2l/p2l/p2l_inference.py -> /app
         '/app',
+        # 本地开发环境: p2l/p2l/p2l_inference.py -> ../../..
+        os.path.join(os.path.dirname(os.path.dirname(current_dir)), '..'),
         # 相对路径备选
         os.path.join(current_dir, '..', '..', '..'),
         # 当前工作目录
-        os.getcwd()
+        os.getcwd(),
+        # PYTHONPATH环境变量路径
+        os.environ.get('PYTHONPATH', '') if os.environ.get('PYTHONPATH') else None
     ]
+    
+    # 过滤掉None值
+    possible_paths = [p for p in possible_paths if p is not None]
     
     for path in possible_paths:
         abs_path = os.path.abspath(path)
-        constants_file = os.path.join(abs_path, 'constants.py')
-        if os.path.exists(constants_file) and abs_path not in sys.path:
+        p2l_core_file = os.path.join(abs_path, 'p2l_core.py')
+        if os.path.exists(p2l_core_file) and abs_path not in sys.path:
             sys.path.insert(0, abs_path)
+            print(f"✅ 成功添加p2l_core路径: {abs_path}")
             return abs_path
     
+    print("⚠️  未找到p2l_core.py文件")
     return None
 
 _add_constants_path()
@@ -106,8 +120,19 @@ class P2LTaskClassifier(nn.Module):
             128
         )
         
-        # 模型匹配层
-        self.model_scorer = nn.Linear(128, 9)  # 9个LLM模型
+        # 模型匹配层 - 动态获取模型数量
+        try:
+            import sys
+            import os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+            from backend.config import MODEL_CONFIGS
+            self.num_models = len(MODEL_CONFIGS)
+            print(f"✅ 动态获取模型数量: {self.num_models}")
+        except ImportError:
+            self.num_models = 42  # 备用值，基于当前配置
+            print(f"⚠️  使用备用模型数量: {self.num_models}")
+        
+        self.model_scorer = nn.Linear(128, self.num_models)
         
         self.dropout = nn.Dropout(0.1)
         
@@ -198,13 +223,8 @@ class P2LInferenceEngine:
         # 领域类型
         self.domains = ["技术", "文学", "商业", "学术", "日常", "专业"]
         
-        # LLM模型列表
-        self.llm_models = [
-            "gpt-4o", "gpt-4o-mini", "claude-3-5-sonnet-20241022",
-            "claude-3-7-sonnet-20250219", "claude-3-5-haiku-20241022",
-            "gemini-1.5-pro-002", "gemini-1.5-flash-002", "qwen2.5-72b-instruct",
-            "llama-3.1-70b-instruct", "deepseek-v3"
-        ]
+        # LLM模型列表 - 动态获取
+        self.llm_models = self._load_llm_models()
         
         # 模型配置
         self.model_configs = self._load_model_configs()
@@ -255,29 +275,42 @@ class P2LInferenceEngine:
                     break
             print(f"⚠️  从配置文件获取local_name: {local_name}")
         
-        # 智能路径解析
+        # 智能路径解析 - Docker优先
         base_model_path = self.config.get("model_path", "./models")
         
-        # 尝试多种可能的路径
+        # 尝试多种可能的路径 - Docker环境优先
         possible_paths = [
+            # Docker环境路径（优先）
+            f"/app/models/{local_name}",
             # 配置路径
             os.path.join(base_model_path, local_name),
-            # Docker环境路径
-            f"/app/models/{local_name}",
             # 本地环境路径
             f"./models/{local_name}",
             f"models/{local_name}",
-            # 备用路径
+            # 相对于当前工作目录
+            os.path.join(os.getcwd(), "models", local_name),
+            # 备用路径（本地开发）
             f"/Users/sinzol/Desktop/program-b/models/{local_name}"
         ]
+        
+        # 检测运行环境
+        is_docker = os.path.exists('/app') and os.getcwd().startswith('/app')
+        if is_docker:
+            print("🐳 检测到Docker环境")
+        else:
+            print("💻 检测到本地环境")
         
         for path in possible_paths:
             if os.path.exists(path):
                 print(f"🎯 找到模型路径: {path}")
                 return path
         
-        # 如果都找不到，返回第一个路径作为默认值
-        default_path = possible_paths[0]
+        # 如果都找不到，根据环境返回默认路径
+        if is_docker:
+            default_path = f"/app/models/{local_name}"
+        else:
+            default_path = possible_paths[1]  # 配置路径
+        
         print(f"🔍 使用默认路径: {default_path}")
         return default_path
     
@@ -294,60 +327,80 @@ class P2LInferenceEngine:
     
 
     
+    def _load_llm_models(self) -> List[str]:
+        """动态加载LLM模型列表，兼容Docker和本地环境"""
+        try:
+            # 优先尝试从外置配置文件加载
+            import sys
+            import os
+            
+            # 智能添加项目根路径 - Docker优先
+            possible_roots = [
+                '/app',  # Docker环境
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),  # 本地环境
+                os.environ.get('PYTHONPATH', '') if os.environ.get('PYTHONPATH') else None
+            ]
+            
+            project_root = None
+            for root in possible_roots:
+                if root and os.path.exists(os.path.join(root, 'model_configs.py')):
+                    project_root = root
+                    break
+            
+            if project_root and project_root not in sys.path:
+                sys.path.insert(0, project_root)
+                print(f"✅ 添加配置路径: {project_root}")
+            
+            from model_configs import get_model_names
+            models = get_model_names()
+            print(f"✅ 从外置配置加载LLM模型: {len(models)} 个")
+            return models
+        except ImportError:
+            try:
+                # 备用：从backend配置加载
+                from config import MODEL_CONFIGS
+                models = list(MODEL_CONFIGS.keys())
+                print(f"✅ 从backend配置加载LLM模型: {len(models)} 个")
+                return models
+            except ImportError as e:
+                raise RuntimeError(f"❌ 无法加载模型配置: {e}。请确保model_configs.py或backend/config.py存在且可访问。")
+    
     def _load_model_configs(self) -> Dict:
-        """加载模型配置"""
-        return {
-            "gpt-4o": {
-                "provider": "openai", "cost_per_1k": 0.03, "avg_response_time": 2.5,
-                "strengths": ["编程", "数学", "分析"], "quality_score": 0.95,
-                "context_length": 128000, "multimodal": True
-            },
-            "gpt-4o-mini": {
-                "provider": "openai", "cost_per_1k": 0.0015, "avg_response_time": 1.2,
-                "strengths": ["问答", "总结"], "quality_score": 0.82,
-                "context_length": 128000, "multimodal": False
-            },
-            "claude-3-5-sonnet-20241022": {
-                "provider": "anthropic", "cost_per_1k": 0.025, "avg_response_time": 2.8,
-                "strengths": ["创意写作", "分析"], "quality_score": 0.93,
-                "context_length": 200000, "multimodal": True
-            },
-            "claude-3-7-sonnet-20250219": {
-                "provider": "anthropic", "cost_per_1k": 0.025, "avg_response_time": 2.5,
-                "strengths": ["创意写作", "分析", "编程"], "quality_score": 0.95,
-                "context_length": 200000, "multimodal": True
-            },
-            "claude-3-5-haiku-20241022": {
-                "provider": "anthropic", "cost_per_1k": 0.008, "avg_response_time": 1.5,
-                "strengths": ["问答", "总结"], "quality_score": 0.85,
-                "context_length": 200000, "multimodal": False
-            },
-            "gemini-1.5-pro-002": {
-                "provider": "google", "cost_per_1k": 0.02, "avg_response_time": 2.2,
-                "strengths": ["分析", "数学"], "quality_score": 0.90,
-                "context_length": 1000000, "multimodal": True
-            },
-            "gemini-1.5-flash-002": {
-                "provider": "google", "cost_per_1k": 0.005, "avg_response_time": 1.0,
-                "strengths": ["问答", "总结"], "quality_score": 0.80,
-                "context_length": 1000000, "multimodal": False
-            },
-            "qwen2.5-72b-instruct": {
-                "provider": "qwen", "cost_per_1k": 0.002, "avg_response_time": 2.0,
-                "strengths": ["中文理解", "推理", "编程", "数学"], "quality_score": 0.90,
-                "context_length": 32768, "multimodal": False
-            },
-            "llama-3.1-70b-instruct": {
-                "provider": "meta", "cost_per_1k": 0.01, "avg_response_time": 2.3,
-                "strengths": ["编程", "通用"], "quality_score": 0.86,
-                "context_length": 128000, "multimodal": False
-            },
-            "deepseek-v3": {
-                "provider": "deepseek", "cost_per_1k": 0.012, "avg_response_time": 1.8,
-                "strengths": ["数学", "编程"], "quality_score": 0.87,
-                "context_length": 64000, "multimodal": False
-            }
-        }
+        """动态加载模型配置，兼容Docker和本地环境"""
+        try:
+            # 优先尝试从外置配置文件加载
+            import sys
+            import os
+            
+            # 智能添加项目根路径 - Docker优先
+            possible_roots = [
+                '/app',  # Docker环境
+                os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),  # 本地环境
+                os.environ.get('PYTHONPATH', '') if os.environ.get('PYTHONPATH') else None
+            ]
+            
+            project_root = None
+            for root in possible_roots:
+                if root and os.path.exists(os.path.join(root, 'model_configs.py')):
+                    project_root = root
+                    break
+            
+            if project_root and project_root not in sys.path:
+                sys.path.insert(0, project_root)
+                print(f"✅ 添加配置路径: {project_root}")
+            
+            from model_configs import get_all_models
+            configs = get_all_models()
+            print(f"✅ 从外置配置加载模型配置: {len(configs)} 个")
+            return configs
+        except ImportError:
+            try:
+                # 备用：从backend配置加载
+                from config import MODEL_CONFIGS
+                print(f"✅ 从backend配置加载模型配置: {len(MODEL_CONFIGS)} 个")
+                return MODEL_CONFIGS
+            except ImportError as e:
+                raise RuntimeError(f"❌ 无法加载模型配置: {e}。请确保model_configs.py或backend/config.py存在且可访问。")
     
     def _initialize_model(self):
         """初始化P2L模型"""

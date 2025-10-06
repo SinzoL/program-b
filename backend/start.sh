@@ -17,9 +17,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 检查环境配置
-if [ ! -f "api_config.env" ]; then
-    echo "❌ 未找到API配置文件: api_config.env"
+# 检查外置配置文件
+if [ ! -f "../api_configs.py" ]; then
+    echo "❌ 未找到API配置文件: ../api_configs.py"
+    exit 1
+fi
+
+if [ ! -f "../model_configs.py" ]; then
+    echo "❌ 未找到模型配置文件: ../model_configs.py"
     exit 1
 fi
 

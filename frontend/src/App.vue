@@ -30,7 +30,6 @@ import { useP2LStore } from './stores/p2l'
 import CubeLogo from './components/icons/CubeLogo.vue'
 
 const p2lStore = useP2LStore()
-const modelCount = ref(9)
 
 onMounted(() => {
   // 初始化检查后端服务状态

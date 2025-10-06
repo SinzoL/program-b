@@ -65,22 +65,47 @@ uvicorn service:create_app --host 0.0.0.0 --port 8080 --reload
 
 ## 配置文件
 
-### API配置文件
-API密钥配置文件位于 `../api_config.env`：
+### 外置配置文件
+配置文件已迁移到项目根目录的Python文件中：
 
-```env
-# OpenAI
-OPENAI_API_KEY=your_openai_key
-OPENAI_BASE_URL=https://api.openai.com/v1
+#### API配置文件 (`../api_configs.py`)
+包含所有API密钥和端点配置：
 
-# Anthropic Claude
-ANTHROPIC_API_KEY=your_anthropic_key
-ANTHROPIC_BASE_URL=https://api.anthropic.com/v1
+```python
+API_CONFIGS = {
+    "api_keys": {
+        "openai": "your_openai_key",
+        "anthropic": "your_claude_key",
+        # ... 其他API密钥
+    },
+    "base_urls": {
+        "openai": "https://api.openai.com/v1",
+        # ... 其他API端点
+    }
+}
+```
 
-# Google Gemini
-GOOGLE_API_KEY=your_google_key
+#### 模型配置文件 (`../model_configs.py`)
+包含所有模型的详细配置：
 
-# 阿里云通义千问
+```python
+MODEL_CONFIGS = {
+    "gpt-4o": {
+        "provider": "openai",
+        "cost_per_1k": 0.015,
+        "quality_score": 0.94,
+        "strengths": ["编程", "数学", "分析"],
+        # ... 其他模型参数
+    },
+    # ... 42个模型配置
+}
+```
+
+### 配置文件优势
+- **集中管理**: 所有配置在项目根目录
+- **类型安全**: Python字典格式，支持IDE智能提示
+- **易于维护**: 结构化配置，便于批量修改
+- **版本控制**: 可以跟踪配置变更历史
 DASHSCOPE_API_KEY=your_dashscope_key
 DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 

@@ -86,7 +86,7 @@ class LLMClient:
             response = await self._call_anthropic(model, prompt, **kwargs)
         elif provider == "google":
             response = await self._call_google(model, prompt, **kwargs)
-        elif provider == "qwen":
+        elif provider == "dashscope":
             response = await self._call_dashscope(model, prompt, **kwargs)
         elif provider == "deepseek":
             response = await self._call_deepseek(model, prompt, **kwargs)

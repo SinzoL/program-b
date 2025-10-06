@@ -27,21 +27,27 @@ fi
 
 echo "✅ 系统环境检查通过"
 
-# 检查配置文件
-if [ ! -f "backend/api_config.env" ]; then
-    echo "❌ 未找到API配置文件: backend/api_config.env"
-    echo "💡 请先配置API密钥，参考README.md中的配置说明"
+# 检查外置配置文件
+if [ ! -f "api_configs.py" ]; then
+    echo "❌ 未找到API配置文件: api_configs.py"
+    echo "💡 请确保外置配置文件存在，参考README.md中的配置说明"
     exit 1
 fi
 
-echo "✅ 配置文件检查通过"
+if [ ! -f "model_configs.py" ]; then
+    echo "❌ 未找到模型配置文件: model_configs.py"
+    echo "💡 请确保外置配置文件存在，参考README.md中的配置说明"
+    exit 1
+fi
+
+echo "✅ 外置配置文件检查通过"
 
 # 检查P2L模型
 echo "🔍 检查P2L模型..."
-python3 ensure_model.py
+python3 p2l_tools.py ensure
 if [ $? -ne 0 ]; then
     echo "❌ P2L模型检查失败，请检查网络连接"
-    echo "💡 您也可以稍后手动运行: python3 ensure_model.py"
+    echo "💡 您也可以稍后手动运行: python3 p2l_tools.py ensure"
     echo "⚠️  服务将在降级模式下启动"
 fi
 
