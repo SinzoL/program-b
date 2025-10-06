@@ -194,7 +194,15 @@ class UnifiedLLMClient:
                 error_text = await resp.text()
                 raise Exception(f"Anthropic中转API错误 {resp.status}: {error_text}")
             
-            result = await resp.json()
+            # 尝试解析JSON，不检查content-type（兼容中转服务）
+            try:
+                result = await resp.json(content_type=None)  # 忽略content-type检查
+            except Exception as e:
+                # 如果JSON解析失败，获取原始文本并报告详细错误
+                error_text = await resp.text()
+                content_type = resp.headers.get('content-type', '')
+                raise Exception(f"JSON解析失败: {str(e)}, content_type='{content_type}', response_text='{error_text[:200]}'")
+            
             content = result['choices'][0]['message']['content']
             tokens_used = result.get('usage', {}).get('total_tokens', len(content.split()) * 1.3)
             cost = (tokens_used / 1000) * (0.025 if 'sonnet' in model else 0.008)
@@ -252,6 +260,10 @@ class UnifiedLLMClient:
         """调用Google Gemini API"""
         api_keys = self.config["api_keys"]
         base_urls = self.config["base_urls"]
+        model_config = get_model_config(model)
+        
+        # 使用配置中的request_name
+        request_model = model_config.get('request_name', model)
         
         url = f'{base_urls["google"]}/chat/completions'
         headers = {
@@ -262,7 +274,7 @@ class UnifiedLLMClient:
         messages = kwargs.get('messages', [{'role': 'user', 'content': prompt}])
         
         data = {
-            'model': model,
+            'model': request_model,
             'messages': messages,
             'max_tokens': kwargs.get('max_tokens', 2000),
             'temperature': kwargs.get('temperature', 0.7)
@@ -273,7 +285,15 @@ class UnifiedLLMClient:
                 error_text = await resp.text()
                 raise Exception(f"Google API错误 {resp.status}: {error_text}")
             
-            result = await resp.json()
+            # 尝试解析JSON，不检查content-type（兼容中转服务）
+            try:
+                result = await resp.json(content_type=None)  # 忽略content-type检查
+            except Exception as e:
+                # 如果JSON解析失败，获取原始文本并报告详细错误
+                error_text = await resp.text()
+                content_type = resp.headers.get('content-type', '')
+                raise Exception(f"JSON解析失败: {str(e)}, content_type='{content_type}', response_text='{error_text[:200]}'")
+            
             content = result['choices'][0]['message']['content']
             tokens_used = result.get('usage', {}).get('total_tokens', len(content.split()) * 1.3)
             cost = (tokens_used / 1000) * (0.025 if 'pro' in model else 0.015)
