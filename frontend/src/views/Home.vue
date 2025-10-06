@@ -58,6 +58,7 @@
           :enabled-models="p2lStore.enabledModels"
           :loading="p2lStore.loading"
           :get-model-info="getModelInfo"
+          :prompt="userPrompt"
           @call-llm="callLLM"
         />
       </div>

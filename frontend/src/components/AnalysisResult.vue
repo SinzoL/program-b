@@ -112,9 +112,11 @@
               size="small"
               @click="handleCallLLM(rec.model)"
               :loading="loading"
+              :disabled="!props.prompt.trim() || loading"
               class="call-model-btn"
+              :title="!props.prompt.trim() ? '请先输入问题内容' : '调用此模型进行回答'"
             >
-              调用模型
+              {{ !props.prompt.trim() ? '请输入问题' : '调用模型' }}
             </el-button>
           </div>
         </div>
@@ -132,7 +134,8 @@ const props = defineProps({
   recommendations: { type: Array, default: () => [] },
   enabledModels: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
-  getModelInfo: { type: Function, required: true }
+  getModelInfo: { type: Function, required: true },
+  prompt: { type: String, default: '' }  // 添加prompt属性
 })
 
 const emit = defineEmits(['call-llm'])
@@ -421,7 +424,7 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
 .ranking-item:hover {
   border-color: #00d4ff;
   box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2);
-  transform: translateY(-2px);
+  /* 移除 transform: translateY(-2px); 避免按钮移动 */
 }
 
 .ranking-item:hover::before {
@@ -595,8 +598,27 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
   height: 32px !important;
   background-color: #337ecc !important;
   border-color: #337ecc !important;
-  transform: none !important;
-  box-shadow: none !important;
+}
+
+/* 按钮禁用状态 */
+.call-model-btn.is-disabled,
+.call-model-btn:disabled,
+.call-model-btn[disabled] {
+  width: 88px !important;
+  height: 32px !important;
+  background-color: #c0c4cc !important;
+  border-color: #c0c4cc !important;
+  color: #909399 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
+.call-model-btn.is-disabled:hover,
+.call-model-btn:disabled:hover,
+.call-model-btn[disabled]:hover {
+  background-color: #c0c4cc !important;
+  border-color: #c0c4cc !important;
+  color: #909399 !important;
 }
 
 @keyframes rotating {
@@ -610,6 +632,12 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
   top: 50% !important;
   transform: translateY(-50%) !important;
   z-index: 1 !important;
+}
+
+/* 确保按钮在悬停时不移动 - 只保留有效的transform */
+.ranking-item:hover > .call-model-btn,
+.ranking-item > .call-model-btn:hover {
+  transform: translateY(-50%) !important;
 }
 
 .ranking-item {
