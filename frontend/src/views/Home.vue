@@ -193,17 +193,33 @@ const analyzePrompt = async () => {
 
 const callLLM = async (modelName) => {
   try {
-    // 获取当前对话历史
+    // 获取当前对话历史 - 修复消息格式构建问题
     let conversationHistory = []
     if (chatHistoryRef.value) {
       const currentConversation = chatHistoryRef.value.getCurrentConversation()
       if (currentConversation?.messages) {
-        // 转换消息格式为API需要的格式
-        conversationHistory = currentConversation.messages.map(msg => ({
-          prompt: msg.role === 'user' ? msg.content : '',
-          response: msg.role === 'assistant' ? msg.content : '',
-          model: msg.model || ''
-        })).filter(item => item.prompt || item.response)
+        // 正确构建对话历史：成对处理用户问题和AI回复
+        const messages = currentConversation.messages
+        const pairs = []
+        
+        for (let i = 0; i < messages.length; i++) {
+          const msg = messages[i]
+          if (msg.role === 'user' && msg.content.trim()) {
+            // 找到对应的AI回复
+            let response = ''
+            if (i + 1 < messages.length && messages[i + 1].role === 'assistant') {
+              response = messages[i + 1].content.trim()
+            }
+            
+            pairs.push({
+              prompt: msg.content.trim(),
+              response: response,
+              model: messages[i + 1]?.model || ''
+            })
+          }
+        }
+        
+        conversationHistory = pairs
       }
     }
     

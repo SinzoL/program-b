@@ -197,16 +197,22 @@ export const useP2LStore = defineStore('p2l', {
         // 构建消息历史，包含完整的对话上下文
         const messages = []
         
-        // 添加历史对话记录
+        // 添加历史对话记录 - 修复空内容问题
         conversationHistory.forEach(item => {
-          messages.push({
-            role: 'user',
-            content: item.prompt
-          })
-          messages.push({
-            role: 'assistant', 
-            content: item.response
-          })
+          // 只添加非空的用户消息
+          if (item.prompt && item.prompt.trim()) {
+            messages.push({
+              role: 'user',
+              content: item.prompt.trim()
+            })
+          }
+          // 只添加非空的助手回复
+          if (item.response && item.response.trim()) {
+            messages.push({
+              role: 'assistant', 
+              content: item.response.trim()
+            })
+          }
         })
         
         // 添加当前用户问题

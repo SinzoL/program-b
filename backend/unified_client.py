@@ -73,6 +73,19 @@ class UnifiedLLMClient:
             
             provider = model_config["provider"]
             
+            # 处理消息过滤 - 移除空内容消息
+            messages = kwargs.get('messages', [])
+            if messages:
+                filtered_messages = []
+                for msg in messages:
+                    content = msg.get("content", "")
+                    if content and content.strip():  # 只保留非空且非纯空白的消息
+                        filtered_messages.append({
+                            "role": msg["role"],
+                            "content": content.strip()
+                        })
+                kwargs['messages'] = filtered_messages
+            
             # 根据提供商调用相应的API
             if provider == "openai":
                 response = await self._call_openai(model, prompt, **kwargs)

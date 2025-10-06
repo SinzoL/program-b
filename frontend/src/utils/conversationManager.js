@@ -116,14 +116,20 @@ export class Conversation {
     return `conv_${timestamp}_${counter}_${randomPart}`
   }
 
-  // 添加消息 - 改进版本，确保消息ID唯一性和更好的标题生成
+  // 添加消息 - 改进版本，确保消息ID唯一性和更好的标题生成，验证内容非空
   addMessage(type, content, model = null, metadata = {}) {
+    // 验证内容不为空
+    if (!content || !content.trim()) {
+      console.warn('尝试添加空内容消息，已跳过:', { type, content, model })
+      return null
+    }
+    
     const timestamp = Date.now()
     const message = {
       id: `msg_${timestamp}_${Math.floor(Math.random() * 10000)}_${Math.random().toString(36).substr(2, 9)}`,
       type, // 'user' | 'assistant'  
       role: type, // 添加role字段以兼容API格式
-      content,
+      content: content.trim(), // 确保内容已去除首尾空格
       model, // 使用的模型名称
       timestamp,
       tokens: metadata.tokens || 0,
@@ -171,27 +177,35 @@ export class Conversation {
     this.tokenCount = totalTokens
   }
 
-  // 获取用于API的消息格式
+  // 获取用于API的消息格式 - 修复空内容问题
   getMessagesForAPI(maxTokens = 4000) {
     // 如果token数量超过限制，使用摘要+最近消息的策略
     if (this.tokenCount > maxTokens) {
       return this.getCompressedMessages(maxTokens)
     }
     
-    return this.messages.map(msg => ({
-      role: msg.type === 'user' ? 'user' : 'assistant',
-      content: msg.content
-    }))
+    return this.messages
+      .filter(msg => msg.content && msg.content.trim()) // 过滤空内容
+      .map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content.trim()
+      }))
   }
 
-  // 获取压缩后的消息（摘要+最近对话）
+  // 获取压缩后的消息（摘要+最近对话） - 修复空内容问题
   getCompressedMessages(maxTokens) {
     const recentMessages = []
     let tokenCount = 0
     
-    // 从最新消息开始往前取
+    // 从最新消息开始往前取，只处理非空消息
     for (let i = this.messages.length - 1; i >= 0; i--) {
       const message = this.messages[i]
+      
+      // 跳过空内容的消息
+      if (!message.content || !message.content.trim()) {
+        continue
+      }
+      
       const messageTokens = this.estimateMessageTokens(message.content)
       
       if (tokenCount + messageTokens > maxTokens * 0.7) { // 保留70%给最近消息
@@ -200,7 +214,7 @@ export class Conversation {
       
       recentMessages.unshift({
         role: message.type === 'user' ? 'user' : 'assistant',
-        content: message.content
+        content: message.content.trim()
       })
       tokenCount += messageTokens
     }
