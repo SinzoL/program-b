@@ -62,21 +62,21 @@
           <div class="messages-preview">
             <div 
               v-for="(message, index) in getPreviewMessages()" 
-              :key="index"
+              :key="message.id || index"
               class="message-preview"
               :class="{ 
-                'user-preview': message.role === 'user',
-                'assistant-preview': message.role === 'assistant'
+                'user-preview': message.role === 'user' || message.type === 'user',
+                'assistant-preview': message.role === 'assistant' || message.type === 'assistant'
               }"
             >
               <div class="preview-header">
                 <TechIcons 
-                  :name="message.role === 'user' ? 'analytics' : 'robot'" 
+                  :name="(message.role === 'user' || message.type === 'user') ? 'analytics' : 'robot'" 
                   :size="12" 
-                  :color="message.role === 'user' ? '#00d4ff' : '#00ff88'" 
+                  :color="(message.role === 'user' || message.type === 'user') ? '#00d4ff' : '#00ff88'" 
                 />
                 <span class="preview-role">
-                  {{ message.role === 'user' ? '用户' : message.model }}
+                  {{ (message.role === 'user' || message.type === 'user') ? '用户' : (message.model || 'AI助手') }}
                 </span>
                 <span class="preview-time">{{ formatTime(message.timestamp) }}</span>
               </div>
@@ -85,8 +85,8 @@
               </div>
             </div>
             
-            <div v-if="conversation.messages.length > 3" class="more-messages">
-              还有 {{ conversation.messages.length - 3 }} 条消息...
+            <div v-if="conversation.messages && conversation.messages.length > 4" class="more-messages">
+              还有 {{ conversation.messages.length - 4 }} 条消息...
             </div>
           </div>
         </div>
@@ -158,12 +158,14 @@ const formatFullTime = (timestamp) => {
 }
 
 const getTotalTokens = () => {
+  if (!props.conversation.messages) return 0
   return props.conversation.messages.reduce((total, message) => {
     return total + (message.tokens || 0)
   }, 0)
 }
 
 const getTotalCost = () => {
+  if (!props.conversation.messages) return 0
   return props.conversation.messages.reduce((total, message) => {
     return total + (message.cost || 0)
   }, 0)
@@ -171,26 +173,37 @@ const getTotalCost = () => {
 
 const getUserQuestionCount = () => {
   if (!props.conversation || !props.conversation.messages) return 0
-  return props.conversation.messages.filter(msg => msg.role === 'user').length
+  return props.conversation.messages.filter(msg => 
+    msg.role === 'user' || msg.type === 'user'
+  ).length
 }
 
 const getConversationPreview = () => {
-  if (props.conversation.messages.length === 0) {
+  if (!props.conversation.messages || props.conversation.messages.length === 0) {
     return '空对话'
   }
   
-  const firstMessage = props.conversation.messages[0]
-  if (firstMessage.role === 'user') {
-    return truncateText(firstMessage.content, 80)
+  // 查找第一条用户消息作为预览
+  const firstUserMessage = props.conversation.messages.find(msg => 
+    msg.role === 'user' || msg.type === 'user'
+  )
+  if (firstUserMessage) {
+    return truncateText(firstUserMessage.content, 80)
   }
   
-  return '对话已开始...'
+  // 如果没有用户消息，显示第一条消息
+  const firstMessage = props.conversation.messages[0]
+  return truncateText(firstMessage.content, 80)
 }
 
 const getPreviewMessages = () => {
-  // 显示最多3条消息的预览
-  // 第一条消息是初始问题，不该统计
-  return props.conversation.messages.slice(1, 3)
+  // 显示最多4条消息的预览，包含完整的对话流程
+  if (!props.conversation.messages || props.conversation.messages.length === 0) {
+    return []
+  }
+  
+  // 显示前4条消息，确保用户能看到完整的问答对
+  return props.conversation.messages.slice(0, 4)
 }
 </script>
 

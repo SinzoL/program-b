@@ -108,27 +108,35 @@ export class Conversation {
     this.tokenCount = 0 // 估算的token数量
   }
 
-  // 生成唯一ID
+  // 生成唯一ID - 改进版本，确保唯一性
   generateId() {
-    return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+    const timestamp = Date.now()
+    const randomPart = Math.random().toString(36).substr(2, 9)
+    const counter = Math.floor(Math.random() * 1000)
+    return `conv_${timestamp}_${counter}_${randomPart}`
   }
 
-  // 添加消息
+  // 添加消息 - 改进版本，确保消息ID唯一性和更好的标题生成
   addMessage(type, content, model = null, metadata = {}) {
+    const timestamp = Date.now()
     const message = {
-      id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-      type, // 'user' | 'assistant'
+      id: `msg_${timestamp}_${Math.floor(Math.random() * 10000)}_${Math.random().toString(36).substr(2, 9)}`,
+      type, // 'user' | 'assistant'  
+      role: type, // 添加role字段以兼容API格式
       content,
       model, // 使用的模型名称
-      timestamp: Date.now(),
+      timestamp,
+      tokens: metadata.tokens || 0,
+      cost: metadata.cost || 0,
+      responseTime: metadata.responseTime || 0,
       metadata // 额外信息（如处理时间、token数等）
     }
     
     this.messages.push(message)
-    this.updatedAt = Date.now()
+    this.updatedAt = timestamp
     
     // 如果是第一条用户消息，生成标题
-    if (this.messages.length === 1 && type === 'user') {
+    if (this.messages.filter(msg => msg.type === 'user').length === 1 && type === 'user') {
       this.generateTitle(content)
     }
     
@@ -291,16 +299,17 @@ export class ConversationManager {
     }
   }
 
-  // 创建新对话
+  // 创建新对话（临时对话，不立即保存到历史记录）
   async createNewConversation() {
     // 保存当前对话
     if (this.currentConversation && this.currentConversation.messages.length > 0) {
       await this.saveCurrentConversation()
     }
     
-    // 创建新对话
+    // 创建新对话（临时状态）
     this.currentConversation = new Conversation()
-    console.log('🆕 创建新对话:', this.currentConversation.id)
+    this.currentConversation._isTemporary = true // 标记为临时对话
+    console.log('🆕 创建临时对话:', this.currentConversation.id, '(暂不保存)')
     
     return this.currentConversation
   }
@@ -326,6 +335,12 @@ export class ConversationManager {
   // 保存当前对话
   async saveCurrentConversation() {
     if (!this.currentConversation) return
+    
+    // 如果是临时对话且没有消息，不保存
+    if (this.currentConversation._isTemporary && (!this.currentConversation.messages || this.currentConversation.messages.length === 0)) {
+      console.log('⏸️ 临时对话无消息，跳过保存:', this.currentConversation.id)
+      return
+    }
     
     try {
       await this.storage.saveConversation(this.currentConversation)
@@ -355,6 +370,13 @@ export class ConversationManager {
     }
     
     const message = this.currentConversation.addMessage('user', content)
+    
+    // 如果是临时对话的第一条消息，将其转为正式对话并保存
+    if (this.currentConversation._isTemporary) {
+      delete this.currentConversation._isTemporary
+      console.log('📝 临时对话转为正式对话:', this.currentConversation.id)
+    }
+    
     await this.saveCurrentConversation()
     
     return message
@@ -367,6 +389,12 @@ export class ConversationManager {
     }
     
     const message = this.currentConversation.addMessage('assistant', content, model, metadata)
+    
+    // 如果是临时对话，将其转为正式对话
+    if (this.currentConversation._isTemporary) {
+      delete this.currentConversation._isTemporary
+      console.log('📝 临时对话转为正式对话:', this.currentConversation.id)
+    }
     
     // 如果对话变长，生成摘要
     if (this.currentConversation.messages.length > 10 && !this.currentConversation.summary) {

@@ -226,15 +226,23 @@ const handleNewConversation = async () => {
       return
     }
     
-    // 创建新对话
-    const newConversation = await conversationManager.createConversation()
-    console.log('✅ 创建新对话:', newConversation.id)
+    // 创建新的临时对话（不保存到历史记录）
+    const newConversation = await conversationManager.createNewConversation()
+    console.log('✅ 创建临时对话:', newConversation.id, '(暂不保存到历史记录)')
     
     // 通知父组件切换到新对话
     emit('new-conversation', newConversation)
     
     // 清空当前输入
     emit('clear')
+    
+    ElNotification({
+      title: '新对话',
+      message: '已准备新对话，开始提问后将自动保存',
+      type: 'success',
+      customClass: 'tech-notification',
+      duration: 3000
+    })
   } catch (error) {
     console.error('❌ 创建新对话失败:', error)
     ElNotification({

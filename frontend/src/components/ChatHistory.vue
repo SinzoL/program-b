@@ -87,17 +87,17 @@ const initializeConversations = async () => {
   try {
     await conversationManager.initialize()
     
-    // 加载所有对话
+    // 加载所有对话（只加载已保存的对话）
     conversations.value = await conversationManager.getAllConversations()
     
     // 获取当前对话ID
     currentConversationId.value = conversationManager.getCurrentConversationId()
     
-    // 如果没有当前对话，创建一个新的
-    if (!currentConversationId.value && conversations.value.length === 0) {
-      const newConversation = await conversationManager.createConversation()
-      conversations.value.push(newConversation)
+    // 如果没有当前对话，创建一个临时对话（不保存到历史记录）
+    if (!currentConversationId.value) {
+      const newConversation = await conversationManager.createNewConversation()
       currentConversationId.value = newConversation.id
+      console.log('🆕 创建初始临时对话:', newConversation.id)
     }
     
     console.log('✅ 对话管理器初始化完成:', {
@@ -109,14 +109,23 @@ const initializeConversations = async () => {
   }
 }
 
-// 切换对话
+// 切换对话 - 改进版本，确保完整加载对话数据
 const switchConversation = async (conversationId) => {
   try {
-    await conversationManager.switchConversation(conversationId)
+    // 切换到目标对话
+    const conversation = await conversationManager.switchConversation(conversationId)
     currentConversationId.value = conversationId
+    
+    // 更新本地对话列表中的数据，确保显示最新信息
+    const conversationIndex = conversations.value.findIndex(conv => conv.id === conversationId)
+    if (conversationIndex >= 0 && conversation) {
+      conversations.value[conversationIndex] = { ...conversation }
+    }
+    
+    // 切换到当前对话标签页
     activeTab.value = 'current'
     
-    console.log('✅ 切换到对话:', conversationId)
+    console.log('✅ 切换到对话:', conversationId, '消息数量:', conversation?.messages?.length || 0)
     emit('conversation-switched', conversationId)
   } catch (error) {
     console.error('❌ 切换对话失败:', error)
@@ -167,30 +176,56 @@ const clearAllConversations = async () => {
   }
 }
 
-// 添加新消息到当前对话
+// 添加新消息到当前对话 - 改进版本，支持临时对话转正式对话
 const addMessageToCurrentConversation = async (message) => {
   try {
     if (!currentConversationId.value) {
-      const newConversation = await conversationManager.createConversation()
-      conversations.value.push(newConversation)
+      const newConversation = await conversationManager.createNewConversation()
       currentConversationId.value = newConversation.id
     }
     
-    await conversationManager.addMessage(currentConversationId.value, message)
+    // 确保消息格式正确
+    const formattedMessage = {
+      ...message,
+      role: message.role || message.type,
+      type: message.type || message.role,
+      timestamp: message.timestamp || new Date().toISOString(),
+      tokens: message.tokens || 0,
+      cost: message.cost || 0,
+      responseTime: message.responseTime || 0
+    }
     
-    // 更新本地状态
-    const conversation = conversations.value.find(conv => conv.id === currentConversationId.value)
-    if (conversation) {
-      conversation.messages.push(message)
-      conversation.updatedAt = new Date().toISOString()
-      
-      // 如果是第一条用户消息，更新对话标题
-      if (conversation.messages.length === 1 && message.role === 'user') {
-        conversation.title = message.content.substring(0, 50) + (message.content.length > 50 ? '...' : '')
+    // 检查当前对话是否为临时对话
+    const currentConversation = conversationManager.getCurrentConversation()
+    const wasTemporary = currentConversation?._isTemporary
+    
+    await conversationManager.addMessage(currentConversationId.value, formattedMessage)
+    
+    // 如果对话从临时转为正式，更新本地对话列表
+    if (wasTemporary) {
+      const updatedConversation = await conversationManager.storage.getConversation(currentConversationId.value)
+      if (updatedConversation) {
+        // 添加到对话列表中
+        const existingIndex = conversations.value.findIndex(conv => conv.id === currentConversationId.value)
+        if (existingIndex >= 0) {
+          conversations.value[existingIndex] = updatedConversation
+        } else {
+          conversations.value.unshift(updatedConversation)
+        }
+        console.log('📝 临时对话已转为正式对话并加入历史记录:', currentConversationId.value)
+      }
+    } else {
+      // 更新现有对话
+      const updatedConversation = await conversationManager.storage.getConversation(currentConversationId.value)
+      if (updatedConversation) {
+        const conversationIndex = conversations.value.findIndex(conv => conv.id === currentConversationId.value)
+        if (conversationIndex >= 0) {
+          conversations.value[conversationIndex] = updatedConversation
+        }
       }
     }
     
-    console.log('✅ 添加消息到对话:', currentConversationId.value)
+    console.log('✅ 添加消息到对话:', currentConversationId.value, '消息内容:', formattedMessage.content.substring(0, 50))
   } catch (error) {
     console.error('❌ 添加消息失败:', error)
   }
