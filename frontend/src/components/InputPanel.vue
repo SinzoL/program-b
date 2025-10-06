@@ -75,7 +75,7 @@
         class="tech-button primary-button"
       >
         <TechIcons name="analytics" :size="18" color="#ffffff" />
-        P2L智能分析
+        智能分析
       </el-button>
       <el-button 
         @click="handleClear"
@@ -548,6 +548,7 @@ const handleNewConversation = async () => {
   font-size: 14px;
   line-height: 1.6;
   padding: 12px 16px;
+  height: 200px;
   transition: all 0.3s ease;
   box-shadow: 
     inset 0 2px 8px rgba(0, 212, 255, 0.1),
