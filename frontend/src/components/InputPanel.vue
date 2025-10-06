@@ -200,6 +200,16 @@ const handleAnalyze = () => {
   emit('analyze')
 }
 
+// 清空输入框内容的方法
+const clearInput = () => {
+  emit('update:prompt', '')
+}
+
+// 暴露清空方法给父组件
+defineExpose({
+  clearInput
+})
+
 const handleClear = () => {
   emit('clear')
 }

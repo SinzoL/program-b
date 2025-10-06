@@ -38,6 +38,7 @@
       <!-- 左侧：输入和控制面板 -->
       <div class="input-panel">
         <InputPanel
+          ref="inputPanelRef"
           v-model:prompt="userPrompt"
           v-model:selected-mode="selectedMode"
           :loading="p2lStore.loading"
@@ -100,6 +101,7 @@ const selectedMode = ref('balanced')
 const healthChecking = ref(false)
 const examplesVisible = ref(false)
 const chatHistoryRef = ref(null)
+const inputPanelRef = ref(null)
 
 // 方法
 const checkHealth = async () => {
@@ -217,6 +219,11 @@ const callLLM = async (modelName) => {
       
       // 滚动到最新消息
       chatHistoryRef.value.scrollToBottom()
+    }
+    
+    // 清空输入框
+    if (inputPanelRef.value) {
+      inputPanelRef.value.clearInput()
     }
     
     ElNotification({
