@@ -5,6 +5,22 @@
         <TechIcons name="network" :size="20" color="#00d4ff" />
         <span>系统状态</span>
         <div class="header-actions">
+          <!-- 智能路由开关 -->
+          <div class="smart-routing-control">
+            <el-tooltip content="开启后将自动选择评分最高的模型进行回答" placement="top">
+              <div class="routing-switch-wrapper">
+                <TechIcons name="brain" :size="16" :color="smartRoutingEnabled ? '#00ff88' : '#909399'" />
+                <span class="switch-label">智能路由</span>
+                <el-switch
+                  :model-value="smartRoutingEnabled"
+                  @change="handleSmartRoutingChange"
+                  active-color="#00ff88"
+                  inactive-color="#909399"
+                  size="small"
+                />
+              </div>
+            </el-tooltip>
+          </div>
           <ModelSelector
             :available-models="availableModels"
             :enabled-models="enabledModels"
@@ -54,10 +70,14 @@ defineProps({
   enabledModels: {
     type: Array,
     default: () => []
+  },
+  smartRoutingEnabled: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['check-health', 'update:enabled-models'])
+const emit = defineEmits(['check-health', 'update:enabled-models', 'update:smart-routing'])
 
 const handleCheckHealth = () => {
   emit('check-health')
@@ -65,6 +85,10 @@ const handleCheckHealth = () => {
 
 const handleEnabledModelsChange = (enabledModels) => {
   emit('update:enabled-models', enabledModels)
+}
+
+const handleSmartRoutingChange = (enabled) => {
+  emit('update:smart-routing', enabled)
 }
 </script>
 
@@ -116,6 +140,55 @@ const handleEnabledModelsChange = (enabledModels) => {
 
 .header-actions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.smart-routing-control {
+  display: flex;
+  align-items: center;
+}
+
+.routing-switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.routing-switch-wrapper:hover {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
+  border-color: rgba(0, 212, 255, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.2);
+}
+
+.switch-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #00d4ff;
+  white-space: nowrap;
+}
+
+.routing-switch-wrapper:hover .switch-label {
+  color: #00ff88;
+}
+
+/* 智能路由开关激活状态 */
+.routing-switch-wrapper:has(.el-switch.is-checked) {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05));
+  border-color: rgba(0, 255, 136, 0.4);
+  box-shadow: 0 2px 12px rgba(0, 255, 136, 0.2);
+}
+
+.routing-switch-wrapper:has(.el-switch.is-checked) .switch-label {
+  color: #00ff88;
 }
 
 .status-content {

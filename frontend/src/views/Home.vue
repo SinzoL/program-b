@@ -29,8 +29,10 @@
       :loading="healthChecking"
       :available-models="p2lStore.availableModels"
       :enabled-models="p2lStore.enabledModels"
+      :smart-routing-enabled="smartRoutingEnabled"
       @check-health="checkHealth"
       @update:enabled-models="handleEnabledModelsChange"
+      @update:smart-routing="handleSmartRoutingChange"
     />
 
     <!-- 主要功能区域 -->
@@ -102,6 +104,7 @@ const healthChecking = ref(false)
 const examplesVisible = ref(false)
 const chatHistoryRef = ref(null)
 const inputPanelRef = ref(null)
+const smartRoutingEnabled = ref(false)
 
 // 方法
 const checkHealth = async () => {
@@ -153,14 +156,30 @@ const analyzePrompt = async () => {
       p2lStore.enabledModels.includes(rec.model)
     )
     
-    ElNotification({
-      title: 'P2L分析完成',
-      message: `为您推荐了 ${enabledRecommendations.length} 个启用的模型`,
-      type: 'success',
-      customClass: 'tech-notification',
-      duration: 4000,
-      dangerouslyUseHTMLString: true
-    })
+    // 如果开启了智能路由，自动选择评分最高的模型进行回答
+    if (smartRoutingEnabled.value && enabledRecommendations.length > 0) {
+      // 找到评分最高的启用模型
+      const bestModel = enabledRecommendations[0] // recommendations已经按分数排序
+      
+      ElNotification({
+        title: '智能路由启动',
+        message: `P2L分析完成，自动选择 ${bestModel.model} (评分: ${bestModel.score}) 进行回答`,
+        type: 'success',
+        customClass: 'tech-notification',
+        duration: 4000
+      })
+      
+      // 自动调用最佳模型
+      await callLLM(bestModel.model)
+    } else {
+      ElNotification({
+        title: 'P2L分析完成',
+        message: `为您推荐了 ${enabledRecommendations.length} 个启用的模型，请选择一个进行回答`,
+        type: 'success',
+        customClass: 'tech-notification',
+        duration: 4000
+      })
+    }
   } catch (error) {
     ElNotification({
       title: '操作失败',
@@ -287,6 +306,20 @@ const handleEnabledModelsChange = (enabledModels) => {
     title: '模型更新',
     message: `已更新模型配置，当前启用 ${enabledModels.length} 个模型`,
     type: 'success',
+    customClass: 'tech-notification',
+    duration: 4000
+  })
+}
+
+// 智能路由开关处理
+const handleSmartRoutingChange = (enabled) => {
+  smartRoutingEnabled.value = enabled
+  ElNotification({
+    title: '智能路由',
+    message: enabled ? 
+      '已开启智能路由，分析后将自动选择最佳模型回答' : 
+      '已关闭智能路由，需要手动选择模型回答',
+    type: 'info',
     customClass: 'tech-notification',
     duration: 4000
   })
