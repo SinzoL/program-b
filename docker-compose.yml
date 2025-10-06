@@ -10,6 +10,8 @@ services:
       - P2L_ENV=production
       - P2L_HOST=0.0.0.0
       - P2L_PORT=8080
+      # Python路径配置（适配整理后的结构）
+      - PYTHONPATH=/app:/app/backend:/app/backend/model_p2l
       # 内存优化配置
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
       - OMP_NUM_THREADS=2
@@ -17,6 +19,8 @@ services:
       - ./models:/app/models
       - ./p2l:/app/p2l:ro
       - ./logs:/app/logs
+      # 更新配置文件挂载路径
+      - ./backend/model_p2l:/app/backend/model_p2l:ro
       - ./backend/api_config.env:/app/api_config.env:ro
     restart: unless-stopped
     # 资源限制（适合轻量服务器）
@@ -29,7 +33,7 @@ services:
           memory: 1G
           cpus: '0.5'
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 60s
       timeout: 15s
       retries: 5

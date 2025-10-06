@@ -21,18 +21,31 @@ logger = logging.getLogger(__name__)
 # 导入P2L推理模块
 try:
     import sys
-    # 添加项目根目录到Python路径
-    current_dir = os.path.dirname(os.path.abspath(__file__))  # backend目录
-    project_root = os.path.dirname(current_dir)  # program-b目录
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
+    # 优先从model_p2l目录导入
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    model_p2l_dir = os.path.join(current_dir, "model_p2l")
+    if model_p2l_dir not in sys.path:
+        sys.path.insert(0, model_p2l_dir)
     
-    from p2l.p2l.model import load_model as load_p2l_model, generate_text
-    from p2l.p2l.p2l_inference import P2LInferenceEngine
+    from model_p2l.p2l_inference import P2LInferenceEngine
     P2L_AVAILABLE = True
+    
+    # 尝试导入完整的P2L模块（如果存在）
+    try:
+        project_root = os.path.dirname(current_dir)
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
+        from p2l.p2l.model import load_model as load_p2l_model, generate_text
+        P2L_FULL_AVAILABLE = True
+    except ImportError:
+        P2L_FULL_AVAILABLE = False
+        def load_p2l_model(*args, **kwargs): return None, None
+        def generate_text(*args, **kwargs): return ""
+        
 except ImportError as e:
     logging.warning(f"P2L模块导入失败: {e}")
     P2L_AVAILABLE = False
+    P2L_FULL_AVAILABLE = False
 
 class P2LEngine:
     """P2L推理引擎管理器"""
@@ -52,15 +65,18 @@ class P2LEngine:
         """加载可用的P2L模型 - 按配置优先级"""
         # 导入配置常量
         try:
-            import sys
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            project_root = os.path.dirname(current_dir)
-            if project_root not in sys.path:
-                sys.path.insert(0, project_root)
-            from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
-        except ImportError as e:
-            logger.error(f"无法导入配置常量: {e}")
-            return
+            from model_p2l.p2l_core import DEFAULT_MODEL, MODEL_MAPPING
+        except ImportError:
+            try:
+                import sys
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                project_root = os.path.dirname(current_dir)
+                if project_root not in sys.path:
+                    sys.path.insert(0, project_root)
+                from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
+            except ImportError as e:
+                logger.error(f"无法导入配置常量: {e}")
+                return
         
         model_path = self.config["model_path"]
         if not os.path.exists(model_path):
@@ -223,16 +239,19 @@ class P2LEngine:
             
             # 导入配置常量
             try:
-                import sys
-                current_dir = os.path.dirname(os.path.abspath(__file__))
-                project_root = os.path.dirname(current_dir)
-                if project_root not in sys.path:
-                    sys.path.insert(0, project_root)
-                from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
+                from model_p2l.p2l_core import DEFAULT_MODEL, MODEL_MAPPING
             except ImportError:
-                logger.warning("无法导入配置常量，使用默认扫描方式")
-                DEFAULT_MODEL = None
-                MODEL_MAPPING = {}
+                try:
+                    import sys
+                    current_dir = os.path.dirname(os.path.abspath(__file__))
+                    project_root = os.path.dirname(current_dir)
+                    if project_root not in sys.path:
+                        sys.path.insert(0, project_root)
+                    from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
+                except ImportError:
+                    logger.warning("无法导入配置常量，使用默认扫描方式")
+                    DEFAULT_MODEL = None
+                    MODEL_MAPPING = {}
             
             # 使用配置中的模型路径
             models_dir = self.config["model_path"]

@@ -27,34 +27,37 @@ fi
 
 echo "✅ 系统环境检查通过"
 
-# 检查外置配置文件
-if [ ! -f "api_configs.py" ]; then
-    echo "❌ 未找到API配置文件: api_configs.py"
-    echo "💡 请确保外置配置文件存在，参考README.md中的配置说明"
+# 检查backend配置文件
+if [ ! -f "backend/model_p2l/api_configs.py" ]; then
+    echo "❌ 未找到API配置文件: backend/model_p2l/api_configs.py"
+    echo "💡 请确保配置文件存在，参考backend/README.md中的配置说明"
     exit 1
 fi
 
-if [ ! -f "model_configs.py" ]; then
-    echo "❌ 未找到模型配置文件: model_configs.py"
-    echo "💡 请确保外置配置文件存在，参考README.md中的配置说明"
+if [ ! -f "backend/model_p2l/model_configs.py" ]; then
+    echo "❌ 未找到模型配置文件: backend/model_p2l/model_configs.py"
+    echo "💡 请确保配置文件存在，参考backend/README.md中的配置说明"
     exit 1
 fi
 
-echo "✅ 外置配置文件检查通过"
+echo "✅ Backend配置文件检查通过"
 
 # 检查P2L模型
 echo "🔍 检查P2L模型..."
+cd backend/model_p2l
 python3 p2l_tools.py ensure
 if [ $? -ne 0 ]; then
     echo "❌ P2L模型检查失败，请检查网络连接"
-    echo "💡 您也可以稍后手动运行: python3 p2l_tools.py ensure"
+    echo "💡 您也可以稍后手动运行: cd backend/model_p2l && python3 p2l_tools.py ensure"
     echo "⚠️  服务将在降级模式下启动"
 fi
+cd ../..
 
 # 停止已有服务
 echo "🛑 停止已有服务..."
-pkill -f "main.py" 2>/dev/null || true
-pkill -f "service.py" 2>/dev/null || true
+pkill -f "backend.*main.py" 2>/dev/null || true
+pkill -f "backend.*service.py" 2>/dev/null || true
+pkill -f "uvicorn.*backend" 2>/dev/null || true
 pkill -f "vite.*--port 3000" 2>/dev/null || true
 pkill -f "npm.*dev" 2>/dev/null || true
 
@@ -90,6 +93,13 @@ if [ $? -ne 0 ]; then
         echo "❌ 后端依赖安装失败"
         exit 1
     fi
+fi
+
+# 测试配置加载
+echo "🔧 测试backend配置..."
+python3 -c "from config import get_all_models; print(f'✅ 配置加载成功，共{len(get_all_models())}个模型')" 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "⚠️  配置加载测试失败，但将继续启动"
 fi
 
 # 启动后端

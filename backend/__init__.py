@@ -19,7 +19,8 @@ from .config import (
     load_env_config
 )
 
-from .llm_client import LLMClient, LLMResponse
+# 使用统一的LLM客户端
+from .unified_client import UnifiedLLMClient, LLMResponse
 from .p2l_engine import P2LEngine
 from .task_analyzer import TaskAnalyzer
 from .model_scorer import ModelScorer
@@ -35,7 +36,7 @@ __all__ = [
     "load_env_config",
     
     # 核心组件
-    "LLMClient", "LLMResponse",
+    "UnifiedLLMClient", "LLMResponse",
     "P2LEngine", "TaskAnalyzer", "ModelScorer",
     "P2LBackendService"
 ]

@@ -1,28 +1,36 @@
-# P2L Backend Service Requirements
+# P2L Backend 依赖文件 - 精简版本
 
-# Web Framework
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
+# 核心框架
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
 
-# Machine Learning
+# HTTP客户端
+aiohttp==3.9.1
+httpx==0.25.2
+
+# AI/ML核心
 torch>=2.0.0
 transformers>=4.35.0
-huggingface_hub>=0.19.0
+tokenizers>=0.15.0
 
-# HTTP Client
-aiohttp>=3.9.0
-
-# Data Processing
+# 数据处理
 numpy>=1.24.0
 pandas>=2.0.0
 
-# Utilities
-pydantic>=2.0.0
-python-dotenv>=1.0.0
+# 工具库
+python-dotenv==1.0.0
+python-multipart==0.0.6
 
-# Logging
-loguru>=0.7.0
+# HuggingFace
+huggingface-hub>=0.19.0
+safetensors>=0.4.0
 
-# Optional: GPU Support
-# torch-audio  # Uncomment if needed
-# torchaudio   # Uncomment if needed
+# 可选：加速库（根据环境选择）
+# accelerate>=0.24.0  # GPU加速
+# bitsandbytes>=0.41.0  # 量化支持
+
+# 开发工具（可选）
+# pytest>=7.4.0
+# black>=23.0.0
+# flake8>=6.0.0

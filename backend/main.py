@@ -1,28 +1,35 @@
 #!/usr/bin/env python3
 """
-P2L后端服务启动文件
+Backend主启动文件 - 简化版本
 统一的后端服务入口
 """
 
-import sys
 import os
+import sys
+import logging
 
-# 添加当前目录到Python路径
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-# 添加项目根目录到Python路径
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# 设置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+def main():
+    """主函数"""
+    try:
+        # 导入并启动服务
+        from service import main as service_main
+        logger.info("🚀 启动P2L Backend服务...")
+        service_main()
+        
+    except ImportError as e:
+        logger.error(f"❌ 服务模块导入失败: {e}")
+        logger.error("请确保所有依赖已正确安装")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"❌ 服务启动失败: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    print("🚀 P2L后端服务启动")
-    print("=" * 50)
-    
-    # 启动服务
-    try:
-        from .service import main
-    except ImportError:
-        # 兼容直接运行的情况
-        import sys
-        import os
-        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-        from service import main
     main()

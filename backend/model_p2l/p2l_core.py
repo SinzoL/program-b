@@ -80,7 +80,9 @@ class P2LModelManager:
             self.models_dir = Path("/app/models")
             self.is_docker = True
         else:
-            self.models_dir = Path("models")
+            # 使用相对于当前文件的models目录
+            current_dir = Path(__file__).parent
+            self.models_dir = current_dir / "models"
             self.is_docker = False
         
         self.models_dir.mkdir(exist_ok=True)

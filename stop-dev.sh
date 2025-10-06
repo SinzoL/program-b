@@ -23,8 +23,9 @@ if [ ! -z "$BACKEND_PID" ] && kill -0 $BACKEND_PID 2>/dev/null; then
     kill $BACKEND_PID
 else
     echo "  - 通过进程名停止后端服务"
-    pkill -f "main.py" 2>/dev/null || true
-    pkill -f "service.py" 2>/dev/null || true
+    pkill -f "backend.*main.py" 2>/dev/null || true
+    pkill -f "backend.*service.py" 2>/dev/null || true
+    pkill -f "uvicorn.*backend" 2>/dev/null || true
 fi
 
 # 停止前端服务
@@ -76,11 +77,11 @@ echo "🚀 重新启动: ./start-dev.sh"
 echo ""
 
 # 显示剩余的相关进程
-REMAINING_PROCESSES=$(ps aux | grep -E "(main\.py|service\.py|vite.*3000|npm.*dev)" | grep -v grep | wc -l)
+REMAINING_PROCESSES=$(ps aux | grep -E "(backend.*main\.py|backend.*service\.py|uvicorn.*backend|vite.*3000|npm.*dev)" | grep -v grep | wc -l)
 if [ $REMAINING_PROCESSES -gt 0 ]; then
     echo "⚠️  发现残留进程:"
-    ps aux | grep -E "(main\.py|service\.py|vite.*3000|npm.*dev)" | grep -v grep
+    ps aux | grep -E "(backend.*main\.py|backend.*service\.py|uvicorn.*backend|vite.*3000|npm.*dev)" | grep -v grep
     echo ""
     echo "💡 如需强制清理，请运行:"
-    echo "   pkill -f 'main.py|service.py|vite.*3000|npm.*dev'"
+    echo "   pkill -f 'backend.*main.py|backend.*service.py|uvicorn.*backend|vite.*3000|npm.*dev'"
 fi

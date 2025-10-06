@@ -1,46 +1,53 @@
 #!/bin/bash
-# P2L Backend Service 启动脚本
+# Backend启动脚本 - 统一版本
 
-echo "🚀 启动P2L统一后端服务..."
+set -e
+
+echo "🚀 启动P2L Backend服务..."
 
 # 检查Python环境
 if ! command -v python3 &> /dev/null; then
-    echo "❌ Python3 未安装，请先安装Python3"
+    echo "❌ Python3 未找到，请先安装Python3"
+    exit 1
+fi
+
+# 检查当前目录
+if [ ! -f "service.py" ]; then
+    echo "❌ 请在backend目录下运行此脚本"
     exit 1
 fi
 
 # 检查依赖
-echo "📦 检查依赖..."
-python3 -c "import fastapi, uvicorn, torch, transformers, aiohttp" 2>/dev/null
-if [ $? -ne 0 ]; then
-    echo "❌ 缺少必要依赖，请运行: pip install -r requirements.txt"
+echo "🔍 检查依赖..."
+python3 -c "import fastapi, uvicorn, torch, transformers" 2>/dev/null || {
+    echo "⚠️  缺少依赖，尝试安装..."
+    pip3 install -r requirements.txt || {
+        echo "❌ 依赖安装失败"
+        exit 1
+    }
+}
+
+# 检查配置文件
+echo "🔍 检查配置文件..."
+if [ ! -d "model_p2l" ]; then
+    echo "❌ model_p2l 目录不存在"
     exit 1
 fi
 
-# 检查外置配置文件
-if [ ! -f "../api_configs.py" ]; then
-    echo "❌ 未找到API配置文件: ../api_configs.py"
+if [ ! -f "model_p2l/api_configs.py" ] || [ ! -f "model_p2l/model_configs.py" ]; then
+    echo "❌ 配置文件缺失"
     exit 1
 fi
 
-if [ ! -f "../model_configs.py" ]; then
-    echo "❌ 未找到模型配置文件: ../model_configs.py"
-    exit 1
-fi
-
-# 停止已有服务
-echo "🛑 停止已有服务..."
-pkill -f "main.py" 2>/dev/null || true
-pkill -f "service.py" 2>/dev/null || true
-
-# 等待端口释放
-sleep 2
+# 设置环境变量
+export PYTHONPATH="${PYTHONPATH}:$(pwd):$(pwd)/model_p2l"
 
 # 启动服务
-echo "🚀 启动统一后端服务..."
-cd "$(dirname "$0")"
-python3 main.py
+echo "✅ 环境检查完成，启动服务..."
+echo "📡 服务地址: http://localhost:8080"
+echo "📋 API文档: http://localhost:8080/docs"
+echo "❤️  健康检查: http://localhost:8080/health"
+echo ""
 
-echo "✅ P2L后端服务已启动"
-echo "🌐 健康检查: curl http://localhost:8080/health"
-echo "📊 API文档: http://localhost:8080/docs"
+# 使用Python直接运行service.py
+python3 service.py

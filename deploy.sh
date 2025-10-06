@@ -68,13 +68,15 @@ echo "✅ 模型目录已准备"
 echo "🚀 预下载P2L模型..."
 
 # 简单检查：如果有Python环境和必要文件，就尝试预下载
-if command -v python3 &> /dev/null && [ -f "p2l_tools.py" ] && [ -f "p2l_core.py" ]; then
+if command -v python3 &> /dev/null && [ -f "backend/model_p2l/p2l_tools.py" ] && [ -f "backend/model_p2l/p2l_core.py" ]; then
     echo "⬇️  尝试预下载模型..."
+    cd backend/model_p2l
     if timeout 300 python3 p2l_tools.py download 2>/dev/null; then
         echo "✅ 模型预下载成功！容器启动将更快"
     else
         echo "⚠️  预下载失败或超时，容器启动时将重试"
     fi
+    cd ../..
 else
     echo "⚠️  跳过预下载（缺少Python环境或项目文件）"
 fi
@@ -82,7 +84,7 @@ fi
 echo "💡 说明：模型下载策略"
 echo "   - 优先使用预下载的模型"
 echo "   - 容器启动时会自动检测并补充缺失的模型"
-echo "   - 模型配置由 p2l_core.py 中的 DEFAULT_MODEL 决定"
+echo "   - 模型配置由 backend/model_p2l/p2l_core.py 中的 DEFAULT_MODEL 决定"
 echo "   - 下载进度可通过日志查看: docker-compose logs -f backend"
 
 # 检查配置文件
@@ -95,6 +97,17 @@ OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 EOF
     echo "请编辑 backend/api_config.env 添加您的 API 密钥"
+fi
+
+# 检查整理后的配置文件
+if [ ! -f "backend/model_p2l/api_configs.py" ]; then
+    echo "⚠️  未找到 backend/model_p2l/api_configs.py"
+    echo "💡 请确保配置文件存在，参考 backend/README.md"
+fi
+
+if [ ! -f "backend/model_p2l/model_configs.py" ]; then
+    echo "⚠️  未找到 backend/model_p2l/model_configs.py"
+    echo "💡 请确保配置文件存在，参考 backend/README.md"
 fi
 
 # 检查SSL证书（生产环境）
@@ -384,8 +397,8 @@ if [ "$UPGRADE_MODE" = true ]; then
 fi
 echo ""
 echo "🤖 模型管理："
-echo "  - 模型配置: 编辑 p2l_core.py 中的 DEFAULT_MODEL"
-echo "  - 手动管理: python3 p2l_tools.py [check|download|list|ensure]"
+echo "  - 模型配置: 编辑 backend/model_p2l/p2l_core.py 中的 DEFAULT_MODEL"
+echo "  - 手动管理: cd backend/model_p2l && python3 p2l_tools.py [check|download|list|ensure]"
 echo "  - 自动下载: backend服务启动时自动检测并下载模型"
 echo "  - 模型位置: ./models/ 目录"
-echo "  - 切换模型: 修改 p2l_core.py 后重启服务即可"
+echo "  - 切换模型: 修改 backend/model_p2l/p2l_core.py 后重启服务即可"

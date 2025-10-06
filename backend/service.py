@@ -15,9 +15,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 
-# 导入项目核心模块（唯一依赖）
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from p2l_core import DEFAULT_MODEL, MODEL_MAPPING, get_backend_status, print_backend_status
+# 导入项目核心模块
+try:
+    from model_p2l.p2l_core import DEFAULT_MODEL, MODEL_MAPPING, get_backend_status, print_backend_status
+except ImportError:
+    # 备用导入路径
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    try:
+        from p2l_core import DEFAULT_MODEL, MODEL_MAPPING, get_backend_status, print_backend_status
+    except ImportError:
+        # 最后的备用方案
+        DEFAULT_MODEL = "p2l-135m-grk-01112025"
+        MODEL_MAPPING = {}
+        def get_backend_status(): return {"p2l_ready": False}
+        def print_backend_status(): print("⚠️ P2L核心模块未找到")
 
 # 配置日志
 try:
@@ -42,7 +53,7 @@ try:
     from .p2l_engine import P2LEngine
     from .task_analyzer import TaskAnalyzer
     from .model_scorer import ModelScorer
-    from .llm_client import LLMClient
+    from .unified_client import UnifiedLLMClient
     logger.info("✅ 所有后端模块导入成功")
 except ImportError as e:
     # 如果相对导入失败，尝试绝对导入（兼容直接运行）
@@ -51,7 +62,7 @@ except ImportError as e:
         from p2l_engine import P2LEngine
         from task_analyzer import TaskAnalyzer
         from model_scorer import ModelScorer
-        from llm_client import LLMClient
+        from unified_client import UnifiedLLMClient
         logger.info("✅ 所有后端模块导入成功 (绝对导入)")
     except ImportError as e2:
         logger.error(f"❌ 后端模块导入失败: {e2}")
@@ -59,7 +70,7 @@ except ImportError as e:
         P2LEngine = None
         TaskAnalyzer = None
         ModelScorer = None
-        LLMClient = None
+        UnifiedLLMClient = None
         logger.warning("⚠️  部分模块导入失败，服务可能功能受限")
 
 # 请求模型
@@ -95,7 +106,7 @@ class P2LBackendService:
         self.task_analyzer = TaskAnalyzer()
         self.model_scorer = ModelScorer(self.all_models)
         
-        # 初始化LLM客户端
+        # 初始化统一LLM客户端
         self.llm_client = None
         
         # 模型加载状态
@@ -141,10 +152,10 @@ class P2LBackendService:
             logger.error(f"❌ P2L模型加载失败: {e}")
             logger.info("💡 服务将以降级模式运行，部分功能可能不可用")
     
-    async def _get_llm_client(self) -> LLMClient:
-        """获取LLM客户端实例"""
+    async def _get_llm_client(self) -> UnifiedLLMClient:
+        """获取统一LLM客户端实例"""
         if self.llm_client is None:
-            self.llm_client = LLMClient()
+            self.llm_client = UnifiedLLMClient()
         return self.llm_client
     
     async def analyze_prompt(self, request: P2LAnalysisRequest) -> Dict:
