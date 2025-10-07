@@ -184,6 +184,22 @@ class OptimalLPCostOptimizer(BaseCostOptimizer):
 class P2LRouter:
     """P2L原生路由器"""
     
+    # 采样权重配置 - 基于模型能力和使用频率
+    SAMPLING_WEIGHTS = {
+        "gpt-4o-2024-08-06": 4,
+        "gpt-4o-mini-2024-07-18": 2,
+        "claude-3-5-sonnet-20241022": 4,
+        "claude-3-5-haiku-20241022": 2,
+        "gemini-1.5-pro-002": 4,
+        "gemini-1.5-flash-002": 2,
+        "deepseek-v3": 4,
+        "qwen2.5-72b-instruct": 2,
+        "llama-3.1-405b-instruct": 4,
+        "llama-3.1-70b-instruct": 2,
+        "mistral-large-2411": 4,
+        "yi-lightning": 2,
+    }
+    
     def __init__(self):
         self.cost_optimizers = {
             'strict': StrictCostOptimizer(),
@@ -198,6 +214,37 @@ class P2LRouter:
             'speed': 'speed_weighted',       # 速度优先：速度权重调整
             'balanced': 'simple-lp'          # 平衡模式：简单线性规划
         }
+        
+        # 初始化采样权重和对手分布
+        self.opponent_distribution = None
+        self.opponent_scores = None
+    
+    def setup_opponent_distribution(self, model_list: List[str], p2l_coefficients: np.ndarray):
+        """
+        设置对手分布，用于博弈论优化
+        
+        Args:
+            model_list: 模型列表
+            p2l_coefficients: P2L系数
+        """
+        print(f"\n🎲 【设置对手分布】")
+        
+        # 构建对手分布权重
+        opponent_weights = []
+        for model in model_list:
+            weight = self.SAMPLING_WEIGHTS.get(model, 1)  # 默认权重为1
+            opponent_weights.append(weight)
+            print(f"   {model}: 权重={weight}")
+        
+        # 标准化为概率分布
+        opponent_weights = np.array(opponent_weights, dtype=float)
+        self.opponent_distribution = opponent_weights / opponent_weights.sum()
+        self.opponent_scores = p2l_coefficients.copy()
+        
+        print(f"   🎯 对手分布: {self.opponent_distribution}")
+        print(f"   📊 对手系数: {self.opponent_scores}")
+        
+        logger.info(f"🎲 对手分布设置完成，共{len(model_list)}个模型")
     
     def route_models(
         self,
@@ -408,14 +455,24 @@ class P2LRouter:
         p2l_coefficients: np.ndarray,
         model_list: List[str],
         model_configs: Dict[str, Dict],
+        mode: str = 'balanced',
         enabled_models: Optional[List[str]] = None
     ) -> List[Dict]:
         """
-        生成基于P2L系数的模型排名
+        生成基于优先模式调整的模型排名
+        
+        Args:
+            p2l_coefficients: P2L系数
+            model_list: 模型列表
+            model_configs: 模型配置
+            mode: 优先模式，影响评分计算
+            enabled_models: 启用的模型列表
         
         Returns:
-            排序后的模型列表，包含P2L分数和配置信息
+            排序后的模型列表，包含调整后的评分
         """
+        print(f"\n📊 【生成模型排名】优先模式: {mode}")
+        
         # 过滤启用的模型
         if enabled_models:
             filtered_data = [
@@ -431,26 +488,113 @@ class P2LRouter:
         else:
             configs = [model_configs[model] for model in model_list]
         
+        # 根据优先模式计算调整后的评分
+        adjusted_scores = self._calculate_mode_adjusted_scores(
+            p2l_coefficients, model_list, model_configs, mode
+        )
+        
         # 创建排名列表
         rankings = []
-        for i, (model, coef, config) in enumerate(zip(model_list, p2l_coefficients, configs)):
+        for i, (model, p2l_coef, adj_score, config) in enumerate(zip(model_list, p2l_coefficients, adjusted_scores, configs)):
             rankings.append({
                 "model": model,
-                "score": float(coef),  # P2L原生分数
-                "p2l_coefficient": float(coef),
+                "score": float(adj_score),  # 调整后的综合评分
+                "p2l_coefficient": float(p2l_coef),  # 原始P2L系数
                 "config": config,
                 "provider": config["provider"],
-                "cost_per_1k": config["cost_per_1k"],
-                "avg_response_time": config["avg_response_time"],
                 "cost_per_1k": config["cost_per_1k"],
                 "avg_response_time": config["avg_response_time"]
             })
         
-        # 按P2L系数排序
+        # 按调整后的评分排序
         rankings.sort(key=lambda x: x["score"], reverse=True)
         
-        logger.info(f"📊 P2L模型排名生成完成，共{len(rankings)}个模型")
+        print(f"📈 排名调整完成:")
+        for i, ranking in enumerate(rankings[:3], 1):
+            print(f"  {i}. {ranking['model']}: 综合评分={ranking['score']:.3f}, P2L系数={ranking['p2l_coefficient']:.3f}")
+        
+        logger.info(f"📊 模式调整的模型排名生成完成，共{len(rankings)}个模型")
         return rankings
+    
+    def _calculate_mode_adjusted_scores(
+        self,
+        p2l_coefficients: np.ndarray,
+        model_list: List[str],
+        model_configs: Dict[str, Dict],
+        mode: str
+    ) -> np.ndarray:
+        """
+        根据优先模式计算调整后的模型评分
+        
+        Args:
+            p2l_coefficients: 原始P2L系数
+            model_list: 模型列表
+            model_configs: 模型配置
+            mode: 优先模式
+            
+        Returns:
+            调整后的评分数组
+        """
+        print(f"🔧 【评分调整】模式: {mode}")
+        
+        # 提取模型属性
+        costs = np.array([model_configs[model]["cost_per_1k"] for model in model_list])
+        response_times = np.array([model_configs[model]["avg_response_time"] for model in model_list])
+        
+        # 标准化P2L系数到0-1范围
+        p2l_min, p2l_max = np.min(p2l_coefficients), np.max(p2l_coefficients)
+        if p2l_max > p2l_min:
+            normalized_p2l = (p2l_coefficients - p2l_min) / (p2l_max - p2l_min)
+        else:
+            normalized_p2l = np.ones_like(p2l_coefficients) * 0.5
+        
+        # 标准化成本分数（成本越低分数越高）
+        max_cost = np.max(costs)
+        cost_scores = (max_cost - costs) / max_cost if max_cost > 0 else np.ones_like(costs)
+        
+        # 标准化速度分数（时间越短分数越高）
+        max_time = np.max(response_times)
+        speed_scores = (max_time - response_times) / max_time if max_time > 0 else np.ones_like(response_times)
+        
+        print(f"   📊 标准化P2L: {normalized_p2l}")
+        print(f"   💰 成本分数: {cost_scores}")
+        print(f"   ⚡ 速度分数: {speed_scores}")
+        
+        # 根据模式设置权重
+        if mode == 'performance':
+            # 性能优先：P2L系数权重最高
+            weights = {'p2l': 0.8, 'cost': 0.1, 'speed': 0.1}
+        elif mode == 'cost':
+            # 成本优先：成本权重最高
+            weights = {'p2l': 0.3, 'cost': 0.6, 'speed': 0.1}
+        elif mode == 'speed':
+            # 速度优先：速度权重最高
+            weights = {'p2l': 0.3, 'cost': 0.1, 'speed': 0.6}
+        elif mode == 'balanced':
+            # 平衡模式：各项权重相等
+            weights = {'p2l': 0.4, 'cost': 0.3, 'speed': 0.3}
+        else:
+            # 默认平衡模式
+            weights = {'p2l': 0.4, 'cost': 0.3, 'speed': 0.3}
+        
+        print(f"   ⚖️ 权重设置: P2L={weights['p2l']}, 成本={weights['cost']}, 速度={weights['speed']}")
+        
+        # 计算综合评分
+        adjusted_scores = (
+            weights['p2l'] * normalized_p2l +
+            weights['cost'] * cost_scores +
+            weights['speed'] * speed_scores
+        )
+        
+        print(f"   🎯 调整后评分: {adjusted_scores}")
+        
+        # 打印每个模型的详细计算
+        for i, model in enumerate(model_list):
+            print(f"      {model}: P2L={normalized_p2l[i]:.3f}*{weights['p2l']} + "
+                  f"成本={cost_scores[i]:.3f}*{weights['cost']} + "
+                  f"速度={speed_scores[i]:.3f}*{weights['speed']} = {adjusted_scores[i]:.3f}")
+        
+        return adjusted_scores
     
     def get_routing_explanation(self, routing_info: Dict) -> str:
         """生成路由选择的解释"""

@@ -110,12 +110,13 @@ class P2LModelScorer:
             print(f"🏆 路由结果: {selected_model}")
             print(f"📋 路由信息: {routing_info}")
             
-            # 3. 生成完整的模型排名
+            # 3. 生成完整的模型排名（根据优先模式调整）
             print(f"\n📊 【步骤3】生成完整模型排名...")
             rankings = self.p2l_router.generate_model_ranking(
                 p2l_coefficients=p2l_coefficients,
                 model_list=self.model_list,
                 model_configs=self.model_configs,
+                mode=priority,  # 传递优先模式
                 enabled_models=enabled_models
             )
             print(f"📈 排名生成完成，共{len(rankings)}个模型")
@@ -187,24 +188,61 @@ class P2LModelScorer:
     
     def _generate_mock_coefficients(self) -> np.ndarray:
         """生成模拟的Bradley-Terry系数（用于测试和降级）"""
-        num_models = len(self.model_list)
+        print(f"🎲 【生成模拟P2L系数】")
         
         # 生成基于模型质量的模拟系数
         coefficients = []
+        
+        # 预设的模型质量评分（基于真实模型表现）
+        model_quality_scores = {
+            "claude-3-5-sonnet-20241022": 0.85,  # 顶级模型
+            "gpt-4o-2024-08-06": 0.80,          # 顶级模型
+            "claude-3-opus-20240229": 0.78,      # 高质量模型
+            "gpt-4-turbo-2024-04-09": 0.75,     # 高质量模型
+            "gemini-1.5-pro-002": 0.70,         # 中高质量模型
+            "claude-3-sonnet-20240229": 0.65,   # 中等模型
+            "gpt-4o-mini-2024-07-18": 0.60,     # 轻量但高效模型
+            "claude-3-haiku-20240307": 0.55,    # 快速模型
+            "gemini-1.5-flash-002": 0.50,       # 快速模型
+            "gpt-3.5-turbo-0125": 0.45          # 基础模型
+        }
+        
         for model_name in self.model_list:
             config = self.model_configs[model_name]
             
-            # 基于成本和响应时间生成模拟系数
-            cost_factor = max(0.1, min(1.0, 0.05 / config["cost_per_1k"]))  # 成本越低分数越高
-            speed_factor = max(0.1, min(1.0, 5.0 / config["avg_response_time"]))  # 速度越快分数越高
-            base_coef = (cost_factor * speed_factor - 0.5) * 2  # 转换到[-1, 1]范围
-            noise = np.random.normal(0, 0.2)
-            coef = base_coef + noise
+            # 获取基础质量评分
+            base_quality = model_quality_scores.get(model_name, 0.5)
+            
+            # 根据成本效益调整（成本越低相对优势越大）
+            cost_efficiency = max(0.1, min(2.0, 0.01 / config["cost_per_1k"]))
+            cost_factor = min(1.2, 1.0 + (cost_efficiency - 1.0) * 0.1)  # 轻微成本优势
+            
+            # 根据响应速度调整（速度越快相对优势越大）
+            speed_efficiency = max(0.1, min(2.0, 3.0 / config["avg_response_time"]))
+            speed_factor = min(1.2, 1.0 + (speed_efficiency - 1.0) * 0.1)  # 轻微速度优势
+            
+            # 计算最终系数
+            adjusted_quality = base_quality * cost_factor * speed_factor
+            
+            # 转换为Bradley-Terry系数范围 [0.1, 2.0]，避免负数
+            # Bradley-Terry系数应该是正数，表示相对强度
+            coef = max(0.1, min(2.0, adjusted_quality * 2.0))
+            
+            # 添加小量随机噪声，但保持正数
+            noise = np.random.normal(0, 0.05)
+            coef = max(0.1, coef + noise)
             
             coefficients.append(coef)
+            
+            print(f"   {model_name}: 基础质量={base_quality:.2f}, "
+                  f"成本因子={cost_factor:.2f}, 速度因子={speed_factor:.2f}, "
+                  f"最终系数={coef:.3f}")
         
-        logger.info("🔄 生成模拟P2L系数")
-        return np.array(coefficients)
+        coefficients = np.array(coefficients)
+        print(f"✅ 模拟系数生成完成: 范围[{coefficients.min():.3f}, {coefficients.max():.3f}]")
+        
+        logger.info("🔄 生成改进的模拟P2L系数")
+        return coefficients
     
     def _fallback_scoring(self, enabled_models: Optional[List[str]] = None) -> List[Dict]:
         """降级评分方法"""

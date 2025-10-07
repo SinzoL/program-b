@@ -58,8 +58,8 @@
       <div class="rankings">
         <div class="rankings-header">
           <TechIcons name="performance" :size="18" color="#00ff88" />
-          <h4>Bradley-Terry系数排名</h4>
-          <el-tooltip content="基于P2L训练模型计算的真实模型能力系数" placement="top">
+          <h4>智能推荐排名</h4>
+          <el-tooltip content="基于当前优先模式的综合评分排名，综合考虑P2L系数、成本效益和响应速度" placement="top">
             <el-icon class="info-icon"><InfoFilled /></el-icon>
           </el-tooltip>
         </div>
@@ -82,7 +82,7 @@
             <div class="score-section">
               <div class="score-display">
                 <div class="score-number">{{ formatCoefficient(rec.p2l_coefficient || rec.score / 100) }}</div>
-                <div class="score-label">系数</div>
+                <div class="score-label">P2L系数</div>
               </div>
               <div class="confidence-info" v-if="rec.confidence">
                 <span class="confidence-label">置信度:</span>
@@ -133,9 +133,11 @@ const sortedRecommendations = computed(() => {
   return [...props.recommendations]
     .filter(rec => props.enabledModels.includes(rec.model))
     .sort((a, b) => {
-      const aCoeff = a.p2l_coefficient || a.score / 100
-      const bCoeff = b.p2l_coefficient || b.score / 100
-      return bCoeff - aCoeff
+      // 按照综合评分(score)排序，而不是P2L系数
+      // score字段已经根据优先模式调整过权重
+      const aScore = a.score || 0
+      const bScore = b.score || 0
+      return bScore - aScore
     })
 })
 
