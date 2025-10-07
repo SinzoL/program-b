@@ -6,6 +6,7 @@ Backend配置文件 - 统一版本
 
 import os
 import sys
+import logging
 from typing import Dict, Any
 
 # 添加model_p2l目录到Python路径
@@ -33,6 +34,101 @@ except ImportError as e:
 # 验证配置加载
 if not MODEL_CONFIGS:
     raise RuntimeError("❌ 模型配置加载失败！")
+
+# ================== 环境配置管理 ==================
+def get_environment():
+    """检测当前运行环境"""
+    return os.getenv("P2L_ENV", "development").lower()
+
+def get_production_service_config() -> Dict[str, Any]:
+    """生产环境配置 - Docker部署优化"""
+    return {
+        "server": {
+            "host": os.getenv("P2L_HOST", "0.0.0.0"),
+            "port": int(os.getenv("P2L_PORT", 8080)),
+            "log_level": "info",
+            "reload": False,  # 生产环境不启用热重载
+            "workers": 1,     # 单worker避免资源竞争
+        },
+        "cors": {
+            "allow_origins": ["*"],  # 生产环境可以配置具体域名
+            "allow_credentials": True,
+            "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["*"],
+        },
+        "logging": {
+            "level": "INFO",
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            "file": "/app/logs/backend.log",
+        },
+        "p2l": {
+            "model_path": os.getenv("P2L_MODEL_PATH", "/app/backend/model_p2l/models/p2l-135m-grk"),
+            "device": os.getenv("P2L_DEVICE", "cpu"),
+            "mock_mode": False,  # 生产环境使用真实P2L模型
+            "timeout": 60,  # 增加超时时间
+            "max_retries": 3,
+        },
+        "resources": {
+            "max_memory_mb": 3000,  # 最大内存使用
+            "max_cpu_percent": 80,  # 最大CPU使用率
+            "cleanup_interval": 300,  # 5分钟清理一次
+        }
+    }
+
+def get_development_service_config() -> Dict[str, Any]:
+    """开发环境配置"""
+    return {
+        "server": {
+            "host": "127.0.0.1",
+            "port": 8080,
+            "log_level": "debug",
+            "reload": True,  # 开发环境启用热重载
+        },
+        "cors": {
+            "allow_origins": ["*"],
+            "allow_credentials": True,
+            "allow_methods": ["*"],
+            "allow_headers": ["*"],
+        },
+        "logging": {
+            "level": "DEBUG",
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        },
+        "p2l": {
+            "model_path": os.path.join(current_dir, "model_p2l", "models", "p2l-135m-grk"),
+            "device": "cpu",
+            "mock_mode": False,
+            "timeout": 30,
+            "max_retries": 2,
+        }
+    }
+
+def setup_logging():
+    """根据环境设置日志配置"""
+    config = get_service_config()
+    log_config = config["logging"]
+    
+    handlers = [logging.StreamHandler()]
+    
+    # 生产环境添加文件日志
+    if get_environment() == "production" and "file" in log_config:
+        log_file = log_config["file"]
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        handlers.append(logging.FileHandler(log_file))
+    
+    logging.basicConfig(
+        level=getattr(logging, log_config["level"]),
+        format=log_config["format"],
+        handlers=handlers
+    )
+    
+    # 生产环境设置第三方库日志级别
+    if get_environment() == "production":
+        logging.getLogger("uvicorn").setLevel(logging.WARNING)
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+        logging.getLogger("transformers").setLevel(logging.WARNING)
+    
+    return logging.getLogger(__name__)
 
 # ================== P2L引擎配置 ==================
 def _get_model_path():
@@ -101,12 +197,34 @@ def get_p2l_config() -> Dict[str, Any]:
     return P2L_CONFIG
 
 def get_service_config() -> Dict[str, Any]:
-    """获取服务配置"""
-    from api_configs import get_service_config as external_get_service_config
-    return external_get_service_config()
+    """根据环境自动获取服务配置"""
+    env = get_environment()
+    
+    if env == "production":
+        config = get_production_service_config()
+        print(f"🐳 使用生产环境配置 (P2L_ENV={env})")
+        return config
+    else:
+        # 开发环境优先使用外部配置，如果失败则使用内置配置
+        try:
+            from api_configs import get_service_config as external_get_service_config
+            config = external_get_service_config()
+            print(f"🛠️ 使用开发环境外部配置 (P2L_ENV={env})")
+            return config
+        except ImportError:
+            config = get_development_service_config()
+            print(f"🛠️ 使用开发环境内置配置 (P2L_ENV={env})")
+            return config
 
 # 初始化环境配置
 load_env_config()
 
+# 环境信息输出
+env = get_environment()
 print(f"✅ Backend配置加载完成，共 {len(MODEL_CONFIGS)} 个模型")
 print(f"🔑 API配置加载完成，共 {len([k for k, v in API_CONFIGS['api_keys'].items() if v])} 个API密钥")
+print(f"🌍 当前环境: {env}")
+
+# 自动设置日志（如果需要）
+if os.getenv("AUTO_SETUP_LOGGING", "false").lower() == "true":
+    setup_logging()

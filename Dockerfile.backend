@@ -1,37 +1,46 @@
-# P2L Backend Dockerfile - 轻量优化版
+# P2L Backend Dockerfile - 生产优化版
 FROM python:3.10-slim
 
 # 设置工作目录
 WORKDIR /app
 
-# 跳过系统包安装，使用 Python 内置的 urllib 进行健康检查
-# 这样可以避免网络连接问题导致的构建失败
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# 复制依赖文件
+# 复制依赖文件并安装
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
-# 复制整个项目结构以支持相对导入
+# 复制整个项目结构
 COPY . .
 
-# 创建必要目录
-RUN mkdir -p /app/models /app/logs
-
-# 确保脚本可执行
-RUN chmod +x /app/p2l_tools.py
+# 创建必要目录并设置权限
+RUN mkdir -p /app/models /app/logs /app/backend/model_p2l/models && \
+    chmod -R 755 /app && \
+    chmod +x /app/p2l_tools.py
 
 # 设置环境变量
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app:/app/backend:/app/backend/model_p2l
 ENV P2L_ENV=production
 ENV P2L_HOST=0.0.0.0
 ENV P2L_PORT=8080
+ENV TOKENIZERS_PARALLELISM=false
+ENV OMP_NUM_THREADS=4
 
 # 暴露端口
 EXPOSE 8080
 
-# 健康检查（使用 Python 而不是 curl）
-HEALTHCHECK --interval=60s --timeout=15s --start-period=300s --retries=5 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
+# 更稳健的健康检查
+HEALTHCHECK --interval=30s --timeout=30s --start-period=600s --retries=10 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=30)" || exit 1
 
-# 启动命令 - 先检查模型再启动服务
-CMD ["/bin/bash", "-c", "echo '🐳 P2L Backend容器启动' && echo '🔍 检查P2L模型...' && python3 p2l_tools.py ensure && echo '🚀 启动backend服务...' && python -m backend.main"]
+# 优化的启动脚本
+COPY docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
