@@ -4,11 +4,8 @@ FROM python:3.10-slim
 # 设置工作目录
 WORKDIR /app
 
-# 安装必要的系统依赖（不更新包列表以加速构建）
-RUN apt-get install -y --no-install-recommends \
-    wget \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# 使用Python内置模块替代系统工具，避免apt-get update
+# wget/curl功能由Python的urllib实现
 
 # 复制依赖文件并安装
 COPY backend/requirements.txt .
@@ -34,7 +31,7 @@ ENV OMP_NUM_THREADS=4
 # 暴露端口
 EXPOSE 8080
 
-# 更稳健的健康检查
+# 使用Python进行健康检查，无需系统工具
 HEALTHCHECK --interval=30s --timeout=30s --start-period=600s --retries=10 \
     CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=30)" || exit 1
 
