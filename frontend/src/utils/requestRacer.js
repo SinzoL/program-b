@@ -238,7 +238,7 @@ class RequestRacer {
     ]
 
     return this.race(`p2l-analysis-${Date.now()}`, requestConfigs, {
-      timeout: 45000,      // 45秒超时
+      timeout: 60000,      // 60秒超时，P2L分析相对较快
       maxConcurrent: 3,    // 最多3个并发
       staggerDelay: 800,   // 800ms错开
       fallbackDelay: 3000, // 3秒后发送备用请求
@@ -278,10 +278,10 @@ class RequestRacer {
     ]
 
     return this.race(`llm-generation-${model}-${Date.now()}`, requestConfigs, {
-      timeout: 60000,      // 60秒超时
+      timeout: 150000,     // 150秒超时，与API配置保持一致
       maxConcurrent: 2,    // LLM请求并发数较少
-      staggerDelay: 1000,  // 1秒错开
-      fallbackDelay: 5000, // 5秒后发送备用请求
+      staggerDelay: 2000,  // 2秒错开，给服务器更多时间
+      fallbackDelay: 8000, // 8秒后发送备用请求
       retryOnFailure: true
     })
   }
