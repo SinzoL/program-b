@@ -10,42 +10,38 @@ services:
       - P2L_ENV=production
       - P2L_HOST=0.0.0.0
       - P2L_PORT=8080
-      # Python路径配置
+      # Python路径配置（适配整理后的结构）
       - PYTHONPATH=/app:/app/backend:/app/backend/model_p2l
-      # 内存优化配置 - 更宽松的设置
-      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:256
-      - OMP_NUM_THREADS=4
-      - TOKENIZERS_PARALLELISM=false
-      # P2L 特定配置
-      - P2L_MODEL_PATH=/app/backend/model_p2l/models/p2l-135m-grk
-      - P2L_DEVICE=cpu
+      # 内存优化配置
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128
+      - OMP_NUM_THREADS=2
     volumes:
       - ./models:/app/models
       - ./p2l:/app/p2l:ro
       - ./logs:/app/logs
+      # 更新配置文件挂载路径
       - ./backend/model_p2l:/app/backend/model_p2l:ro
     restart: unless-stopped
-    # 更宽松的资源限制
+    # 资源限制（适合轻量服务器）
     deploy:
       resources:
         limits:
-          memory: 4G      # 增加内存限制
-          cpus: '2.0'     # 增加CPU限制
+          memory: 2.5G
+          cpus: '1.5'
         reservations:
-          memory: 2G      # 增加内存预留
-          cpus: '1.0'     # 增加CPU预留
-    # 优化的健康检查
+          memory: 1G
+          cpus: '0.5'
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=30)"]
-      interval: 30s       # 减少检查频率
-      timeout: 30s        # 增加超时时间
-      retries: 10         # 增加重试次数
-      start_period: 600s  # 增加启动等待时间到10分钟
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 60s
+      timeout: 15s
+      retries: 5
+      start_period: 300s  # 增加启动等待时间，因为可能需要下载模型
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"   # 增加日志大小
-        max-file: "3"     # 增加日志文件数
+        max-size: "5m"
+        max-file: "2"
 
   frontend:
     build: 
@@ -55,30 +51,28 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      backend:
-        condition: service_healthy  # 等待后端健康检查通过
+      - backend
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 1G      # 增加前端内存
-          cpus: '1.0'     # 增加前端CPU
-        reservations:
-          memory: 256M
+          memory: 512M
           cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.2'
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 30s
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 60s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 3
     logging:
       driver: "json-file"
       options:
         max-size: "5m"
         max-file: "2"
 
-  # Nginx 反向代理
+  # Nginx 反向代理（可选，生产环境推荐）
   nginx:
     image: nginx:alpine
     container_name: p2l-nginx
@@ -89,22 +83,11 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
-      frontend:
-        condition: service_healthy
-      backend:
-        condition: service_healthy
+      - frontend
+      - backend
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.5'
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    profiles:
+      - production  # 使用 --profile production 启用
     logging:
       driver: "json-file"
       options:
@@ -114,10 +97,7 @@ services:
 networks:
   default:
     name: p2l-network
-    driver: bridge
 
 volumes:
   logs:
-    driver: local
-  models:
     driver: local
