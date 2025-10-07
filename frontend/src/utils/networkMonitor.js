@@ -44,16 +44,27 @@ class NetworkMonitor {
     this.listeners.forEach(callback => callback(event))
   }
 
-  // 检测网络延迟
+  // 检测网络延迟 - 优化生产环境兼容性
   async checkLatency() {
     if (!this.isOnline) return Infinity
 
     try {
       const start = performance.now()
+      
+      // 使用更安全的检测方式
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5秒超时
+      
       const response = await fetch('/api/health', { 
-        method: 'HEAD',
-        cache: 'no-cache'
+        method: 'GET', // 改用GET，更兼容
+        cache: 'no-cache',
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json'
+        }
       })
+      
+      clearTimeout(timeoutId)
       const end = performance.now()
       
       if (response.ok) {
@@ -61,47 +72,58 @@ class NetworkMonitor {
         return this.latency
       }
     } catch (error) {
-      console.warn('网络延迟检测失败:', error)
+      // 静默处理网络检测错误，避免控制台噪音
+      if (error.name !== 'AbortError') {
+        console.debug('网络延迟检测失败:', error.message)
+      }
       this.latency = Infinity
     }
     
     return this.latency
   }
 
-  // 评估连接质量
+  // 评估连接质量 - 优化阈值和错误处理
   async assessConnectionQuality() {
     const latency = await this.checkLatency()
     
+    let newQuality
     if (latency === Infinity) {
-      this.connectionQuality = 'offline'
-    } else if (latency < 100) {
-      this.connectionQuality = 'excellent'
-    } else if (latency < 300) {
-      this.connectionQuality = 'good'
-    } else if (latency < 1000) {
-      this.connectionQuality = 'fair'
+      // 检测失败不一定是离线，可能是CORS或其他问题
+      newQuality = navigator.onLine ? 'unknown' : 'offline'
+    } else if (latency < 200) {
+      newQuality = 'excellent'
+    } else if (latency < 500) {
+      newQuality = 'good'
+    } else if (latency < 1500) {
+      newQuality = 'fair'
     } else {
-      this.connectionQuality = 'poor'
+      newQuality = 'poor'
     }
 
-    this.notifyListeners({
-      type: 'quality-update',
-      quality: this.connectionQuality,
-      latency: this.latency
-    })
+    // 只在质量真正改变时通知
+    if (newQuality !== this.connectionQuality) {
+      this.connectionQuality = newQuality
+      this.notifyListeners({
+        type: 'quality-update',
+        quality: this.connectionQuality,
+        latency: this.latency
+      })
+    }
 
     return this.connectionQuality
   }
 
-  // 开始定期质量检查
+  // 开始定期质量检查 - 优化检查频率
   startQualityCheck() {
-    // 立即检查一次
-    this.assessConnectionQuality()
+    // 延迟3秒后开始第一次检查，避免应用启动时的干扰
+    setTimeout(() => {
+      this.assessConnectionQuality()
+    }, 3000)
     
-    // 每30秒检查一次
+    // 每60秒检查一次（降低频率，减少网络负担）
     setInterval(() => {
       this.assessConnectionQuality()
-    }, 30000)
+    }, 60000)
   }
 
   // 获取当前状态
@@ -121,7 +143,7 @@ class NetworkMonitor {
       'fair': '网络连接一般，部分功能可能较慢',
       'good': '网络连接良好',
       'excellent': '网络连接优秀',
-      'unknown': '网络状态检测中...'
+      'unknown': '网络状态正常'  // 改为更积极的描述
     }
     
     return descriptions[this.connectionQuality] || descriptions.unknown

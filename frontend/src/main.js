@@ -18,15 +18,18 @@ app.use(createPinia())
 app.use(router)
 app.use(ElementPlus)
 
-// 初始化网络监控
-console.log('🌐 初始化网络监控器...')
+// 初始化网络监控 - 优化日志输出
+console.log('🌐 网络监控器已启动')
 networkMonitor.addListener((event) => {
   if (event.type === 'offline') {
     console.warn('⚠️ 网络连接已断开')
   } else if (event.type === 'online') {
     console.log('✅ 网络连接已恢复')
-  } else if (event.type === 'quality-update') {
-    console.log(`📊 网络质量: ${event.quality} (${Math.round(event.latency)}ms)`)
+  } else if (event.type === 'quality-update' && event.quality !== 'unknown') {
+    // 只在有明确质量评估时输出，避免unknown状态的噪音
+    if (event.latency !== Infinity) {
+      console.log(`📊 网络质量: ${event.quality} (${Math.round(event.latency)}ms)`)
+    }
   }
 })
 
