@@ -4,11 +4,10 @@ FROM python:3.10-slim
 # 设置工作目录
 WORKDIR /app
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y \
+# 安装必要的系统依赖（不更新包列表以加速构建）
+RUN apt-get install -y --no-install-recommends \
     wget \
     curl \
-    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制依赖文件并安装
@@ -39,5 +38,8 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=30s --start-period=600s --retries=10 \
     CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=30)" || exit 1
 
-# 启动命令 - 先检查模型再启动服务
-CMD ["/bin/bash", "-c", "echo '🐳 P2L Backend容器启动' && echo '🔍 检查P2L模型...' && python3 p2l_tools.py ensure && echo '🚀 启动backend服务...' && python -m backend.main"]
+# 优化的启动脚本
+COPY docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
