@@ -49,5 +49,5 @@ echo "📋 API文档: http://localhost:8080/docs"
 echo "❤️  健康检查: http://localhost:8080/health"
 echo ""
 
-# 使用Python直接运行service.py
-python3 service.py
+# 使用P2L原生服务
+python3 service_p2l_native.py

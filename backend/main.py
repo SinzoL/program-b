@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 def main():
     """主函数"""
     try:
-        # 导入并启动服务
-        from service import main as service_main
-        logger.info("🚀 启动P2L Backend服务...")
+        # 导入并启动P2L原生服务
+        from service_p2l_native import main as service_main
+        logger.info("🚀 启动P2L原生Backend服务...")
         service_main()
         
     except ImportError as e:
-        logger.error(f"❌ 服务模块导入失败: {e}")
+        logger.error(f"❌ P2L原生服务模块导入失败: {e}")
         logger.error("请确保所有依赖已正确安装")
         sys.exit(1)
     except Exception as e:

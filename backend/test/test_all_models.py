@@ -8,7 +8,16 @@ import requests
 import json
 import time
 import threading
+import sys
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# 添加backend目录到Python路径
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, backend_dir)
+
+# 导入model_p2l配置
+sys.path.insert(0, os.path.join(backend_dir, 'model_p2l'))
 from api_configs import API_CONFIGS
 from model_configs import MODEL_CONFIGS, get_request_name, get_model_provider_info
 
@@ -215,10 +224,10 @@ def test_all_models():
         "detailed_results": results
     }
     
-    with open("all_models_test_results.json", "w", encoding="utf-8") as f:
-        json.dump(detailed_results, f, indent=2, ensure_ascii=False)
+    # with open("all_models_test_results.json", "w", encoding="utf-8") as f:
+    #    json.dump(detailed_results, f, indent=2, ensure_ascii=False)
     
-    print(f"\n💾 详细结果已保存到 all_models_test_results.json")
+    # print(f"\n💾 详细结果已保存到 all_models_test_results.json")
     
     return results
 

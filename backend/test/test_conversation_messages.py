@@ -8,9 +8,9 @@ import asyncio
 import sys
 import os
 
-# 添加当前目录到Python路径
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, current_dir)
+# 添加backend目录到Python路径
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, backend_dir)
 
 from unified_client import UnifiedLLMClient
 

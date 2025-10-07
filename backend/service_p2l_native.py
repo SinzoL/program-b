@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-P2L后端服务主文件
-统一的后端服务，整合所有功能模块
+P2L原生后端服务
+完全基于P2L模型的Bradley-Terry系数进行智能路由
 """
 
 import os
@@ -32,9 +32,9 @@ except ImportError:
 
 # 配置日志
 try:
-    from .config import get_service_config, load_env_config
+    from .config import get_service_config, load_env_config, get_all_models, get_model_config
 except ImportError:
-    from config import get_service_config, load_env_config
+    from config import get_service_config, load_env_config, get_all_models, get_model_config
 
 # 加载环境配置
 load_env_config()
@@ -46,30 +46,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# 导入后端模块
+# 导入P2L原生模块
 try:
     # 尝试相对导入
-    from .config import get_all_models, get_model_config
     from .p2l_engine import P2LEngine
-    from .task_analyzer import TaskAnalyzer
-    from .model_scorer import ModelScorer
+    from .p2l_model_scorer import P2LModelScorer  # 新的P2L原生评分器
     from .unified_client import UnifiedLLMClient
-    logger.info("✅ 所有后端模块导入成功")
+    logger.info("✅ P2L原生模块导入成功")
 except ImportError as e:
-    # 如果相对导入失败，尝试绝对导入（兼容直接运行）
+    # 如果相对导入失败，尝试绝对导入
     try:
-        from config import get_all_models, get_model_config
         from p2l_engine import P2LEngine
-        from task_analyzer import TaskAnalyzer
-        from model_scorer import ModelScorer
+        from p2l_model_scorer import P2LModelScorer
         from unified_client import UnifiedLLMClient
-        logger.info("✅ 所有后端模块导入成功 (绝对导入)")
+        logger.info("✅ P2L原生模块导入成功 (绝对导入)")
     except ImportError as e2:
-        logger.error(f"❌ 后端模块导入失败: {e2}")
+        logger.error(f"❌ P2L原生模块导入失败: {e2}")
         # 设置默认值以避免NameError
         P2LEngine = None
-        TaskAnalyzer = None
-        ModelScorer = None
+        P2LModelScorer = None
         UnifiedLLMClient = None
         logger.warning("⚠️  部分模块导入失败，服务可能功能受限")
 
@@ -78,6 +73,7 @@ class P2LAnalysisRequest(BaseModel):
     prompt: str
     priority: str = "balanced"
     enabled_models: Optional[List[str]] = None
+    budget: Optional[float] = None  # 新增：预算约束
 
 class LLMRequest(BaseModel):
     model: str
@@ -91,20 +87,19 @@ class P2LInferenceRequest(BaseModel):
     max_length: int = 512
     temperature: float = 0.7
 
-# 主服务类
-class P2LBackendService:
-    """P2L后端服务 - 统一版本"""
+# P2L原生后端服务
+class P2LNativeBackendService:
+    """P2L原生后端服务 - 完全基于Bradley-Terry系数的智能路由"""
     
     def __init__(self):
         # 设备检测
         self.device = self._detect_device()
         logger.info(f"🖥️  使用设备: {self.device}")
         
-        # 初始化各个模块（不加载P2L模型）
+        # 初始化各个模块
         self.all_models = get_all_models()
         self.p2l_engine = None  # 延迟初始化
-        self.task_analyzer = TaskAnalyzer()
-        self.model_scorer = ModelScorer(self.all_models)
+        self.p2l_model_scorer = None  # P2L原生评分器，需要p2l_engine初始化后创建
         
         # 初始化统一LLM客户端
         self.llm_client = None
@@ -113,9 +108,7 @@ class P2LBackendService:
         self.p2l_loading = False
         self.p2l_loaded = False
         
-        logger.info("🚀 P2L后端服务初始化完成（P2L模型将在后台加载）")
-        
-        # 注意：不在这里启动异步任务，而是在FastAPI启动时处理
+        logger.info("🚀 P2L原生后端服务初始化完成（P2L模型将在后台加载）")
     
     def _detect_device(self) -> torch.device:
         """检测可用设备"""
@@ -142,9 +135,15 @@ class P2LBackendService:
                 None, lambda: P2LEngine(self.device)
             )
             
+            # 初始化P2L原生评分器
+            self.p2l_model_scorer = P2LModelScorer(
+                model_configs=self.all_models,
+                p2l_engine=self.p2l_engine
+            )
+            
             self.p2l_loaded = True
             self.p2l_loading = False
-            logger.info("✅ P2L模型加载完成")
+            logger.info("✅ P2L原生模型和评分器加载完成")
             
         except Exception as e:
             self.p2l_loading = False
@@ -159,8 +158,8 @@ class P2LBackendService:
         return self.llm_client
     
     async def analyze_prompt(self, request: P2LAnalysisRequest) -> Dict:
-        """P2L智能分析主接口"""
-        logger.info(f"📝 收到P2L分析请求: {request.prompt[:50]}...")
+        """P2L原生智能分析主接口"""
+        logger.info(f"🧠 收到P2L原生分析请求: {request.prompt[:50]}...")
         start_time = time.time()
         
         # 检查P2L模型状态
@@ -171,28 +170,19 @@ class P2LBackendService:
                 raise HTTPException(status_code=503, detail="P2L模型未加载，服务暂时不可用")
         
         try:
-            # 1. P2L语义分析
-            complexity_score, language_score = self.p2l_engine.semantic_analysis(request.prompt)
-            
-            # 2. 任务分析
-            task_analysis = self.task_analyzer.analyze_task(
-                request.prompt, 
-                complexity_score, 
-                language_score
+            # 使用P2L原生评分器进行分析
+            model_rankings, routing_info = self.p2l_model_scorer.calculate_p2l_scores(
+                prompt=request.prompt,
+                priority=request.priority,
+                enabled_models=request.enabled_models,
+                budget=request.budget
             )
             
-            # 3. 模型评分和排序
-            model_scores = self.model_scorer.calculate_model_scores(
-                task_analysis, 
-                request.priority, 
-                request.enabled_models
-            )
-            
-            # 4. 生成推荐理由
-            if model_scores:
-                best_model = model_scores[0]
-                reasoning = self.model_scorer.generate_recommendation_reasoning(
-                    best_model, task_analysis, request.priority
+            # 生成推荐理由
+            if model_rankings:
+                best_model = model_rankings[0]
+                reasoning = self.p2l_model_scorer.generate_recommendation_reasoning(
+                    best_model, routing_info, request.priority
                 )
             else:
                 reasoning = "无可用模型"
@@ -201,44 +191,56 @@ class P2LBackendService:
             
             # 转换为前端期望的格式
             recommendations = []
-            for score_data in model_scores:
-                model_config = get_model_config(score_data["model"])
+            for ranking in model_rankings:
                 recommendations.append({
-                    "model": score_data["model"],
-                    "score": score_data["score"],
-                    "provider": model_config["provider"],
-                    "cost_per_1k": model_config["cost_per_1k"],
-                    "avg_response_time": model_config["avg_response_time"],
-                    "strengths": model_config["strengths"],
-                    "quality_score": model_config["quality_score"]
+                    "model": ranking["model"],
+                    "score": ranking["score"],
+                    "p2l_coefficient": ranking.get("p2l_coefficient", 0),
+                    "provider": ranking["provider"],
+                    "cost_per_1k": ranking["cost_per_1k"],
+                    "avg_response_time": ranking["avg_response_time"],
+                    "strengths": ranking["strengths"],
+                    "quality_score": ranking["quality_score"]
                 })
+            
+            # 构建任务分析结果（兼容前端）
+            task_analysis = {
+                "complexity_score": routing_info.get("complexity_score", 0.5),
+                "language_score": routing_info.get("language_score", 0.5),
+                "task_type": routing_info.get("task_type", "general"),
+                "estimated_tokens": routing_info.get("estimated_tokens", len(request.prompt.split()) * 1.3),
+                "p2l_strategy": routing_info.get("strategy", "unknown"),
+                "routing_explanation": routing_info.get("explanation", "P2L原生路由")
+            }
             
             result = {
                 "task_analysis": task_analysis,
-                "model_ranking": model_scores,
-                "recommendations": recommendations,  # 前端期望的字段
-                "recommended_model": model_scores[0]["model"] if model_scores else None,
-                "confidence": model_scores[0]["score"] if model_scores else 0,
+                "model_ranking": model_rankings,
+                "recommendations": recommendations,
+                "recommended_model": model_rankings[0]["model"] if model_rankings else None,
+                "confidence": model_rankings[0]["score"] if model_rankings else 0,
                 "reasoning": reasoning,
                 "processing_time": processing_time,
                 "device": str(self.device),
+                "p2l_native": True,  # 标识这是P2L原生结果
+                "routing_info": routing_info,  # 完整的路由信息
                 # 兼容旧版本前端
                 "recommendation": {
-                    "model": model_scores[0]["model"] if model_scores else None,
-                    "score": model_scores[0]["score"] if model_scores else 0,
+                    "model": model_rankings[0]["model"] if model_rankings else None,
+                    "score": model_rankings[0]["score"] if model_rankings else 0,
                     "reasoning": reasoning
                 }
             }
             
-            logger.info(f"✅ P2L分析完成，耗时: {processing_time}s")
+            logger.info(f"✅ P2L原生分析完成，策略: {routing_info.get('strategy', 'unknown')}, 耗时: {processing_time}s")
             return result
             
         except Exception as e:
-            logger.error(f"❌ P2L分析失败: {e}")
-            raise HTTPException(status_code=500, detail=f"P2L分析失败: {str(e)}")
+            logger.error(f"❌ P2L原生分析失败: {e}")
+            raise HTTPException(status_code=500, detail=f"P2L原生分析失败: {str(e)}")
     
     async def generate_llm_response(self, request: LLMRequest) -> Dict:
-        """LLM响应生成接口"""
+        """LLM响应生成接口（保持不变）"""
         logger.info(f"🤖 LLM请求: {request.model}")
         
         try:
@@ -298,7 +300,7 @@ class P2LBackendService:
             }
     
     async def p2l_inference(self, request: P2LInferenceRequest) -> Dict:
-        """P2L推理接口"""
+        """P2L推理接口（保持不变）"""
         logger.info(f"🧠 P2L推理请求")
         
         # 检查P2L模型状态
@@ -339,13 +341,23 @@ class P2LBackendService:
             "p2l_loading": self.p2l_loading,
             "p2l_loaded": self.p2l_loaded,
             "llm_client_available": True,
-            "real_api_enabled": True
+            "real_api_enabled": True,
+            "p2l_native_scorer": self.p2l_model_scorer is not None,
+            "service_type": "p2l_native"  # 标识服务类型
         }
+    
+    def get_available_models(self) -> List[str]:
+        """获取可用模型列表"""
+        return list(self.all_models.keys())
 
 # 创建FastAPI应用
 def create_app() -> FastAPI:
-    """创建FastAPI应用实例"""
-    app = FastAPI(title="P2L Backend Service - Unified", version="3.0.0")
+    """创建P2L原生FastAPI应用实例"""
+    app = FastAPI(
+        title="P2L Native Backend Service", 
+        version="4.0.0",
+        description="完全基于P2L模型Bradley-Terry系数的智能路由服务"
+    )
     
     # 添加CORS中间件
     cors_config = service_config["cors"]
@@ -357,8 +369,8 @@ def create_app() -> FastAPI:
         allow_headers=cors_config["allow_headers"],
     )
     
-    # 初始化服务
-    service = P2LBackendService()
+    # 初始化P2L原生服务
+    service = P2LNativeBackendService()
     
     # 启动事件：开始异步加载P2L模型
     @app.on_event("startup")
@@ -380,7 +392,7 @@ def create_app() -> FastAPI:
     
     @app.post("/api/p2l/analyze")
     async def analyze_prompt(request: P2LAnalysisRequest):
-        """P2L智能分析接口"""
+        """P2L原生智能分析接口"""
         return await service.analyze_prompt(request)
     
     @app.post("/api/llm/generate")
@@ -436,17 +448,16 @@ def create_app() -> FastAPI:
             
             # 获取模型详细信息
             model_info = {
-                "model_name": model_local_name,  # 直接使用local_name
+                "model_name": model_local_name,
                 "model_path": getattr(inference_engine, 'p2l_model_path', 'unknown'),
                 "model_type": type(inference_engine.model).__name__ if inference_engine.model else "未加载",
                 "tokenizer_type": type(inference_engine.tokenizer).__name__ if inference_engine.tokenizer else "未加载",
                 "is_loaded": inference_engine.model is not None,
                 "device": str(getattr(inference_engine, 'device', 'unknown')),
-                "current_model_key": current_model
+                "current_model_key": current_model,
+                "service_type": "p2l_native",
+                "native_scorer_loaded": service.p2l_model_scorer is not None
             }
-            
-            # 调试信息
-            logger.info(f"🔍 调试信息 - 设置的model_name: {model_local_name}")
             
             # 如果模型已加载，获取更多详细信息
             if inference_engine.model and hasattr(inference_engine.model, 'config'):
@@ -460,15 +471,11 @@ def create_app() -> FastAPI:
                     "max_position_embeddings": getattr(config, 'max_position_embeddings', 0)
                 })
                 
-                # 计算参数量（但不用于显示名称）
+                # 计算参数量
                 if hasattr(inference_engine.model, 'parameters'):
                     total_params = sum(p.numel() for p in inference_engine.model.parameters())
                     model_info["total_parameters"] = total_params
                     model_info["parameters_display"] = f"{total_params/1e6:.1f}M" if total_params > 1e6 else f"{total_params/1e3:.1f}K"
-            
-            # 确保model_name始终使用local_name，不被其他逻辑覆盖
-            model_info["model_name"] = model_local_name
-            logger.info(f"🔍 最终设置的model_name: {model_local_name}")
             
             return {
                 "status": "success",
@@ -490,11 +497,12 @@ def create_app() -> FastAPI:
                 "status": "error",
                 "error": str(e),
                 "model_info": {
-                    "model_name": model_local_name,  # 直接使用local_name
+                    "model_name": model_local_name,
                     "model_type": "未知",
                     "is_loaded": False,
                     "device": "unknown",
-                    "current_model_key": current_model
+                    "current_model_key": current_model,
+                    "service_type": "p2l_native"
                 },
                 "timestamp": time.time()
             }
@@ -502,7 +510,7 @@ def create_app() -> FastAPI:
     # 兼容性路由 (保持向后兼容)
     @app.post("/analyze")
     async def analyze_prompt_compat(request: P2LAnalysisRequest):
-        """P2L智能分析接口 (兼容性)"""
+        """P2L原生智能分析接口 (兼容性)"""
         return await service.analyze_prompt(request)
     
     @app.post("/generate")
@@ -521,7 +529,7 @@ def create_app() -> FastAPI:
     # Nginx代理路由 (去掉/api前缀后的路由)
     @app.post("/p2l/analyze")
     async def p2l_analyze_nginx(request: P2LAnalysisRequest):
-        """P2L智能分析接口 (Nginx代理)"""
+        """P2L原生智能分析接口 (Nginx代理)"""
         return await service.analyze_prompt(request)
 
     @app.post("/llm/generate")
@@ -546,7 +554,7 @@ def main():
     """主函数"""
     import uvicorn
     
-    logger.info("🚀 启动P2L后端服务 (统一版本)")
+    logger.info("🚀 启动P2L原生后端服务")
     
     server_config = service_config["server"]
     app = create_app()

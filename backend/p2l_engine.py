@@ -1,564 +1,554 @@
 #!/usr/bin/env python3
 """
-P2L推理引擎模块
-负责P2L模型加载和推理分析
+P2L引擎 - 加载并使用真实的P2L模型
+基于下载的 p2l-135m-grk 模型进行Bradley-Terry系数计算
 """
 
-import os
-import time
-import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from typing import Dict, Optional
+import json
 import logging
+import numpy as np
+import torch
+import torch.nn.functional as F
+from typing import Dict, List, Optional, Tuple, Any
+from dataclasses import dataclass
+import os
+import sys
+from pathlib import Path
 
-try:
-    from .config import get_p2l_config
-except ImportError:
-    from config import get_p2l_config
+# 添加p2l路径到系统路径
+current_dir = Path(__file__).parent
+p2l_project_dir = current_dir.parent / 'p2l'
+if str(p2l_project_dir) not in sys.path:
+    sys.path.insert(0, str(p2l_project_dir))
 
 logger = logging.getLogger(__name__)
 
-# 导入P2L推理模块
-try:
-    import sys
-    # 优先从model_p2l目录导入
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    model_p2l_dir = os.path.join(current_dir, "model_p2l")
-    if model_p2l_dir not in sys.path:
-        sys.path.insert(0, model_p2l_dir)
-    
-    from model_p2l.p2l_inference import P2LInferenceEngine
-    P2L_AVAILABLE = True
-    
-    # 尝试导入完整的P2L模块（如果存在）
-    try:
-        project_root = os.path.dirname(current_dir)
-        if project_root not in sys.path:
-            sys.path.insert(0, project_root)
-        from p2l.p2l.model import load_model as load_p2l_model, generate_text
-        P2L_FULL_AVAILABLE = True
-    except ImportError:
-        P2L_FULL_AVAILABLE = False
-        def load_p2l_model(*args, **kwargs): return None, None
-        def generate_text(*args, **kwargs): return ""
-        
-except ImportError as e:
-    logging.warning(f"P2L模块导入失败: {e}")
-    P2L_AVAILABLE = False
-    P2L_FULL_AVAILABLE = False
+@dataclass
+class P2LCoefficients:
+    """P2L系数数据结构"""
+    model_coefficients: Dict[str, float]  # Bradley-Terry系数
+    eta: Optional[float] = None  # 平局参数
+    gamma: Optional[float] = None  # 质量参数
+    confidence_scores: Optional[Dict[str, float]] = None  # 置信度分数
+    model_list: List[str] = None  # 模型列表
 
 class P2LEngine:
-    """P2L推理引擎管理器"""
+    """P2L引擎 - 使用下载的真实P2L模型"""
     
-    def __init__(self, device: torch.device):
+    def __init__(self, model_path: str = None, device: str = "cpu"):
+        """
+        初始化P2L引擎
+        
+        Args:
+            model_path: P2L模型路径
+            device: 计算设备
+        """
         self.device = device
-        self.p2l_models = {}
-        self.p2l_inference_engine = None
-        self.config = get_p2l_config()
+        self.is_loaded = False
         
-        # 加载P2L模型和推理引擎
-        self._load_p2l_models()
-        if P2L_AVAILABLE:
-            self._load_p2l_inference_engine()
-    
-    def _load_p2l_models(self):
-        """加载可用的P2L模型 - 按配置优先级"""
-        # 导入配置常量
-        try:
-            from model_p2l.p2l_core import DEFAULT_MODEL, MODEL_MAPPING
-        except ImportError:
-            try:
-                import sys
-                current_dir = os.path.dirname(os.path.abspath(__file__))
-                project_root = os.path.dirname(current_dir)
-                if project_root not in sys.path:
-                    sys.path.insert(0, project_root)
-                from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
-            except ImportError as e:
-                logger.error(f"无法导入配置常量: {e}")
-                return
-        
-        model_path = self.config["model_path"]
-        if not os.path.exists(model_path):
-            logger.warning(f"P2L模型路径不存在: {model_path}")
-            return
-        
-        # 1. 优先加载配置指定的默认模型
-        if DEFAULT_MODEL in MODEL_MAPPING:
-            target_model = MODEL_MAPPING[DEFAULT_MODEL]["local_name"]
-            target_path = os.path.join(model_path, target_model)
-            
-            if os.path.exists(target_path):
-                logger.info(f"🎯 按配置加载指定模型: {target_model} (来自 {DEFAULT_MODEL})")
-                if self._load_single_model(target_model, target_path):
-                    logger.info(f"✅ 配置模型 {target_model} 加载成功，跳过其他模型")
-                    return
-                else:
-                    logger.warning(f"⚠️ 配置模型 {target_model} 加载失败，尝试备用方案")
-            else:
-                logger.warning(f"⚠️ 配置的模型路径不存在: {target_path}")
+        # 设置模型路径
+        if model_path is None:
+            self.model_path = current_dir / "model_p2l" / "models" / "p2l-135m-grk"
         else:
-            logger.warning(f"⚠️ 配置的模型 {DEFAULT_MODEL} 不在映射表中")
+            self.model_path = Path(model_path)
         
-        # 2. 备用方案：扫描所有可用模型（按字母顺序，但会警告）
-        logger.warning("🔍 配置的默认模型不可用，扫描所有可用模型...")
-        available_models = []
-        for item in os.listdir(model_path):
-            if item.startswith('p2l-') and os.path.isdir(os.path.join(model_path, item)):
-                available_models.append(item)
+        logger.info(f"🔍 P2L模型路径: {self.model_path}")
         
-        # 按字母顺序排序，但优先选择较小的模型
-        available_models.sort(key=lambda x: (x.split('-')[1] if len(x.split('-')) > 1 else 'zzz'))
-        
-        for item in available_models:
-            full_model_path = os.path.join(model_path, item)
-            logger.warning(f"⚠️ 尝试备用模型: {item}")
-            if self._load_single_model(item, full_model_path):
-                logger.info(f"✅ 备用模型 {item} 加载成功")
-                break
-        
-    def _load_single_model(self, item: str, full_model_path: str) -> bool:
-        """加载单个P2L模型"""
+        # 尝试加载P2L模型
         try:
-            logger.info(f"🔄 正在加载P2L专用模型: {item}")
-            
-            # 检查是否是P2L专用模型格式
-            config_path = os.path.join(full_model_path, "config.json")
-            training_config_path = os.path.join(full_model_path, "training_config.json")
-            
-            if os.path.exists(training_config_path):
-                logger.info("🎯 检测到P2L训练模型，使用P2L专用加载器")
-                # 使用P2L专用模型加载器
-                from p2l.p2l.model import get_p2l_model, get_tokenizer
-                import json
-                
-                # 读取训练配置
-                with open(training_config_path, 'r') as f:
-                    training_config = json.load(f)
-                
-                # 读取模型配置
-                with open(config_path, 'r') as f:
-                    model_config = json.load(f)
-                
-                # 创建P2L模型
-                model_type = training_config.get("model_type", "qwen2")
-                loss_type = training_config.get("loss_type", "grk")
-                head_type = training_config.get("head_type", "rk")
-                
-                logger.info(f"📋 P2L模型配置: {model_type}/{loss_type}/{head_type}")
-                
-                # 获取P2L模型类
-                P2LModel = get_p2l_model(model_type, loss_type, head_type)
-                
-                # 加载tokenizer
-                tokenizer = get_tokenizer(
-                    full_model_path,
-                    chat_template=None,
-                    pad_token_if_none="<|pad|>",
-                    cls_token_if_none="<|cls|>"
-                )
-                
-                # 创建模型配置对象
-                from transformers import AutoConfig
-                config = AutoConfig.from_pretrained(full_model_path)
-                
-                # 初始化P2L模型 - 从权重文件推断正确的类别数
-                model_weights_path = os.path.join(full_model_path, "model.safetensors")
-                num_classes = 10  # 默认值
-                
-                if os.path.exists(model_weights_path):
-                    import safetensors.torch
-                    state_dict = safetensors.torch.load_file(model_weights_path)
-                    # 从权重文件推断类别数
-                    if 'head.head.weight' in state_dict:
-                        num_classes = state_dict['head.head.weight'].shape[0]
-                        logger.info(f"📊 从权重文件推断类别数: {num_classes}")
-                
-                model = P2LModel(
-                    config=config,
-                    CLS_id=tokenizer.cls_token_id,
-                    num_models=num_classes,  # 使用推断的类别数
-                    linear_head_downsize_factor=training_config.get("linear_head_downsize_factor"),
-                    head_kwargs=training_config.get("head_kwargs", {})
-                )
-                
-                # 加载权重
-                if os.path.exists(model_weights_path):
-                    model.load_state_dict(state_dict, strict=False)
-                    logger.info("✅ P2L模型权重加载成功")
-                else:
-                    logger.warning("⚠️ 未找到模型权重文件，使用随机初始化")
-                
-                model.to(self.device)
-                model.eval()
-                
-                self.p2l_models[item] = {
-                    "tokenizer": tokenizer,
-                    "model": model,
-                    "path": full_model_path,
-                    "model_type": model_type,
-                    "loss_type": loss_type,
-                    "head_type": head_type,
-                    "is_p2l_model": True
-                }
-                logger.info(f"🎉 P2L专用模型 {item} 加载成功！")
-                return True
-            
-            else:
-                # 尝试标准transformers加载
-                logger.info("🔄 尝试标准transformers加载...")
-                tokenizer = AutoTokenizer.from_pretrained(full_model_path, trust_remote_code=True)
-                model = AutoModelForCausalLM.from_pretrained(
-                    full_model_path,
-                    torch_dtype=torch.float16 if self.device.type == 'cuda' else torch.float32,
-                    device_map=None,
-                    trust_remote_code=True
-                )
-                model.to(self.device)
-                model.eval()
-                
-                self.p2l_models[item] = {
-                    "tokenizer": tokenizer,
-                    "model": model,
-                    "path": full_model_path,
-                    "is_p2l_model": False
-                }
-                logger.info(f"✅ 标准模型 {item} 加载成功")
-                return True
-                        
+            self._load_p2l_model()
         except Exception as e:
-            logger.error(f"❌ P2L模型 {item} 加载失败: {e}")
-            import traceback
-            logger.error(f"详细错误: {traceback.format_exc()}")
+            logger.warning(f"⚠️ P2L模型加载失败，将使用模拟模式: {e}")
+            self.is_loaded = False
+        
+    def _load_model_config(self) -> Dict:
+        """加载模型配置"""
+        config_path = self.model_path / "config.json"
+        training_config_path = self.model_path / "training_config.json"
+        
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                model_config = json.load(f)
+            
+            # 加载训练配置
+            if training_config_path.exists():
+                with open(training_config_path, 'r', encoding='utf-8') as f:
+                    training_config = json.load(f)
+                model_config.update(training_config)
+            
+            logger.info(f"✅ 模型配置加载成功")
+            return model_config
+            
+        except Exception as e:
+            logger.error(f"❌ 模型配置加载失败: {e}")
+            raise
+    
+    def _load_model_list(self) -> List[str]:
+        """加载模型列表"""
+        model_list_path = self.model_path / "model_list.json"
+        
+        try:
+            with open(model_list_path, 'r', encoding='utf-8') as f:
+                model_list = json.load(f)
+            
+            logger.info(f"✅ 模型列表加载成功，共 {len(model_list)} 个模型")
+            return model_list
+            
+        except Exception as e:
+            logger.error(f"❌ 模型列表加载失败: {e}")
+            raise
+    
+    def _load_p2l_model(self):
+        """加载P2L模型和tokenizer"""
+        # 检查模型是否存在
+        if not self.model_path.exists():
+            raise FileNotFoundError(f"P2L模型路径不存在: {self.model_path}")
+        
+        # 加载模型配置和模型列表
+        self.model_config = self._load_model_config()
+        self.model_list = self._load_model_list()
+        self.num_models = len(self.model_list)
+        
+        try:
+            # 导入P2L模型相关模块
+            from p2l.model import get_p2l_model
+            from transformers import AutoTokenizer
+            
+            logger.info(f"🔍 开始加载P2L模型...")
+            
+            # 加载tokenizer
+            tokenizer = AutoTokenizer.from_pretrained(str(self.model_path))
+            tokenizer.truncation_side = "left"
+            tokenizer.padding_side = "right"
+            
+            # 添加特殊token
+            if "pad_token" not in tokenizer.special_tokens_map:
+                tokenizer.add_special_tokens({"pad_token": "<|pad|>"})
+            if "cls_token" not in tokenizer.special_tokens_map:
+                tokenizer.add_special_tokens({"cls_token": "<|cls|>"})
+            
+            logger.info(f"✅ Tokenizer加载成功")
+            
+            # 获取P2L模型类
+            model_type = self.model_config.get("model_type", "llama")
+            head_type = self.model_config.get("head_type", "rk")
+            loss_type = self.model_config.get("loss_type", "bag")
+            
+            logger.info(f"🎯 模型参数: type={model_type}, head={head_type}, loss={loss_type}")
+            
+            P2LModelClass = get_p2l_model(model_type, loss_type, head_type)
+            
+            # 加载模型
+            model = P2LModelClass.from_pretrained(
+                str(self.model_path),
+                CLS_id=tokenizer.cls_token_id,
+                num_models=self.num_models,
+                torch_dtype=torch.bfloat16 if self.device != "cpu" else torch.float32,
+                device_map="auto" if self.device == "cuda" else None
+            )
+            
+            if self.device != "cuda":
+                model = model.to(self.device)
+            
+            model.eval()
+            
+            self.model = model
+            self.tokenizer = tokenizer
+            self.is_loaded = True
+            
+            logger.info(f"✅ P2L模型加载成功")
+            logger.info(f"📊 支持模型数量: {self.num_models}")
+            logger.info(f"🎯 模型设备: {next(model.parameters()).device}")
+            logger.info(f"🎯 模型精度: {next(model.parameters()).dtype}")
+            
+        except Exception as e:
+            logger.error(f"❌ P2L模型加载失败: {e}")
+            raise
+    
+    def get_bradley_terry_coefficients(self, prompt: str, model_list: List[str]) -> np.ndarray:
+        """
+        获取Bradley-Terry系数
+        
+        Args:
+            prompt: 用户提示词
+            model_list: 要评估的模型列表
+            
+        Returns:
+            np.ndarray: Bradley-Terry系数数组
+        """
+        print(f"🎯 【P2L引擎】计算Bradley-Terry系数...")
+        print(f"📝 提示词: {prompt[:50]}{'...' if len(prompt) > 50 else ''}")
+        print(f"📋 目标模型数量: {len(model_list)}")
+        
+        if not self.is_loaded:
+            print(f"⚠️ P2L模型未加载，使用模拟系数")
+            logger.warning("P2L模型未加载，使用模拟系数")
+            return self._generate_mock_coefficients(len(model_list))
+        
+        try:
+            # 获取完整的P2L系数对象
+            coefficients = self.get_coefficients_for_prompt(prompt, model_list)
+            
+            # 提取系数数组
+            coef_array = np.array([
+                coefficients.model_coefficients.get(model, 0.5) 
+                for model in model_list
+            ])
+            
+            print(f"✅ P2L推理成功，获得{len(coef_array)}个系数")
+            print(f"📊 系数范围: [{coef_array.min():.3f}, {coef_array.max():.3f}]")
+            
+            return coef_array
+            
+        except Exception as e:
+            print(f"❌ P2L推理失败: {e}")
+            logger.error(f"P2L推理失败: {e}")
+            return self._generate_mock_coefficients(len(model_list))
+    
+    def get_coefficients_for_prompt(self, prompt: str, models: List[str] = None) -> P2LCoefficients:
+        """
+        使用真实P2L模型计算Bradley-Terry系数
+        
+        Args:
+            prompt: 用户提示词
+            models: 要评估的模型列表，如果为None则使用所有模型
+            
+        Returns:
+            P2LCoefficients: P2L系数对象
+        """
+        if not self.is_loaded:
+            # 如果模型未加载，返回模拟系数
+            if models is None:
+                models = ["gpt-4o", "claude-3.5-sonnet", "gemini-pro"]
+            
+            mock_coefs = self._generate_mock_coefficients(len(models))
+            model_coefficients = {model: float(coef) for model, coef in zip(models, mock_coefs)}
+            confidence_scores = {model: 0.5 for model in models}
+            
+            return P2LCoefficients(
+                model_coefficients=model_coefficients,
+                eta=0.1,
+                gamma=1.0,
+                confidence_scores=confidence_scores,
+                model_list=models
+            )
+        
+        try:
+            logger.info(f"🔍 开始P2L推理...")
+            logger.info(f"📝 提示词长度: {len(prompt)}")
+            
+            # 准备输入
+            messages = [{"role": "user", "content": prompt}]
+            
+            # 使用chat template格式化
+            formatted_prompt = self.tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=False,
+                add_special_tokens=False,
+            )
+            
+            # 添加CLS token
+            formatted_prompt = formatted_prompt + self.tokenizer.cls_token
+            
+            logger.info(f"🎯 格式化提示词: {formatted_prompt[:100]}...")
+            
+            # Tokenize
+            inputs = self.tokenizer(
+                formatted_prompt,
+                return_tensors="pt",
+                max_length=8192,
+                padding=True,
+                truncation=True,
+                add_special_tokens=False
+            )
+            
+            # 移动到设备
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            
+            logger.info(f"🎯 输入形状: {inputs['input_ids'].shape}")
+            
+            # 模型推理
+            with torch.no_grad():
+                outputs = self.model(
+                    input_ids=inputs["input_ids"],
+                    attention_mask=inputs["attention_mask"]
+                )
+            
+            # 提取系数
+            coefs = outputs.coefs.cpu().float().numpy()[0]  # [num_models]
+            eta = outputs.eta.cpu().float().item() if outputs.eta is not None else None
+            gamma = outputs.gamma.cpu().float().item() if outputs.gamma is not None else None
+            
+            logger.info(f"✅ P2L推理完成")
+            logger.info(f"🎯 系数形状: {coefs.shape}")
+            logger.info(f"🎯 Eta参数: {eta}")
+            logger.info(f"🎯 Gamma参数: {gamma}")
+            
+            # 创建模型系数字典
+            if models is None:
+                target_models = self.model_list
+            else:
+                target_models = models
+            
+            model_coefficients = {}
+            confidence_scores = {}
+            
+            for model_name in target_models:
+                if model_name in self.model_list:
+                    model_idx = self.model_list.index(model_name)
+                    coef_value = float(coefs[model_idx])
+                    model_coefficients[model_name] = coef_value
+                    
+                    # 计算置信度分数（基于系数的sigmoid变换）
+                    confidence = float(torch.sigmoid(torch.tensor(coef_value)).item())
+                    confidence_scores[model_name] = confidence
+                else:
+                    logger.warning(f"⚠️ 模型 {model_name} 不在P2L模型列表中")
+            
+            logger.info(f"📊 成功计算 {len(model_coefficients)} 个模型的系数")
+            
+            # 显示前5个系数用于调试
+            sorted_coefs = sorted(model_coefficients.items(), key=lambda x: x[1], reverse=True)
+            logger.info(f"🏆 前5名模型系数:")
+            for i, (model, coef) in enumerate(sorted_coefs[:5]):
+                logger.info(f"   {i+1}. {model}: {coef:.4f}")
+            
+            return P2LCoefficients(
+                model_coefficients=model_coefficients,
+                eta=eta,
+                gamma=gamma,
+                confidence_scores=confidence_scores,
+                model_list=target_models
+            )
+            
+        except Exception as e:
+            logger.error(f"❌ P2L推理失败: {e}")
+            raise
+    
+    def calculate_win_probabilities(self, coefficients: P2LCoefficients, 
+                                  model_pairs: List[Tuple[str, str]]) -> Dict[Tuple[str, str], Dict[str, float]]:
+        """
+        使用P2L系数计算模型对之间的胜率概率
+        使用GRK (Generalized Rao-Kupper) 模型
+        """
+        probabilities = {}
+        
+        # 使用真实的eta参数
+        eta = coefficients.eta if coefficients.eta is not None else 0.1
+        theta = np.exp(eta) + 1.000001
+        
+        for model_a, model_b in model_pairs:
+            if model_a in coefficients.model_coefficients and model_b in coefficients.model_coefficients:
+                coef_a = coefficients.model_coefficients[model_a]
+                coef_b = coefficients.model_coefficients[model_b]
+                
+                # GRK模型计算概率
+                pi_a = np.exp(coef_a)
+                pi_b = np.exp(coef_b)
+                pi_gamma = 1.0  # bag模型中gamma固定为1
+                
+                # 计算各种结果的概率
+                p_win = pi_a / (pi_a + theta * pi_b + pi_gamma)
+                p_lose = pi_b / (pi_b + theta * pi_a + pi_gamma)
+                p_tie_bb = pi_gamma / (pi_gamma + pi_a + pi_b)  # 双方都不好的平局
+                p_tie = 1.0 - p_win - p_lose - p_tie_bb  # 正常平局
+                
+                probabilities[(model_a, model_b)] = {
+                    "win": float(p_win),
+                    "lose": float(p_lose),
+                    "tie": float(p_tie),
+                    "tie_bothbad": float(p_tie_bb)
+                }
+        
+        return probabilities
+    
+    def get_model_rankings(self, coefficients: P2LCoefficients) -> List[Tuple[str, float]]:
+        """获取基于P2L系数的模型排名"""
+        rankings = [(model, coef) for model, coef in coefficients.model_coefficients.items()]
+        rankings.sort(key=lambda x: x[1], reverse=True)
+        
+        logger.info(f"📊 模型排名计算完成，前3名:")
+        for i, (model, coef) in enumerate(rankings[:3]):
+            logger.info(f"   {i+1}. {model}: {coef:.4f}")
+        
+        return rankings
+    
+    def _generate_mock_coefficients(self, num_models: int) -> np.ndarray:
+        """生成模拟的Bradley-Terry系数"""
+        print(f"🎲 生成{num_models}个模拟Bradley-Terry系数...")
+        
+        # 设置随机种子以确保可重现性
+        np.random.seed(42)
+        
+        # 生成符合实际分布的系数
+        # Bradley-Terry系数通常在0.2-1.5之间，大多数在0.4-1.2之间
+        coefficients = np.random.beta(2, 2, num_models) * 1.0 + 0.2
+        
+        # 添加一些随机性，但保持合理范围
+        coefficients += np.random.normal(0, 0.1, num_models)
+        coefficients = np.clip(coefficients, 0.2, 1.5)
+        
+        print(f"📊 模拟系数统计: 最小={coefficients.min():.3f}, 最大={coefficients.max():.3f}, 平均={coefficients.mean():.3f}")
+        
+        return coefficients
+    
+    def get_supported_models(self) -> List[str]:
+        """获取P2L模型支持的所有模型列表"""
+        if self.is_loaded:
+            return self.model_list.copy()
+        else:
+            return []
+    
+    def check_model_support(self, model_name: str) -> bool:
+        """检查模型是否被P2L支持"""
+        if self.is_loaded:
+            return model_name in self.model_list
+        else:
             return False
     
-    def _load_p2l_inference_engine(self):
-        """加载P2L推理引擎 - 按配置优先级"""
-        try:
-            logger.info("正在加载P2L推理引擎...")
-            
-            # 导入配置常量
-            try:
-                from model_p2l.p2l_core import DEFAULT_MODEL, MODEL_MAPPING
-            except ImportError:
-                try:
-                    import sys
-                    current_dir = os.path.dirname(os.path.abspath(__file__))
-                    project_root = os.path.dirname(current_dir)
-                    if project_root not in sys.path:
-                        sys.path.insert(0, project_root)
-                    from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
-                except ImportError:
-                    logger.warning("无法导入配置常量，使用默认扫描方式")
-                    DEFAULT_MODEL = None
-                    MODEL_MAPPING = {}
-            
-            # 使用配置中的模型路径
-            models_dir = self.config["model_path"]
-            p2l_model_path = None
-            
-            # 1. 优先使用配置指定的模型
-            if DEFAULT_MODEL and DEFAULT_MODEL in MODEL_MAPPING:
-                target_model = MODEL_MAPPING[DEFAULT_MODEL]["local_name"]
-                target_path = os.path.join(models_dir, target_model)
-                if os.path.exists(target_path):
-                    p2l_model_path = target_path
-                    logger.info(f"🎯 推理引擎使用配置模型: {target_model}")
-            
-            # 2. 备用方案：扫描第一个可用模型
-            if not p2l_model_path and os.path.exists(models_dir):
-                logger.warning("推理引擎使用备用扫描方式")
-                for item in os.listdir(models_dir):
-                    if item.startswith('p2l-') and os.path.isdir(os.path.join(models_dir, item)):
-                        p2l_model_path = os.path.join(models_dir, item)
-                        logger.warning(f"⚠️ 推理引擎使用备用模型: {item}")
-                        break
-            
-            # 使用P2L推理引擎
-            if p2l_model_path:
-                model, tokenizer = load_p2l_model(p2l_model_path, device=str(self.device))
-            else:
-                # 创建默认推理引擎
-                model, tokenizer = load_p2l_model("", device=str(self.device))
-            
-            if isinstance(model, P2LInferenceEngine):
-                self.p2l_inference_engine = model
-                logger.info("✅ P2L推理引擎加载成功")
-            else:
-                logger.warning("加载的不是P2L推理引擎，使用标准模型")
-                
-        except Exception as e:
-            logger.error(f"❌ P2L推理引擎加载失败: {e}")
-            # 创建基本的推理引擎作为后备
-            try:
-                self.p2l_inference_engine = P2LInferenceEngine(device=str(self.device))
-                logger.info("✅ 创建了基本P2L推理引擎")
-            except Exception as e2:
-                logger.error(f"❌ 基本P2L推理引擎创建失败: {e2}")
-    
-    def semantic_analysis(self, prompt: str) -> tuple:
-        """使用P2L模型进行语义分析"""
-        if not self.p2l_models:
-            logger.warning("🔍 P2L模型未加载，使用默认分析")
-            return 0.5, 0.5
-        
-        try:
-            model_name = list(self.p2l_models.keys())[0]
-            p2l_model = self.p2l_models[model_name]
-            tokenizer = p2l_model["tokenizer"]
-            model = p2l_model["model"]
-            is_p2l_model = p2l_model.get("is_p2l_model", False)
-            
-            logger.info(f"🧠 使用P2L模型进行语义增强分析 (P2L专用: {is_p2l_model})...")
-            
-            if is_p2l_model:
-                # 使用真正的P2L模型进行推理
-                logger.info("🎯 使用P2L专用模型进行智能分析")
-                
-                # 准备P2L模型输入 - 需要添加CLS token
-                prompt_with_cls = f"{prompt} <|cls|>"
-                inputs = tokenizer(
-                    prompt_with_cls, 
-                    return_tensors="pt", 
-                    truncation=True, 
-                    padding=True, 
-                    max_length=512
-                )
-                inputs = {k: v.to(self.device) for k, v in inputs.items()}
-                
-                with torch.no_grad():
-                    # P2L模型前向传播
-                    outputs = model(**inputs)
-                    
-                    # 获取P2L模型的系数输出
-                    if hasattr(outputs, 'coefs') and outputs.coefs is not None:
-                        coefs = outputs.coefs  # [batch_size, num_models]
-                        
-                        # 使用P2L系数计算语义特征
-                        coef_values = coefs[0]  # [num_models]
-                        
-                        # 计算复杂度分数：基于系数的方差
-                        complexity_score = torch.var(coef_values).item()
-                        complexity_score = min(max(complexity_score, 0), 1)
-                        
-                        # 计算语言分数：基于系数的最大值
-                        language_score = torch.max(torch.softmax(coef_values, dim=0)).item()
-                        
-                        # 获取eta参数（如果存在）
-                        eta_info = ""
-                        if hasattr(outputs, 'eta') and outputs.eta is not None:
-                            eta_value = outputs.eta[0].item()
-                            eta_info = f", eta={eta_value:.3f}"
-                            # 使用eta调整复杂度
-                            complexity_score = complexity_score * (1 + abs(eta_value) * 0.1)
-                            complexity_score = min(complexity_score, 1)
-                        
-                        logger.info(f"🎯 P2L模型输出: coefs_var={torch.var(coef_values).item():.3f}, max_prob={language_score:.3f}{eta_info}")
-                        logger.info(f"🔍 P2L计算得分: complexity_score={complexity_score:.3f}, language_score={language_score:.3f}")
-                        
-                        return complexity_score, language_score
-                    
-                    else:
-                        logger.warning("⚠️ P2L模型输出格式异常，降级到隐藏状态分析")
-                        # 降级到隐藏状态分析
-                        if hasattr(outputs, 'last_hidden_state') and outputs.last_hidden_state is not None:
-                            hidden_states = outputs.last_hidden_state
-                            sentence_embedding = hidden_states.mean(dim=1)[0]
-                            
-                            feature_mean = sentence_embedding.mean().item()
-                            feature_std = sentence_embedding.std().item()
-                            
-                            complexity_score = min(max(feature_std / (abs(feature_mean) + 1e-6), 0), 1)
-                            language_score = min(max(abs(feature_mean), 0), 1)
-                            
-                            logger.info(f"🔍 隐藏状态分析: complexity_score={complexity_score:.3f}, language_score={language_score:.3f}")
-                            return complexity_score, language_score
-            
-            else:
-                # 标准transformers模型分析
-                logger.info("🔄 使用标准transformers模型分析")
-                inputs = tokenizer(prompt, return_tensors="pt", truncation=True, padding=True, max_length=512)
-                inputs = {k: v.to(self.device) for k, v in inputs.items()}
-                
-                with torch.no_grad():
-                    outputs = model(**inputs)
-                    
-                    # 获取隐藏状态作为语义特征
-                    if hasattr(outputs, 'hidden_states') and outputs.hidden_states is not None:
-                        hidden_states = outputs.hidden_states[-1]
-                        sentence_embedding = hidden_states.mean(dim=1)[0]
-                        semantic_features = sentence_embedding
-                    elif hasattr(outputs, 'last_hidden_state'):
-                        semantic_features = outputs.last_hidden_state.mean(dim=1)[0]
-                    else:
-                        # 使用logits
-                        logits = outputs.logits
-                        semantic_features = logits.mean(dim=(0, 1))
-                
-                # 基于语义特征计算复杂度和语言分数
-                feature_mean = semantic_features.mean().item()
-                feature_std = semantic_features.std().item()
-                feature_max = semantic_features.max().item()
-                
-                complexity_score = min(max((feature_std / (abs(feature_mean) + 1e-6)), 0), 1)
-                language_score = min(max((feature_max / (abs(feature_mean) + 1e-6)), 0), 1)
-                
-                logger.info(f"🔍 标准模型分析: complexity_score={complexity_score:.3f}, language_score={language_score:.3f}")
-            
-            return complexity_score, language_score
-            
-        except Exception as e:
-            logger.error(f"❌ P2L模型分析失败: {e}")
-            import traceback
-            logger.error(f"详细错误: {traceback.format_exc()}")
-            return 0.5, 0.5
-    
-    def inference_engine_analysis(self, prompt: str) -> Optional[Dict]:
-        """使用P2L推理引擎进行任务分析"""
-        if not self.p2l_inference_engine:
-            return None
-        
-        try:
-            logger.info("使用P2L推理引擎进行任务分析...")
-            result = self.p2l_inference_engine.analyze_task_complexity(prompt)
-            
-            # 转换P2L推理引擎的输出格式
-            task_analysis = {
-                "task_type": result.get("task_type", "通用"),
-                "complexity": result.get("complexity", "中等"),
-                "language": result.get("language", "中文"),
-                "length": len(prompt),
-                "p2l_scores": {
-                    "complexity": result.get("complexity_score", 0.5),
-                    "confidence": result.get("confidence", 0.8)
-                }
+    def get_debug_info(self, prompt: str, models: List[str] = None) -> Dict:
+        """获取调试信息"""
+        if not self.is_loaded:
+            return {
+                "engine_status": "模拟模式",
+                "model_loaded": False,
+                "prompt_length": len(prompt),
+                "target_models": len(models) if models else 0
             }
-            
-            logger.info(f"🧠 P2L推理引擎分析: {task_analysis}")
-            return task_analysis
-            
-        except Exception as e:
-            logger.warning(f"P2L推理引擎分析失败: {e}")
-            return None
-    
-    def code_inference(self, code: str, max_length: int = 512, temperature: float = 0.7) -> Dict:
-        """P2L代码推理 - 将代码转换为自然语言"""
-        logger.info(f"🧠 P2L推理请求: {code[:100]}...")
         
-        # 优先使用P2L专用模型
-        if self.p2l_models:
-            model_name = list(self.p2l_models.keys())[0]
-            p2l_model = self.p2l_models[model_name]
-            
-            if p2l_model.get("is_p2l_model", False):
-                try:
-                    logger.info("🎯 使用P2L专用模型进行代码推理")
-                    
-                    tokenizer = p2l_model["tokenizer"]
-                    model = p2l_model["model"]
-                    
-                    # 构造P2L推理prompt
-                    inference_prompt = f"请分析以下代码的功能：\n{code}\n<|cls|>"
-                    
-                    inputs = tokenizer(
-                        inference_prompt,
-                        return_tensors="pt",
-                        truncation=True,
-                        padding=True,
-                        max_length=max_length
-                    )
-                    inputs = {k: v.to(self.device) for k, v in inputs.items()}
-                    
-                    start_time = time.time()
-                    
-                    with torch.no_grad():
-                        outputs = model(**inputs)
-                        
-                        # 获取P2L模型的推理结果
-                        if hasattr(outputs, 'coefs'):
-                            coefs = outputs.coefs[0]  # [num_models]
-                            
-                            # 基于系数生成自然语言描述
-                            model_probs = torch.softmax(coefs, dim=0)
-                            top_model_idx = torch.argmax(model_probs).item()
-                            confidence = model_probs[top_model_idx].item()
-                            
-                            # 简单的代码分析逻辑
-                            if "def " in code or "function" in code:
-                                analysis = "这是一个函数定义"
-                            elif "class " in code:
-                                analysis = "这是一个类定义"
-                            elif "import " in code or "from " in code:
-                                analysis = "这是模块导入语句"
-                            elif "for " in code or "while " in code:
-                                analysis = "这是循环控制结构"
-                            elif "if " in code:
-                                analysis = "这是条件判断语句"
-                            else:
-                                analysis = "这是一段通用代码"
-                            
-                            processing_time = time.time() - start_time
-                            
-                            return {
-                                "code": code,
-                                "natural_language": analysis,
-                                "confidence": confidence,
-                                "processing_time": processing_time,
-                                "model_info": f"P2L-{p2l_model['model_type']}-{p2l_model['loss_type']}",
-                                "p2l_coefs": coefs.cpu().tolist(),
-                                "used_p2l_model": True
-                            }
-                            
-                except Exception as e:
-                    logger.error(f"❌ P2L专用模型推理失败: {e}")
+        coefficients = self.get_coefficients_for_prompt(prompt, models)
         
-        # 降级到P2L推理引擎
-        if self.p2l_inference_engine:
-            try:
-                logger.info("🔄 使用P2L推理引擎")
-                result = self.p2l_inference_engine.infer(
-                    code,
-                    max_length=max_length,
-                    temperature=temperature
-                )
-                
-                return {
-                    "code": code,
-                    "natural_language": result["natural_language"],
-                    "confidence": result.get("confidence", 0.8),
-                    "processing_time": result.get("processing_time", 0.0),
-                    "model_info": "P2L-Inference-Engine",
-                    "used_p2l_model": False
-                }
-            except Exception as e:
-                logger.error(f"❌ P2L推理引擎失败: {e}")
-        
-        # 最后的降级方案
-        logger.warning("⚠️ 所有P2L推理方法都失败，使用基础分析")
         return {
-            "code": code,
-            "natural_language": "代码分析功能暂时不可用",
-            "confidence": 0.1,
-            "processing_time": 0.0,
-            "model_info": "Fallback",
-            "used_p2l_model": False
+            "model_path": str(self.model_path),
+            "model_type": self.model_config.get("model_type", "unknown"),
+            "head_type": self.model_config.get("head_type", "unknown"),
+            "loss_type": self.model_config.get("loss_type", "unknown"),
+            "total_models_supported": self.num_models,
+            "prompt_length": len(prompt),
+            "eta": coefficients.eta,
+            "gamma": coefficients.gamma,
+            "model_count": len(coefficients.model_coefficients),
+            "coefficients": coefficients.model_coefficients,
+            "confidence_scores": coefficients.confidence_scores,
+            "device": str(self.device),
+            "model_device": str(next(self.model.parameters()).device) if self.is_loaded else "N/A",
+            "model_dtype": str(next(self.model.parameters()).dtype) if self.is_loaded else "N/A"
         }
     
-    def get_loaded_models(self) -> Dict:
-        """获取已加载的P2L模型信息"""
-        p2l_model_info = {}
-        for name, model_data in self.p2l_models.items():
-            p2l_model_info[name] = {
-                "is_p2l_model": model_data.get("is_p2l_model", False),
-                "model_type": model_data.get("model_type", "unknown"),
-                "loss_type": model_data.get("loss_type", "unknown"),
-                "head_type": model_data.get("head_type", "unknown")
+    def get_model_info(self) -> Dict:
+        """获取P2L模型信息"""
+        if not self.is_loaded:
+            return {
+                "engine_type": "P2L Engine (模拟模式)",
+                "model_loaded": False,
+                "status": "P2L模型未加载，使用模拟系数"
             }
         
         return {
-            "p2l_models": list(self.p2l_models.keys()),
-            "p2l_model_details": p2l_model_info,
-            "inference_engine_available": self.p2l_inference_engine is not None,
-            "p2l_available": P2L_AVAILABLE,
-            "total_models_loaded": len(self.p2l_models)
+            "engine_type": "P2L Engine (真实模式)",
+            "model_path": str(self.model_path),
+            "base_model": self.model_config.get("_name_or_path", "unknown"),
+            "model_type": self.model_config.get("model_type", "unknown"),
+            "head_type": self.model_config.get("head_type", "unknown"),
+            "loss_type": self.model_config.get("loss_type", "unknown"),
+            "supported_models": self.num_models,
+            "device": self.device,
+            "parameters": "135M",
+            "architecture": "SmolLM2 + P2L Head",
+            "features": [
+                "真实Bradley-Terry系数计算",
+                "GRK概率模型",
+                "130+个模型支持",
+                "Rao-Kupper头部",
+                "BAG损失函数"
+            ]
         }
+    
+    def get_status(self) -> Dict[str, Any]:
+        """获取P2L引擎状态"""
+        return {
+            "is_loaded": self.is_loaded,
+            "model_path": str(self.model_path) if hasattr(self, 'model_path') else None,
+            "supported_models": len(self.model_list) if self.is_loaded else 0,
+            "device": self.device,
+            "model_info": self.get_model_info()
+        }
+    
+    def print_status(self):
+        """打印P2L引擎状态"""
+        status = self.get_status()
+        
+        print(f"\n🔧 【P2L引擎状态】")
+        print(f"✅ 加载状态: {'已加载' if status['is_loaded'] else '未加载'}")
+        print(f"📁 模型路径: {status['model_path']}")
+        print(f"📊 支持模型: {status['supported_models']} 个")
+        print(f"🖥️ 设备: {status['device']}")
+        
+        model_info = status['model_info']
+        print(f"🎯 引擎类型: {model_info['engine_type']}")
+        
+        if status['is_loaded']:
+            print(f"🏗️ 架构: {model_info['architecture']}")
+            print(f"🎯 特性: {', '.join(model_info['features'][:3])}...")
+
+# 全局P2L引擎实例
+_p2l_engine = None
+
+def get_p2l_engine() -> P2LEngine:
+    """获取全局P2L引擎实例"""
+    global _p2l_engine
+    if _p2l_engine is None:
+        _p2l_engine = P2LEngine()
+    return _p2l_engine
+
+def create_p2l_engine(model_path: str = None, device: str = "cpu") -> P2LEngine:
+    """创建新的P2L引擎实例"""
+    return P2LEngine(model_path, device)
+
+# 测试函数
+def test_p2l_engine():
+    """测试P2L引擎"""
+    print("🧪 测试P2L引擎...")
+    
+    try:
+        engine = P2LEngine()
+        engine.print_status()
+        
+        # 测试提示词
+        test_prompts = [
+            "写一个Python快速排序算法",
+            "解释机器学习的基本概念",
+            "帮我翻译这段英文：Hello World"
+        ]
+        
+        # 测试模型列表
+        test_models = ["gpt-4o-2024-08-06", "claude-3-5-sonnet-20241022", "gemini-1.5-pro-002"]
+        
+        for prompt in test_prompts:
+            print(f"\n📝 测试提示词: {prompt}")
+            print("-" * 50)
+            
+            # 测试Bradley-Terry系数计算
+            coefficients_array = engine.get_bradley_terry_coefficients(prompt, test_models)
+            print(f"📊 Bradley-Terry系数: {coefficients_array}")
+            
+            # 测试完整系数对象
+            if engine.is_loaded:
+                coefficients = engine.get_coefficients_for_prompt(prompt, test_models)
+                rankings = engine.get_model_rankings(coefficients)
+                
+                print(f"🏆 前3名模型:")
+                for i, (model, coef) in enumerate(rankings[:3]):
+                    confidence = coefficients.confidence_scores.get(model, 0.5)
+                    print(f"   {i+1}. {model}: 系数={coef:.4f}, 置信度={confidence:.3f}")
+        
+        print(f"\n✅ P2L引擎测试完成！")
+        
+    except Exception as e:
+        print(f"❌ 测试失败: {e}")
+        import traceback
+        traceback.print_exc()
+
+if __name__ == "__main__":
+    test_p2l_engine()

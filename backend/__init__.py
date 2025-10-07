@@ -1,53 +1,48 @@
 #!/usr/bin/env python3
 """
-P2L Backend Package
-统一的后端服务包
+P2L Backend Package - 简化版本
+统一的后端服务包，移除冗余依赖
 """
 
 import os
 import sys
 
-# 导入项目核心模块（唯一依赖）
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
+# 导入项目核心模块
+try:
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from p2l_core import DEFAULT_MODEL, MODEL_MAPPING
+except ImportError:
+    # 备用方案
+    DEFAULT_MODEL = "p2l-135m-grk-01112025"
+    MODEL_MAPPING = {}
 
+# 核心配置导入
 from .config import (
-    MODEL_CONFIGS, API_CONFIG, TASK_ANALYSIS_CONFIG, 
-    P2L_CONFIG, SERVICE_CONFIG,
     get_model_config, get_all_models, get_models_by_provider,
     get_api_config, get_task_config, get_p2l_config, get_service_config,
     load_env_config
 )
 
-# 使用统一的LLM客户端
+# 核心组件导入
 from .unified_client import UnifiedLLMClient, LLMResponse
 from .p2l_engine import P2LEngine
-from .task_analyzer import TaskAnalyzer
-from .model_scorer import ModelScorer
-from .service import P2LBackendService
+from .p2l_model_scorer import P2LModelScorer
+from .service_p2l_native import P2LNativeBackendService
 
-__version__ = "2.0.0"
+__version__ = "3.0.0"
 __all__ = [
-    # 配置
-    "MODEL_CONFIGS", "API_CONFIG", "TASK_ANALYSIS_CONFIG", 
-    "P2L_CONFIG", "SERVICE_CONFIG",
+    # 配置函数
     "get_model_config", "get_all_models", "get_models_by_provider",
     "get_api_config", "get_task_config", "get_p2l_config", "get_service_config",
     "load_env_config",
     
     # 核心组件
     "UnifiedLLMClient", "LLMResponse",
-    "P2LEngine", "TaskAnalyzer", "ModelScorer",
-    "P2LBackendService"
+    "P2LEngine", "P2LModelScorer",
+    "P2LNativeBackendService"
 ]
 
-# ================== P2L模型自动下载 ==================
+# 初始化环境配置
+load_env_config()
 
-# 使用统一的模型管理器
-try:
-    from .model_manager import print_model_status
-    # 在backend包导入时显示模型状态
-    print_model_status()
-except ImportError as e:
-    print(f"⚠️  模型管理器导入失败: {e}")
-    print("💡 服务将以基础模式启动")
+print(f"✅ P2L Backend v{__version__} 初始化完成")
