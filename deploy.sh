@@ -89,14 +89,11 @@ echo "   - 下载进度可通过日志查看: docker-compose logs -f backend"
 
 # 检查配置文件
 echo "⚙️  检查配置文件..."
-if [ ! -f "backend/api_config.env" ]; then
-    echo "⚠️  未找到 backend/api_config.env，创建示例文件..."
-    cat > backend/api_config.env << EOF
-# API 配置示例
-OPENAI_API_KEY=your_openai_api_key_here
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-EOF
-    echo "请编辑 backend/api_config.env 添加您的 API 密钥"
+# 检查Python配置文件（如果存在）
+if [ -f "backend/api_config.py" ]; then
+    echo "✅ 发现 backend/api_config.py 配置文件"
+else
+    echo "ℹ️  未发现 backend/api_config.py，将使用docker-compose.yml中的环境变量"
 fi
 
 # 检查整理后的配置文件
