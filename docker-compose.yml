@@ -67,7 +67,7 @@ services:
           memory: 256M
           cpus: '0.5'
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:80/', timeout=10)"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -100,7 +100,7 @@ services:
           memory: 256M
           cpus: '0.5'
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:80/health', timeout=10)"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
       interval: 30s
       timeout: 10s
       retries: 3
