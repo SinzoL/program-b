@@ -247,7 +247,7 @@ class RequestRacer {
   }
 
   /**
-   * LLM生成竞速请求
+   * LLM生成竞速请求 - 优化版本
    */
   async raceLLMGeneration(model, prompt, messages = []) {
     const baseRequest = {
@@ -257,32 +257,39 @@ class RequestRacer {
         model,
         prompt,
         messages,
+        temperature: 0.7,
         max_tokens: 2000
       }
     }
 
-    // 为LLM请求创建备用配置
+    // 对于DeepSeek模型，使用单一请求避免API压力
+    if (model.includes('deepseek')) {
+      console.log(`🎯 [RequestRacer] DeepSeek模型使用单一请求策略: ${model}`)
+      
+      try {
+        const response = await this._makeRequest(baseRequest, {
+          timeout: 180000, // DeepSeek使用更长超时时间
+          cancelToken: null
+        })
+        return response
+      } catch (error) {
+        console.error(`❌ [RequestRacer] DeepSeek请求失败: ${error.message}`)
+        throw error
+      }
+    }
+
+    // 其他模型使用竞速策略，但减少并发数
     const requestConfigs = [
       // 主请求
-      { ...baseRequest },
-      
-      // 备用请求 - 稍微不同的参数
-      {
-        ...baseRequest,
-        data: {
-          ...baseRequest.data,
-          temperature: 0.8,
-          max_tokens: 1500
-        }
-      }
+      { ...baseRequest }
     ]
 
     return this.race(`llm-generation-${model}-${Date.now()}`, requestConfigs, {
       timeout: 150000,     // 150秒超时，与API配置保持一致
-      maxConcurrent: 2,    // LLM请求并发数较少
-      staggerDelay: 2000,  // 2秒错开，给服务器更多时间
-      fallbackDelay: 8000, // 8秒后发送备用请求
-      retryOnFailure: true
+      maxConcurrent: 1,    // 减少并发数，避免API压力
+      staggerDelay: 1000,  // 减少错开延迟
+      fallbackDelay: 5000, // 减少备用请求延迟
+      retryOnFailure: false // 禁用重试，避免过度请求
     })
   }
 
