@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { p2lApi } from '@/utils/api'
+import { requestRacer } from '@/utils/requestRacer'
 
 export const useP2LStore = defineStore('p2l', {
   state: () => ({
@@ -50,14 +51,16 @@ export const useP2LStore = defineStore('p2l', {
   },
 
   actions: {
-    // 检查后端健康状态
+    // 检查后端健康状态 - 使用竞速请求
     async checkBackendHealth() {
       try {
-        const response = await p2lApi.get('/health')
+        console.log('🏥 [Health Check] 开始竞速健康检查...')
+        const response = await requestRacer.raceHealthCheck()
         this.backendHealth = response.status === 200
+        console.log('✅ [Health Check] 竞速健康检查成功')
         return this.backendHealth
       } catch (error) {
-        console.error('后端服务检查失败:', error)
+        console.error('❌ [Health Check] 竞速健康检查失败:', error)
         this.backendHealth = false
         return false
       }
@@ -168,22 +171,26 @@ export const useP2LStore = defineStore('p2l', {
       return '慢'
     },
 
-    // P2L智能分析
+    // P2L智能分析 - 使用竞速请求机制
     async analyzeWithP2L(prompt, mode = 'balanced') {
       this.loading = true
+      
       try {
-        console.log('🚀 [P2L Store] 发送请求:', { prompt: prompt.substring(0, 50), priority: mode })
-        
-        const response = await p2lApi.post('/p2l/analyze', {
-          prompt,
-          priority: mode, // 修正参数名
-          enabled_models: this.enabledModels.length > 0 ? this.enabledModels : this.availableModels.map(m => m.name)
+        console.log('🏁 [P2L Store] 开始竞速P2L分析:', { 
+          prompt: prompt.substring(0, 50), 
+          priority: mode 
         })
         
-        console.log('📥 [P2L Store] 后端返回数据:', {
+        const enabledModels = this.enabledModels.length > 0 
+          ? this.enabledModels 
+          : this.availableModels.map(m => m.name)
+        
+        // 使用竞速请求
+        const response = await requestRacer.raceP2LAnalysis(prompt, mode, enabledModels)
+        
+        console.log('🏆 [P2L Store] 竞速P2L分析成功:', {
           routing_info: response.data.routing_info,
-          strategy: response.data.routing_info?.strategy,
-          full_response: response.data
+          strategy: response.data.routing_info?.strategy
         })
         
         this.currentAnalysis = response.data
@@ -191,17 +198,113 @@ export const useP2LStore = defineStore('p2l', {
         
         return response.data
       } catch (error) {
-        console.error('P2L分析失败:', error)
-        throw new Error('P2L分析服务暂时不可用')
+        console.error('❌ [P2L Store] 竞速P2L分析失败:', error)
+        
+        // 如果竞速请求失败，回退到传统重试机制
+        if (error.allErrors) {
+          console.log('🔄 [P2L Store] 竞速失败，尝试传统重试...')
+          return this._fallbackAnalyzeWithP2L(prompt, mode)
+        }
+        
+        throw new Error('P2L分析服务暂时不可用，请稍后重试')
       } finally {
         this.loading = false
       }
     },
 
-    // 调用LLM生成回答
+    // 传统P2L分析作为竞速失败的备用方案
+    async _fallbackAnalyzeWithP2L(prompt, mode = 'balanced', retryCount = 0) {
+      const maxRetries = 1
+      
+      try {
+        console.log(`🔄 [P2L Fallback] 传统重试 (${retryCount + 1}/${maxRetries + 1})`)
+        
+        const response = await p2lApi.post('/p2l/analyze', {
+          prompt,
+          priority: mode,
+          enabled_models: this.enabledModels.length > 0 ? this.enabledModels : this.availableModels.map(m => m.name)
+        })
+        
+        this.currentAnalysis = response.data
+        this.recommendations = response.data.recommendations || []
+        
+        return response.data
+      } catch (error) {
+        if (retryCount < maxRetries) {
+          await this.delay(3000)
+          return this._fallbackAnalyzeWithP2L(prompt, mode, retryCount + 1)
+        }
+        throw error
+      }
+    },
+
+    // 错误分析和分类
+    analyzeError(error) {
+      // 网络超时错误
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        return {
+          canRetry: true,
+          retryDelay: 3000,
+          userMessage: 'P2L分析超时，正在重试...'
+        }
+      }
+      
+      // 网络连接错误
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENETUNREACH') {
+        return {
+          canRetry: true,
+          retryDelay: 2000,
+          userMessage: '网络连接异常，正在重试...'
+        }
+      }
+      
+      // 服务器错误 (5xx)
+      if (error.response?.status >= 500) {
+        return {
+          canRetry: true,
+          retryDelay: 5000,
+          userMessage: 'P2L服务暂时繁忙，正在重试...'
+        }
+      }
+      
+      // 请求过于频繁 (429)
+      if (error.response?.status === 429) {
+        return {
+          canRetry: true,
+          retryDelay: 10000,
+          userMessage: '请求过于频繁，请稍后重试...'
+        }
+      }
+      
+      // 客户端错误 (4xx) - 通常不重试
+      if (error.response?.status >= 400 && error.response?.status < 500) {
+        return {
+          canRetry: false,
+          retryDelay: 0,
+          userMessage: error.response.data?.message || 'P2L分析请求有误'
+        }
+      }
+      
+      // 其他未知错误
+      return {
+        canRetry: false,
+        retryDelay: 0,
+        userMessage: 'P2L分析服务暂时不可用，请稍后重试'
+      }
+    },
+
+    // 延迟工具函数
+    delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms))
+    },
+
+    // 调用LLM生成回答 - 使用竞速请求机制
     async generateWithLLM(model, prompt, conversationHistory = []) {
       this.loading = true
+      
       try {
+        console.log(`🏁 [LLM Store] 开始竞速LLM调用: ${model}`)
+        
         // 构建消息历史，包含完整的对话上下文
         const messages = []
         
@@ -229,12 +332,8 @@ export const useP2LStore = defineStore('p2l', {
           content: prompt
         })
         
-        const response = await p2lApi.post('/llm/generate', {
-          model,
-          prompt,
-          messages, // 传递完整的对话历史
-          max_tokens: 2000
-        })
+        // 使用竞速请求
+        const response = await requestRacer.raceLLMGeneration(model, prompt, messages)
         
         // 检查后端是否返回了错误状态
         if (response.data.provider === 'error') {
@@ -250,24 +349,152 @@ export const useP2LStore = defineStore('p2l', {
           cost: response.data.cost || 0,
           tokens: response.data.tokens || response.data.tokens_used || 0,
           provider: response.data.provider || 'unknown',
-          responseTime: response.data.response_time || 0  // 添加响应时间
+          responseTime: response.data.response_time || 0,
+          isRaceWinner: true  // 标记为竞速获胜者
+        }
+        
+        this.chatHistory.push(result)
+        console.log(`🏆 [LLM Store] ${model} 竞速调用成功，响应时间: ${result.responseTime}s`)
+        return result
+      } catch (error) {
+        console.error(`❌ [LLM Store] ${model} 竞速调用失败:`, error)
+        
+        // 如果竞速请求失败，回退到传统重试机制
+        if (error.allErrors) {
+          console.log(`🔄 [LLM Store] ${model} 竞速失败，尝试传统重试...`)
+          return this._fallbackGenerateWithLLM(model, prompt, conversationHistory)
+        }
+        
+        throw new Error(`${model} 服务暂时不可用，请稍后重试`)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 传统LLM调用作为竞速失败的备用方案
+    async _fallbackGenerateWithLLM(model, prompt, conversationHistory = [], retryCount = 0) {
+      const maxRetries = 1
+      
+      try {
+        console.log(`🔄 [LLM Fallback] ${model} 传统重试 (${retryCount + 1}/${maxRetries + 1})`)
+        
+        // 构建消息历史
+        const messages = []
+        conversationHistory.forEach(item => {
+          if (item.prompt && item.prompt.trim()) {
+            messages.push({ role: 'user', content: item.prompt.trim() })
+          }
+          if (item.response && item.response.trim()) {
+            messages.push({ role: 'assistant', content: item.response.trim() })
+          }
+        })
+        messages.push({ role: 'user', content: prompt })
+        
+        const response = await p2lApi.post('/llm/generate', {
+          model,
+          prompt,
+          messages,
+          max_tokens: 2000
+        })
+        
+        if (response.data.provider === 'error') {
+          throw new Error(response.data.content || response.data.response || 'LLM服务调用失败')
+        }
+        
+        const result = {
+          id: Date.now(),
+          prompt,
+          model,
+          response: response.data.response || response.data.content || '暂无回复内容',
+          timestamp: new Date(),
+          cost: response.data.cost || 0,
+          tokens: response.data.tokens || response.data.tokens_used || 0,
+          provider: response.data.provider || 'unknown',
+          responseTime: response.data.response_time || 0,
+          isRaceWinner: false  // 标记为备用方案
         }
         
         this.chatHistory.push(result)
         return result
       } catch (error) {
-        console.error('LLM调用失败:', error)
-        
-        // 如果是网络错误或超时，提供更详细的错误信息
-        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-          throw new Error(`${model} 响应超时，编程问题可能需要更长时间处理，请稍后重试`)
-        } else if (error.response?.status >= 500) {
-          throw new Error(`${model} 服务器内部错误，请稍后重试`)
-        } else {
-          throw new Error(error.message || `${model} 服务暂时不可用`)
+        if (retryCount < maxRetries) {
+          await this.delay(5000)
+          return this._fallbackGenerateWithLLM(model, prompt, conversationHistory, retryCount + 1)
         }
-      } finally {
-        this.loading = false
+        throw error
+      }
+    },
+
+    // LLM错误分析和分类
+    analyzeLLMError(error, model) {
+      // 网络超时错误
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        return {
+          canRetry: true,
+          retryDelay: 5000,
+          userMessage: `${model} 响应超时，复杂问题需要更长处理时间，正在重试...`
+        }
+      }
+      
+      // 网络连接错误
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENETUNREACH') {
+        return {
+          canRetry: true,
+          retryDelay: 3000,
+          userMessage: `${model} 网络连接异常，正在重试...`
+        }
+      }
+      
+      // API限制错误 (429)
+      if (error.response?.status === 429) {
+        return {
+          canRetry: true,
+          retryDelay: 15000, // API限制需要更长等待时间
+          userMessage: `${model} 请求过于频繁，15秒后重试...`
+        }
+      }
+      
+      // 服务器内部错误 (5xx)
+      if (error.response?.status >= 500) {
+        return {
+          canRetry: true,
+          retryDelay: 8000,
+          userMessage: `${model} 服务暂时繁忙，正在重试...`
+        }
+      }
+      
+      // API密钥错误 (401, 403)
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        return {
+          canRetry: false,
+          retryDelay: 0,
+          userMessage: `${model} API密钥无效或权限不足，请检查配置`
+        }
+      }
+      
+      // 请求格式错误 (400)
+      if (error.response?.status === 400) {
+        return {
+          canRetry: false,
+          retryDelay: 0,
+          userMessage: `${model} 请求格式错误: ${error.response.data?.message || '参数有误'}`
+        }
+      }
+      
+      // 模型不可用 (404)
+      if (error.response?.status === 404) {
+        return {
+          canRetry: false,
+          retryDelay: 0,
+          userMessage: `${model} 模型不可用或已下线`
+        }
+      }
+      
+      // 其他未知错误
+      return {
+        canRetry: false,
+        retryDelay: 0,
+        userMessage: `${model} 服务暂时不可用: ${error.message || '未知错误'}`
       }
     },
 
