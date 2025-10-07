@@ -8,7 +8,7 @@ export const useP2LStore = defineStore('p2l', {
     loading: false,
     
     // 配置版本（用于检测配置更新）
-    configVersion: '2.0.1', // 更新版本号以强制刷新配置
+    configVersion: '2.1.0', // 更新版本号以强制刷新配置 - 支持权重排序
     
     // P2L分析结果
     currentAnalysis: null,

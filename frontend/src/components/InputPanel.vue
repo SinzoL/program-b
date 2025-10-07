@@ -24,7 +24,7 @@
     
     <!-- 优先模式选择 -->
     <div class="priority-section">
-      <label class="section-label">优先模式：</label>
+      <label class="section-label">路由策略：</label>
       <el-radio-group :model-value="selectedMode" @change="handleModeChange" class="tech-radio-group">
         <el-radio-button label="performance" class="tech-radio-button">
           <TechIcons name="performance" :size="16" color="#00ff88" />

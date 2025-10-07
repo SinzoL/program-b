@@ -184,20 +184,38 @@ class OptimalLPCostOptimizer(BaseCostOptimizer):
 class P2LRouter:
     """P2L原生路由器"""
     
-    # 采样权重配置 - 基于模型能力和使用频率
+    # 采样权重配置 - 基于我们实际配置的模型能力和使用频率
     SAMPLING_WEIGHTS = {
-        "gpt-4o-2024-08-06": 4,
-        "gpt-4o-mini-2024-07-18": 2,
-        "claude-3-5-sonnet-20241022": 4,
-        "claude-3-5-haiku-20241022": 2,
-        "gemini-1.5-pro-002": 4,
-        "gemini-1.5-flash-002": 2,
-        "deepseek-v3": 4,
-        "qwen2.5-72b-instruct": 2,
-        "llama-3.1-405b-instruct": 4,
-        "llama-3.1-70b-instruct": 2,
-        "mistral-large-2411": 4,
-        "yi-lightning": 2,
+        # ================== OpenAI 模型 ==================
+        "gpt-4o-2024-08-06": 6,              # 高性能模型，最高权重
+        "gpt-4o-mini-2024-07-18": 4,         # 高性价比模型，高权重
+        "gpt-3.5-turbo-0125": 3,             # 经典模型，中等权重
+        "gpt-4-turbo-2024-04-09": 5,         # 高性能但成本较高，高权重
+        
+        # ================== Anthropic 模型 ==================
+        "claude-3-5-sonnet-20241022": 6,     # 顶级模型，最高权重
+        "claude-3-5-haiku-20241022": 4,      # 快速模型，高权重
+        "claude-3-5-sonnet-20240620": 5,     # 经典版本，高权重
+        
+        # ================== Google 模型 ==================
+        "gemini-1.5-flash-001": 3,           # 快速模型，中等权重
+        "gemini-1.5-pro-001": 5,             # 专业模型，高权重
+        "gemini-1.5-pro-002": 5,             # 最新专业版，高权重
+        
+        # ================== DeepSeek 模型 ==================
+        "deepseek-v2.5": 3,                  # 经济实用，中等权重
+        "deepseek-v3": 4,                    # 最新版本，高权重
+        
+        # ================== DashScope (阿里云) 模型 ==================
+        "qwen-max-0428": 5,                  # 顶级模型，高权重
+        "qwen-max-0919": 5,                  # 最新顶级版，高权重
+        "qwen1.5-110b-chat": 4,              # 大参数模型，高权重
+        "qwen1.5-14b-chat": 2,               # 小模型，低权重
+        "qwen1.5-32b-chat": 3,               # 中等模型，中等权重
+        "qwen1.5-72b-chat": 4,               # 大模型，高权重
+        "qwen2-72b-instruct": 4,             # 指令优化版，高权重
+        "qwen2.5-72b-instruct": 4,           # 最新指令版，高权重
+        "qwen2.5-coder-32b-instruct": 3,     # 代码专用，中等权重
     }
     
     def __init__(self):
@@ -361,21 +379,39 @@ class P2LRouter:
                 print(f"   💵 预算约束: {budget}")
                 print(f"   🔧 优化器: {type(self.cost_optimizers[strategy]).__name__}")
                 
+                # 设置对手分布（用于博弈论优化）
+                self.setup_opponent_distribution(model_list, p2l_coefficients)
+                
                 # 成本优化策略
                 optimizer = self.cost_optimizers[strategy]
-                selected_model = optimizer.select_model(
-                    cost=budget,
-                    model_list=model_list,
-                    model_costs=model_costs,
-                    model_scores=p2l_coefficients
-                )
+                
+                # 为OptimalLPCostOptimizer提供对手分布信息
+                if strategy == 'optimal-lp' and self.opponent_distribution is not None:
+                    print(f"   🎲 使用对手分布优化")
+                    selected_model = optimizer.select_model(
+                        cost=budget,
+                        model_list=model_list,
+                        model_costs=model_costs,
+                        model_scores=p2l_coefficients,
+                        opponent_scores=self.opponent_scores,
+                        opponent_distribution=self.opponent_distribution
+                    )
+                else:
+                    selected_model = optimizer.select_model(
+                        cost=budget,
+                        model_list=model_list,
+                        model_costs=model_costs,
+                        model_scores=p2l_coefficients
+                    )
+                
                 print(f"   🎯 优化结果: {selected_model}")
                 
                 routing_info = {
                     "strategy": strategy,
                     "budget": budget,
                     "p2l_scores": p2l_coefficients.tolist(),
-                    "model_costs": model_costs.tolist()
+                    "model_costs": model_costs.tolist(),
+                    "opponent_distribution": self.opponent_distribution.tolist() if self.opponent_distribution is not None else None
                 }
                 
             else:
@@ -560,22 +596,22 @@ class P2LRouter:
         print(f"   💰 成本分数: {cost_scores}")
         print(f"   ⚡ 速度分数: {speed_scores}")
         
-        # 根据模式设置权重
+        # 根据模式设置权重 - 极端差异化配置
         if mode == 'performance':
-            # 性能优先：P2L系数权重最高
-            weights = {'p2l': 0.8, 'cost': 0.1, 'speed': 0.1}
+            # 性能优先：几乎完全依赖P2L系数
+            weights = {'p2l': 0.95, 'cost': 0.025, 'speed': 0.025}
         elif mode == 'cost':
-            # 成本优先：成本权重最高
-            weights = {'p2l': 0.3, 'cost': 0.6, 'speed': 0.1}
+            # 成本优先：几乎完全依赖成本效益
+            weights = {'p2l': 0.1, 'cost': 0.85, 'speed': 0.05}
         elif mode == 'speed':
-            # 速度优先：速度权重最高
-            weights = {'p2l': 0.3, 'cost': 0.1, 'speed': 0.6}
+            # 速度优先：几乎完全依赖响应速度
+            weights = {'p2l': 0.1, 'cost': 0.05, 'speed': 0.85}
         elif mode == 'balanced':
-            # 平衡模式：各项权重相等
-            weights = {'p2l': 0.4, 'cost': 0.3, 'speed': 0.3}
+            # 平衡模式：相对均衡但仍有侧重
+            weights = {'p2l': 0.5, 'cost': 0.25, 'speed': 0.25}
         else:
             # 默认平衡模式
-            weights = {'p2l': 0.4, 'cost': 0.3, 'speed': 0.3}
+            weights = {'p2l': 0.5, 'cost': 0.25, 'speed': 0.25}
         
         print(f"   ⚖️ 权重设置: P2L={weights['p2l']}, 成本={weights['cost']}, 速度={weights['speed']}")
         

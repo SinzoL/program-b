@@ -21,33 +21,26 @@
                 <el-tag class="tech-tag recommended-model">{{ analysis?.recommended_model }}</el-tag>
               </el-tooltip>
             </div>
-          </div>
-          <!-- P2L神经网络推理信息 -->
-          <div class="table-row">
+
             <div class="table-cell label">P2L模型</div>
             <div class="table-cell value">
               <el-tooltip content="SmolLM2-135M + P2L Head 神经网络" placement="top">
                 <el-tag class="tech-tag p2l-model">SmolLM2-135M</el-tag>
               </el-tooltip>
             </div>
-            <div class="table-cell label">推理时间</div>
-            <div class="table-cell value">
-              <el-tooltip :content="`P2L神经网络推理: ${analysis?.processing_time || '0.045'}秒`" placement="top">
-                <el-tag class="tech-tag inference-time">{{ analysis?.processing_time || '0.045' }}s</el-tag>
-              </el-tooltip>
-            </div>
           </div>
+          <!-- P2L神经网络推理信息 -->
           <div class="table-row">
-            <div class="table-cell label">路由策略</div>
-            <div class="table-cell value">
-              <el-tooltip :content="getStrategyDescription(analysis?.routing_info?.strategy)" placement="top">
-                <el-tag class="tech-tag routing-strategy">{{ getStrategyDisplayName(analysis?.routing_info?.strategy) }}</el-tag>
-              </el-tooltip>
-            </div>
             <div class="table-cell label">设备加速</div>
             <div class="table-cell value">
               <el-tooltip :content="`推理设备: ${analysis?.device || 'MPS (Apple Silicon)'}`" placement="top">
                 <el-tag class="tech-tag device-tag">{{ analysis?.device || 'MPS' }}</el-tag>
+              </el-tooltip>
+            </div>
+            <div class="table-cell label">推理时间</div>
+            <div class="table-cell value">
+              <el-tooltip :content="`P2L神经网络推理: ${analysis?.processing_time || '0.045'}秒`" placement="top">
+                <el-tag class="tech-tag inference-time">{{ analysis?.processing_time || '0.045' }}s</el-tag>
               </el-tooltip>
             </div>
           </div>
