@@ -136,7 +136,7 @@ class P2LNativeBackendService:
             # 在后台线程中加载模型，避免阻塞主线程
             loop = asyncio.get_event_loop()
             self.p2l_engine = await loop.run_in_executor(
-                None, lambda: P2LEngine(self.device)
+                None, lambda: P2LEngine(device=str(self.device))
             )
             
             # 初始化P2L原生评分器
@@ -327,9 +327,9 @@ class P2LNativeBackendService:
     def get_health_status(self) -> Dict:
         """健康检查"""
         if self.p2l_loaded and self.p2l_engine:
-            p2l_models = self.p2l_engine.get_loaded_models()
-            p2l_models_count = len(p2l_models["p2l_models"])
-            p2l_available = p2l_models["p2l_available"]
+            p2l_status = self.p2l_engine.get_status()
+            p2l_models_count = p2l_status.get("supported_models", 0)
+            p2l_available = p2l_status.get("is_loaded", False)
         else:
             p2l_models_count = 0
             p2l_available = False
@@ -419,65 +419,34 @@ def create_app() -> FastAPI:
     async def get_p2l_model_info():
         """获取P2L推理模型信息"""
         try:
-            # 获取当前配置的默认模型信息
-            current_model = DEFAULT_MODEL
-            
-            # 从MODEL_MAPPING获取local_name
-            if current_model in MODEL_MAPPING:
-                model_local_name = MODEL_MAPPING[current_model]["local_name"]
+            # 使用当前P2L引擎的信息
+            if service.p2l_engine:
+                p2l_status = service.p2l_engine.get_status()
+                model_info = {
+                    "model_name": "p2l-135m-grk",
+                    "model_path": str(service.p2l_engine.model_path),
+                    "model_type": "P2L",
+                    "tokenizer_type": "AutoTokenizer",
+                    "is_loaded": p2l_status.get("is_loaded", False),
+                    "device": service.p2l_engine.device,
+                    "current_model_key": "p2l-135m-grk",
+                    "service_type": "p2l_native",
+                    "native_scorer_loaded": service.p2l_model_scorer is not None,
+                    "supported_models_count": p2l_status.get("supported_models", 0)
+                }
             else:
-                # 备用方案：从模型名称推导local_name
-                model_local_name = current_model.replace("-01112025", "")
-            
-            # 获取P2L推理引擎实例
-            import sys
-            import os
-            
-            # 添加P2L模块路径
-            p2l_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'p2l')
-            if p2l_path not in sys.path:
-                sys.path.append(p2l_path)
-            
-            # 尝试导入P2L推理引擎
-            try:
-                from p2l.p2l_inference import P2LInferenceEngine
-            except ImportError:
-                # 如果上面失败，尝试直接导入
-                import p2l.p2l_inference
-                P2LInferenceEngine = p2l.p2l_inference.P2LInferenceEngine
-            
-            inference_engine = P2LInferenceEngine()
-            
-            # 获取模型详细信息
-            model_info = {
-                "model_name": model_local_name,
-                "model_path": getattr(inference_engine, 'p2l_model_path', 'unknown'),
-                "model_type": type(inference_engine.model).__name__ if inference_engine.model else "未加载",
-                "tokenizer_type": type(inference_engine.tokenizer).__name__ if inference_engine.tokenizer else "未加载",
-                "is_loaded": inference_engine.model is not None,
-                "device": str(getattr(inference_engine, 'device', 'unknown')),
-                "current_model_key": current_model,
-                "service_type": "p2l_native",
-                "native_scorer_loaded": service.p2l_model_scorer is not None
-            }
-            
-            # 如果模型已加载，获取更多详细信息
-            if inference_engine.model and hasattr(inference_engine.model, 'config'):
-                config = inference_engine.model.config
-                model_info.update({
-                    "architecture": getattr(config, 'architectures', ['未知'])[0] if hasattr(config, 'architectures') else "未知",
-                    "hidden_size": getattr(config, 'hidden_size', 0),
-                    "num_layers": getattr(config, 'num_hidden_layers', 0),
-                    "num_attention_heads": getattr(config, 'num_attention_heads', 0),
-                    "vocab_size": getattr(config, 'vocab_size', 0),
-                    "max_position_embeddings": getattr(config, 'max_position_embeddings', 0)
-                })
-                
-                # 计算参数量
-                if hasattr(inference_engine.model, 'parameters'):
-                    total_params = sum(p.numel() for p in inference_engine.model.parameters())
-                    model_info["total_parameters"] = total_params
-                    model_info["parameters_display"] = f"{total_params/1e6:.1f}M" if total_params > 1e6 else f"{total_params/1e3:.1f}K"
+                model_info = {
+                    "model_name": "p2l-135m-grk",
+                    "model_path": "未加载",
+                    "model_type": "P2L",
+                    "tokenizer_type": "未加载",
+                    "is_loaded": False,
+                    "device": "unknown",
+                    "current_model_key": "p2l-135m-grk",
+                    "service_type": "p2l_native",
+                    "native_scorer_loaded": False,
+                    "supported_models_count": 0
+                }
             
             return {
                 "status": "success",
@@ -488,22 +457,15 @@ def create_app() -> FastAPI:
         except Exception as e:
             logger.error(f"获取P2L模型信息失败: {e}")
             
-            # 获取当前配置的默认模型信息作为备用
-            current_model = DEFAULT_MODEL
-            if current_model in MODEL_MAPPING:
-                model_local_name = MODEL_MAPPING[current_model]["local_name"]
-            else:
-                model_local_name = current_model.replace("-01112025", "")
-            
             return {
                 "status": "error",
                 "error": str(e),
                 "model_info": {
-                    "model_name": model_local_name,
-                    "model_type": "未知",
+                    "model_name": "p2l-135m-grk",
+                    "model_type": "P2L",
                     "is_loaded": False,
                     "device": "unknown",
-                    "current_model_key": current_model,
+                    "current_model_key": "p2l-135m-grk",
                     "service_type": "p2l_native"
                 },
                 "timestamp": time.time()

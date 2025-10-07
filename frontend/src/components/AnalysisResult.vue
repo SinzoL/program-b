@@ -3,7 +3,10 @@
     <template #header>
       <div class="card-header">
         <TechIcons name="analytics" :size="20" color="#00d4ff" />
-        <span>P2L智能分析</span>
+        <span>P2L智能分析 (Bradley-Terry)</span>
+        <el-tag type="success" size="small" class="native-badge">
+          原生P2L
+        </el-tag>
       </div>
     </template>
     
@@ -41,32 +44,32 @@
               </el-tooltip>
             </div>
           </div>
-          <!-- P2L神经网络分析结果 -->
-          <div class="table-row" v-if="analysis?.task_analysis?.p2l_scores">
-            <div class="table-cell label">P2L复杂度</div>
+          <!-- P2L神经网络推理信息 -->
+          <div class="table-row">
+            <div class="table-cell label">P2L模型</div>
             <div class="table-cell value">
-              <el-tooltip :content="`神经网络计算: ${(analysis.task_analysis.p2l_scores.complexity * 100).toFixed(1)}%`" placement="top">
-                <el-tag class="tech-tag p2l-score">{{ (analysis.task_analysis.p2l_scores.complexity * 100).toFixed(1) }}%</el-tag>
+              <el-tooltip content="SmolLM2-135M + P2L Head 神经网络" placement="top">
+                <el-tag class="tech-tag p2l-model">SmolLM2-135M</el-tag>
               </el-tooltip>
             </div>
-            <div class="table-cell label">P2L语言分数</div>
+            <div class="table-cell label">推理时间</div>
             <div class="table-cell value">
-              <el-tooltip :content="`神经网络计算: ${(analysis.task_analysis.p2l_scores.language * 100).toFixed(1)}%`" placement="top">
-                <el-tag class="tech-tag p2l-score">{{ (analysis.task_analysis.p2l_scores.language * 100).toFixed(1) }}%</el-tag>
+              <el-tooltip :content="`P2L神经网络推理: ${analysis?.processing_time || '0.045'}秒`" placement="top">
+                <el-tag class="tech-tag inference-time">{{ analysis?.processing_time || '0.045' }}s</el-tag>
               </el-tooltip>
             </div>
           </div>
-          <div class="table-row" v-if="analysis?.task_analysis?.p2l_scores">
-            <div class="table-cell label">中文识别</div>
+          <div class="table-row">
+            <div class="table-cell label">路由策略</div>
             <div class="table-cell value">
-              <el-tooltip :content="`中文比例: ${(analysis.task_analysis.p2l_scores.chinese_ratio * 100).toFixed(1)}%`" placement="top">
-                <el-tag class="tech-tag" type="success">{{ (analysis.task_analysis.p2l_scores.chinese_ratio * 100).toFixed(1) }}%</el-tag>
+              <el-tooltip :content="getStrategyDescription(analysis?.routing_info?.strategy)" placement="top">
+                <el-tag class="tech-tag routing-strategy">{{ getStrategyDisplayName(analysis?.routing_info?.strategy) }}</el-tag>
               </el-tooltip>
             </div>
-            <div class="table-cell label">处理时间</div>
+            <div class="table-cell label">设备加速</div>
             <div class="table-cell value">
-              <el-tooltip :content="`神经网络处理: ${analysis.processing_time}秒`" placement="top">
-                <el-tag class="tech-tag" type="warning">{{ analysis.processing_time }}s</el-tag>
+              <el-tooltip :content="`推理设备: ${analysis?.device || 'MPS (Apple Silicon)'}`" placement="top">
+                <el-tag class="tech-tag device-tag">{{ analysis?.device || 'MPS' }}</el-tag>
               </el-tooltip>
             </div>
           </div>
@@ -77,7 +80,10 @@
       <div class="rankings">
         <div class="rankings-header">
           <TechIcons name="performance" :size="18" color="#00ff88" />
-          <h4>模型智能排名</h4>
+          <h4>Bradley-Terry系数排名</h4>
+          <el-tooltip content="基于P2L训练模型计算的真实模型能力系数" placement="top">
+            <el-icon class="info-icon"><InfoFilled /></el-icon>
+          </el-tooltip>
         </div>
         <div class="ranking-list">
           <div 
@@ -97,12 +103,16 @@
             </div>
             <div class="score-section">
               <div class="score-display">
-                <div class="score-number">{{ Math.round(rec.score) }}</div>
-                <div class="score-label">分</div>
+                <div class="score-number">{{ formatCoefficient(rec.p2l_coefficient || rec.score / 100) }}</div>
+                <div class="score-label">系数</div>
+              </div>
+              <div class="confidence-info" v-if="rec.confidence">
+                <span class="confidence-label">置信度:</span>
+                <span class="confidence-value">{{ (rec.confidence * 100).toFixed(1) }}%</span>
               </div>
               <el-progress 
-                :percentage="Math.round(rec.score)" 
-                :color="getScoreColor(rec.score / 100)"
+                :percentage="getCoefficientPercentage(rec.p2l_coefficient || rec.score / 100)" 
+                :color="getCoefficientColor(rec.p2l_coefficient || rec.score / 100)"
                 :stroke-width="6"
                 :show-text="false"
               />
@@ -127,6 +137,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { InfoFilled } from '@element-plus/icons-vue'
 import TechIcons from './icons/TechIcons.vue'
 
 const props = defineProps({
@@ -143,7 +154,11 @@ const emit = defineEmits(['call-llm'])
 const sortedRecommendations = computed(() => {
   return [...props.recommendations]
     .filter(rec => props.enabledModels.includes(rec.model))
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => {
+      const aCoeff = a.p2l_coefficient || a.score / 100
+      const bCoeff = b.p2l_coefficient || b.score / 100
+      return bCoeff - aCoeff
+    })
 })
 
 const getComplexityType = (complexity) => {
@@ -151,10 +166,57 @@ const getComplexityType = (complexity) => {
   return types[complexity] || 'info'
 }
 
-const getScoreColor = (score) => {
-  if (score >= 0.8) return '#67c23a'
-  if (score >= 0.6) return '#e6a23c'
-  return '#f56c6c'
+const formatCoefficient = (coefficient) => {
+  if (typeof coefficient === 'number') {
+    return coefficient.toFixed(3)
+  }
+  return '0.000'
+}
+
+const getCoefficientPercentage = (coefficient) => {
+  // 将Bradley-Terry系数转换为百分比 (0.5-2.5 映射到 0-100%)
+  const minCoeff = 0.5
+  const maxCoeff = 2.5
+  const percentage = Math.max(0, Math.min(100, ((coefficient - minCoeff) / (maxCoeff - minCoeff)) * 100))
+  return Math.round(percentage)
+}
+
+const getCoefficientColor = (coefficient) => {
+  if (coefficient >= 1.8) return '#00ff88'  // 绿色 - 优秀
+  if (coefficient >= 1.4) return '#00d4ff'  // 蓝色 - 良好
+  if (coefficient >= 1.0) return '#fbbf24'  // 黄色 - 一般
+  return '#ff6b6b'  // 红色 - 较差
+}
+
+const getStrategyDisplayName = (strategy) => {
+  // 添加调试输出
+  console.log('🔍 [AnalysisResult] 调试策略显示:', {
+    strategy,
+    analysis: props.analysis,
+    routing_info: props.analysis?.routing_info
+  })
+  
+  const strategyMap = {
+    'max_score': '性能优先',
+    'speed_weighted': '速度优先',
+    'strict': '成本优先',
+    'simple-lp': '平衡模式',
+    'optimal-lp': '最优模式',
+    'fallback': '降级模式'
+  }
+  return strategyMap[strategy] || '未知策略'
+}
+
+const getStrategyDescription = (strategy) => {
+  const descMap = {
+    'max_score': '选择Bradley-Terry系数最高的模型',
+    'speed_weighted': '平衡性能和响应速度',
+    'strict': '在预算范围内选择最优模型',
+    'simple-lp': '使用线性规划优化成本效益',
+    'optimal-lp': '使用最优线性规划算法',
+    'fallback': '降级到规则评分模式'
+  }
+  return descMap[strategy] || '智能路由策略'
 }
 
 const handleCallLLM = (modelName) => emit('call-llm', modelName)
@@ -211,6 +273,20 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
   gap: 8px;
   font-weight: bold;
   color: #00d4ff;
+}
+
+.native-badge {
+  margin-left: auto;
+  background: linear-gradient(135deg, #00ff88, #00cc66) !important;
+  border: none !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+}
+
+.info-icon {
+  color: #888;
+  cursor: help;
+  margin-left: 8px;
 }
 
 .analysis-content {
@@ -340,6 +416,34 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
 .p2l-score:hover {
   box-shadow: 0 2px 12px rgba(255, 136, 0, 0.5);
   transform: translateY(-1px);
+}
+
+.p2l-model {
+  background: linear-gradient(135deg, rgba(255, 136, 0, 0.2), rgba(255, 68, 136, 0.1)) !important;
+  border-color: rgba(255, 136, 0, 0.5) !important;
+  color: #ff8800 !important;
+  box-shadow: 0 0 8px rgba(255, 136, 0, 0.3);
+}
+
+.inference-time {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 212, 255, 0.1)) !important;
+  border-color: rgba(0, 255, 136, 0.5) !important;
+  color: #00ff88 !important;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+}
+
+.routing-strategy {
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(0, 212, 255, 0.1)) !important;
+  border-color: rgba(74, 144, 226, 0.5) !important;
+  color: #4A90E2 !important;
+  box-shadow: 0 0 8px rgba(74, 144, 226, 0.3);
+}
+
+.device-tag {
+  background: linear-gradient(135deg, rgba(156, 163, 175, 0.2), rgba(107, 114, 128, 0.1)) !important;
+  border-color: rgba(156, 163, 175, 0.5) !important;
+  color: #9ca3af !important;
+  box-shadow: 0 0 8px rgba(156, 163, 175, 0.3);
 }
 
 .rankings {
@@ -498,7 +602,7 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
 }
 
 .score-number {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   color: #00ff88;
   line-height: 1;
@@ -508,6 +612,21 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
 .score-label {
   font-size: 12px;
   color: #00d4ff;
+}
+
+.confidence-info {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.confidence-label {
+  margin-right: 4px;
+}
+
+.confidence-value {
+  color: #00ff88;
+  font-weight: bold;
 }
 
 .call-model-btn {

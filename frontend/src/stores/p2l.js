@@ -172,10 +172,18 @@ export const useP2LStore = defineStore('p2l', {
     async analyzeWithP2L(prompt, mode = 'balanced') {
       this.loading = true
       try {
+        console.log('🚀 [P2L Store] 发送请求:', { prompt: prompt.substring(0, 50), priority: mode })
+        
         const response = await p2lApi.post('/p2l/analyze', {
           prompt,
           priority: mode, // 修正参数名
           enabled_models: this.enabledModels.length > 0 ? this.enabledModels : this.availableModels.map(m => m.name)
+        })
+        
+        console.log('📥 [P2L Store] 后端返回数据:', {
+          routing_info: response.data.routing_info,
+          strategy: response.data.routing_info?.strategy,
+          full_response: response.data
         })
         
         this.currentAnalysis = response.data

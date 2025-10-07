@@ -12,7 +12,7 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # 检查当前目录
-if [ ! -f "service.py" ]; then
+if [ ! -f "service_p2l_native.py" ]; then
     echo "❌ 请在backend目录下运行此脚本"
     exit 1
 fi
