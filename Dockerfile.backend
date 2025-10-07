@@ -39,8 +39,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=30s --start-period=600s --retries=10 \
     CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=30)" || exit 1
 
-# 优化的启动脚本
-COPY docker-entrypoint.sh /app/
-RUN chmod +x /app/docker-entrypoint.sh
-
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+# 启动命令 - 先检查模型再启动服务
+CMD ["/bin/bash", "-c", "echo '🐳 P2L Backend容器启动' && echo '🔍 检查P2L模型...' && python3 p2l_tools.py ensure && echo '🚀 启动backend服务...' && python -m backend.main"]
