@@ -89,7 +89,7 @@ def main(args, local_file=None):
             local_file,
             CLS_id=tokenizer.cls_token_id,
             num_models=len(model_list),
-            torch_dtype=torch.bfloat16,
+            dtype=torch.bfloat16,
             local_files_only=True,
         )
     else:

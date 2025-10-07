@@ -194,8 +194,10 @@ class P2LModelScorer:
         for model_name in self.model_list:
             config = self.model_configs[model_name]
             
-            # 基于质量分数生成系数，添加随机性
-            base_coef = (config["quality_score"] - 0.5) * 2  # 转换到[-1, 1]范围
+            # 基于成本和响应时间生成模拟系数
+            cost_factor = max(0.1, min(1.0, 0.05 / config["cost_per_1k"]))  # 成本越低分数越高
+            speed_factor = max(0.1, min(1.0, 5.0 / config["avg_response_time"]))  # 速度越快分数越高
+            base_coef = (cost_factor * speed_factor - 0.5) * 2  # 转换到[-1, 1]范围
             noise = np.random.normal(0, 0.2)
             coef = base_coef + noise
             
@@ -215,8 +217,10 @@ class P2LModelScorer:
         for model_name in models_to_score:
             config = self.model_configs[model_name]
             
-            # 简单的质量分数
-            score = config["quality_score"] * 100
+            # 基于P2L系数的分数
+            cost_factor = max(0.1, min(1.0, 0.05 / config["cost_per_1k"]))
+            speed_factor = max(0.1, min(1.0, 5.0 / config["avg_response_time"]))
+            score = (cost_factor * speed_factor) * 100
             
             scores.append({
                 "model": model_name,
@@ -226,8 +230,8 @@ class P2LModelScorer:
                 "provider": config["provider"],
                 "cost_per_1k": config["cost_per_1k"],
                 "avg_response_time": config["avg_response_time"],
-                "strengths": config["strengths"],
-                "quality_score": config["quality_score"]
+                "cost_per_1k": config["cost_per_1k"],
+                "avg_response_time": config["avg_response_time"]
             })
         
         # 按分数排序
@@ -274,7 +278,7 @@ class P2LModelScorer:
             reasoning_parts.append("成本效益高")
         elif priority == "speed" and config["avg_response_time"] < 2.0:
             reasoning_parts.append("响应速度快")
-        elif priority == "performance" and config["quality_score"] > 0.90:
+        elif priority == "performance" and config["cost_per_1k"] < 0.01:
             reasoning_parts.append("性能表现优秀")
         
         return "；".join(reasoning_parts) if reasoning_parts else "P2L智能推荐"

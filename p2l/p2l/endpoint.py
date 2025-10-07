@@ -346,7 +346,7 @@ def load_model(
             model_name,
             CLS_id=tokenizer.cls_token_id,
             num_models=len(model_list),
-            torch_dtype=torch.bfloat16,
+            dtype=torch.bfloat16,
         )
         return model, tokenizer, model_list
         

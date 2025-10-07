@@ -14,11 +14,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.0015,
         "max_tokens": 16384,
         "context_window": 128000,
-        "avg_response_time": 1.2,
-        "strengths": ["通用", "翻译", "分析", "中文"],
-        "quality_score": 0.82,
-        "speed_score": 0.90,
-        "cost_score": 0.95
+        "avg_response_time": 1.2
     },
     "gpt-3.5-turbo-0125": {
         "provider": "openai",
@@ -27,10 +23,6 @@ MODEL_CONFIGS = {
         "max_tokens": 4096,
         "context_window": 16385,
         "avg_response_time": 1.2,
-        "strengths": ["通用", "翻译", "分析", "中文"],
-        "quality_score": 0.75,
-        "speed_score": 0.95,
-        "cost_score": 0.98,
         "verified": True
     },
     "gpt-4o-mini-2024-07-18": {
@@ -40,10 +32,6 @@ MODEL_CONFIGS = {
         "max_tokens": 16384,
         "context_window": 128000,
         "avg_response_time": 1.0,
-        "strengths": ["通用", "翻译", "分析", "中文"],
-        "quality_score": 0.80,
-        "speed_score": 0.95,
-        "cost_score": 0.95,
         "verified": True
     },
     "gpt-4-turbo-2024-04-09": {
@@ -53,10 +41,6 @@ MODEL_CONFIGS = {
         "max_tokens": 4096,
         "context_window": 128000,
         "avg_response_time": 2.5,
-        "strengths": ["编程", "分析", "通用", "中文"],
-        "quality_score": 0.91,
-        "speed_score": 0.75,
-        "cost_score": 0.60,
         "verified": True
     },
     
@@ -68,10 +52,6 @@ MODEL_CONFIGS = {
         "max_tokens": 4096,
         "context_window": 200000,
         "avg_response_time": 2.8,
-        "strengths": ["创意写作", "分析", "编程", "通用"],
-        "quality_score": 0.93,
-        "speed_score": 0.70,
-        "cost_score": 0.65,
         "verified": True
     },
     "claude-3-5-haiku-20241022": {
@@ -81,10 +61,6 @@ MODEL_CONFIGS = {
         "max_tokens": 4096,
         "context_window": 200000,
         "avg_response_time": 1.5,
-        "strengths": ["通用", "翻译", "分析"],
-        "quality_score": 0.85,
-        "speed_score": 0.90,
-        "cost_score": 0.95,
         "verified": True
     },
     "claude-3-5-sonnet-20240620": {
@@ -93,11 +69,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.025,
         "max_tokens": 4096,
         "context_window": 200000,
-        "avg_response_time": 2.8,
-        "strengths": ["创意写作", "分析", "编程", "通用"],
-        "quality_score": 0.92,
-        "speed_score": 0.70,
-        "cost_score": 0.65
+        "avg_response_time": 2.8
     },
 
     
@@ -109,10 +81,6 @@ MODEL_CONFIGS = {
         "max_tokens": 8192,
         "context_window": 1000000,
         "avg_response_time": 5.3,
-        "strengths": ["通用", "分析", "翻译"],
-        "quality_score": 0.87,
-        "speed_score": 0.70,
-        "cost_score": 0.85,
         "verified": True
     },
     "gemini-1.5-pro-001": {
@@ -122,10 +90,6 @@ MODEL_CONFIGS = {
         "max_tokens": 8192,
         "context_window": 1000000,
         "avg_response_time": 5.5,
-        "strengths": ["分析", "通用", "编程"],
-        "quality_score": 0.91,
-        "speed_score": 0.68,
-        "cost_score": 0.75,
         "verified": True
     },
     "gemini-1.5-pro-002": {
@@ -135,10 +99,6 @@ MODEL_CONFIGS = {
         "max_tokens": 8192,
         "context_window": 1000000,
         "avg_response_time": 5.3,
-        "strengths": ["分析", "通用", "编程"],
-        "quality_score": 0.92,
-        "speed_score": 0.69,
-        "cost_score": 0.75,
         "verified": True
     },
     
@@ -149,11 +109,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.002,
         "max_tokens": 4096,
         "context_window": 32000,
-        "avg_response_time": 1.8,
-        "strengths": ["通用", "中文", "翻译"],
-        "quality_score": 0.86,
-        "speed_score": 0.85,
-        "cost_score": 0.98
+        "avg_response_time": 1.8
     },
     "deepseek-v3": {
         "provider": "deepseek",
@@ -162,10 +118,6 @@ MODEL_CONFIGS = {
         "max_tokens": 4096,
         "context_window": 32000,
         "avg_response_time": 1.8,
-        "strengths": ["编程", "中文", "通用"],
-        "quality_score": 0.90,
-        "speed_score": 0.85,
-        "cost_score": 0.98,
         "verified": True
     },
     
@@ -176,11 +128,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.02,
         "max_tokens": 8192,
         "context_window": 200000,
-        "avg_response_time": 2.5,
-        "strengths": ["分析", "创意写作", "中文", "通用"],
-        "quality_score": 0.96,
-        "speed_score": 0.75,
-        "cost_score": 0.75
+        "avg_response_time": 2.5
     },
     "qwen-max-0919": {
         "provider": "dashscope",
@@ -188,11 +136,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.02,
         "max_tokens": 8192,
         "context_window": 200000,
-        "avg_response_time": 2.3,
-        "strengths": ["分析", "创意写作", "中文", "通用"],
-        "quality_score": 0.97,
-        "speed_score": 0.78,
-        "cost_score": 0.75
+        "avg_response_time": 2.3
     },
     "qwen1.5-110b-chat": {
         "provider": "dashscope",
@@ -200,11 +144,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.008,
         "max_tokens": 8192,
         "context_window": 32000,
-        "avg_response_time": 3.2,
-        "strengths": ["分析", "数学", "中文", "通用"],
-        "quality_score": 0.94,
-        "speed_score": 0.65,
-        "cost_score": 0.80
+        "avg_response_time": 3.2
     },
     "qwen1.5-14b-chat": {
         "provider": "dashscope",
@@ -212,11 +152,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.001,
         "max_tokens": 8192,
         "context_window": 32000,
-        "avg_response_time": 1.5,
-        "strengths": ["通用", "中文", "翻译"],
-        "quality_score": 0.85,
-        "speed_score": 0.90,
-        "cost_score": 0.98
+        "avg_response_time": 1.5
     },
     "qwen1.5-32b-chat": {
         "provider": "dashscope",
@@ -224,11 +160,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.002,
         "max_tokens": 8192,
         "context_window": 32000,
-        "avg_response_time": 2.0,
-        "strengths": ["通用", "中文", "分析"],
-        "quality_score": 0.88,
-        "speed_score": 0.82,
-        "cost_score": 0.95
+        "avg_response_time": 2.0
     },
     "qwen1.5-72b-chat": {
         "provider": "dashscope",
@@ -236,11 +168,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.004,
         "max_tokens": 8192,
         "context_window": 32000,
-        "avg_response_time": 2.3,
-        "strengths": ["分析", "中文", "通用"],
-        "quality_score": 0.91,
-        "speed_score": 0.78,
-        "cost_score": 0.90
+        "avg_response_time": 2.3
     },
     "qwen2-72b-instruct": {
         "provider": "dashscope",
@@ -248,11 +176,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.003,
         "max_tokens": 8192,
         "context_window": 32000,
-        "avg_response_time": 2.2,
-        "strengths": ["通用", "中文", "分析"],
-        "quality_score": 0.90,
-        "speed_score": 0.80,
-        "cost_score": 0.92
+        "avg_response_time": 2.2
     },
     "qwen2.5-72b-instruct": {
         "provider": "dashscope",
@@ -260,11 +184,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.002,
         "max_tokens": 8192,
         "context_window": 32000,
-        "avg_response_time": 2.0,
-        "strengths": ["编程", "数学", "中文", "分析"],
-        "quality_score": 0.92,
-        "speed_score": 0.82,
-        "cost_score": 0.95
+        "avg_response_time": 2.0
     },
     "qwen2.5-coder-32b-instruct": {
         "provider": "dashscope",
@@ -272,11 +192,7 @@ MODEL_CONFIGS = {
         "cost_per_1k": 0.002,
         "max_tokens": 8192,
         "context_window": 32000,
-        "avg_response_time": 1.8,
-        "strengths": ["编程", "通用", "中文"],
-        "quality_score": 0.93,
-        "speed_score": 0.85,
-        "cost_score": 0.95
+        "avg_response_time": 1.8
     }
 }
 

@@ -143,7 +143,7 @@ class P2LEngine:
                 str(self.model_path),
                 CLS_id=tokenizer.cls_token_id,
                 num_models=self.num_models,
-                torch_dtype=torch.bfloat16 if self.device != "cpu" else torch.float32,
+                dtype=torch.bfloat16 if self.device != "cpu" else torch.float32,
                 device_map="auto" if self.device == "cuda" else None
             )
             

@@ -10,6 +10,10 @@ import asyncio
 import logging
 import time
 import torch
+import warnings
+
+# 抑制urllib3的OpenSSL警告
+warnings.filterwarnings("ignore", message="urllib3 v2 only supports OpenSSL 1.1.1+")
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -198,9 +202,7 @@ class P2LNativeBackendService:
                     "p2l_coefficient": ranking.get("p2l_coefficient", 0),
                     "provider": ranking["provider"],
                     "cost_per_1k": ranking["cost_per_1k"],
-                    "avg_response_time": ranking["avg_response_time"],
-                    "strengths": ranking["strengths"],
-                    "quality_score": ranking["quality_score"]
+                    "avg_response_time": ranking["avg_response_time"]
                 })
             
             # 构建任务分析结果（兼容前端）

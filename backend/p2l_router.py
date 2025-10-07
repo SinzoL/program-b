@@ -271,7 +271,7 @@ class P2LRouter:
             print(f"      P2L系数: {p2l_coefficients[i]:.3f}")
             print(f"      成本: ${model_costs[i]:.4f}/1k")
             print(f"      响应时间: {model_response_times[i]:.1f}s")
-            print(f"      质量评分: {config['quality_score']:.2f}")
+            print(f"      成本: ${config['cost_per_1k']:.4f}/1k")
         
         # 根据模式选择路由策略
         strategy = self.mode_mapping.get(mode, 'simple-lp')
@@ -442,8 +442,8 @@ class P2LRouter:
                 "provider": config["provider"],
                 "cost_per_1k": config["cost_per_1k"],
                 "avg_response_time": config["avg_response_time"],
-                "strengths": config["strengths"],
-                "quality_score": config["quality_score"]
+                "cost_per_1k": config["cost_per_1k"],
+                "avg_response_time": config["avg_response_time"]
             })
         
         # 按P2L系数排序

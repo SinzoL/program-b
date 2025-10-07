@@ -898,7 +898,7 @@ def load_model(model_path: str, device: str = "auto"):
             # 加载模型
             model = AutoModelForCausalLM.from_pretrained(
                 model_path,
-                torch_dtype=torch.float16 if device != "cpu" else torch.float32,
+                dtype=torch.float16 if device != "cpu" else torch.float32,
                 device_map="auto" if device == "cuda" else None,
                 trust_remote_code=True,
                 low_cpu_mem_usage=True
