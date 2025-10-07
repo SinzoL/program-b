@@ -15,28 +15,6 @@
       <div class="task-info">
         <div class="tech-table">
           <div class="table-row">
-            <div class="table-cell label">类型</div>
-            <div class="table-cell value">
-              <el-tooltip :content="analysis?.task_analysis?.task_type || '未知'" placement="top">
-                <el-tag class="tech-tag">{{ analysis?.task_analysis?.task_type || '未知' }}</el-tag>
-              </el-tooltip>
-            </div>
-            <div class="table-cell label">复杂度</div>
-            <div class="table-cell value">
-              <el-tooltip :content="analysis?.task_analysis?.complexity || '未知'" placement="top">
-                <el-tag class="tech-tag" :type="getComplexityType(analysis?.task_analysis?.complexity)">
-                  {{ analysis?.task_analysis?.complexity || '未知' }}
-                </el-tag>
-              </el-tooltip>
-            </div>
-          </div>
-          <div class="table-row">
-            <div class="table-cell label">语言</div>
-            <div class="table-cell value">
-              <el-tooltip :content="analysis?.task_analysis?.language || '未知'" placement="top">
-                <el-tag class="tech-tag" type="info">{{ analysis?.task_analysis?.language || '未知' }}</el-tag>
-              </el-tooltip>
-            </div>
             <div class="table-cell label">推荐模型</div>
             <div class="table-cell value">
               <el-tooltip :content="analysis?.recommended_model" placement="top">
@@ -161,10 +139,7 @@ const sortedRecommendations = computed(() => {
     })
 })
 
-const getComplexityType = (complexity) => {
-  const types = { '简单': 'success', '中等': 'warning', '复杂': 'danger' }
-  return types[complexity] || 'info'
-}
+
 
 const formatCoefficient = (coefficient) => {
   if (typeof coefficient === 'number') {

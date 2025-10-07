@@ -491,6 +491,8 @@ class P2LEngine:
         if status['is_loaded']:
             print(f"🏗️ 架构: {model_info['architecture']}")
             print(f"🎯 特性: {', '.join(model_info['features'][:3])}...")
+    
+
 
 # 全局P2L引擎实例
 _p2l_engine = None

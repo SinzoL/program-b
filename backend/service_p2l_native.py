@@ -205,18 +205,7 @@ class P2LNativeBackendService:
                     "avg_response_time": ranking["avg_response_time"]
                 })
             
-            # 构建任务分析结果（兼容前端）
-            task_analysis = {
-                "complexity_score": routing_info.get("complexity_score", 0.5),
-                "language_score": routing_info.get("language_score", 0.5),
-                "task_type": routing_info.get("task_type", "general"),
-                "estimated_tokens": routing_info.get("estimated_tokens", len(request.prompt.split()) * 1.3),
-                "p2l_strategy": routing_info.get("strategy", "unknown"),
-                "routing_explanation": routing_info.get("explanation", "P2L原生路由")
-            }
-            
             result = {
-                "task_analysis": task_analysis,
                 "model_ranking": model_rankings,
                 "recommendations": recommendations,
                 "recommended_model": model_rankings[0]["model"] if model_rankings else None,
