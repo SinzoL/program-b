@@ -18,7 +18,7 @@ COPY . .
 RUN mkdir -p /app/models /app/logs
 
 # 确保脚本可执行
-RUN chmod +x /app/p2l_tools.py /app/p2l_core.py
+RUN chmod +x /app/p2l_tools.py
 
 # 设置环境变量
 ENV PYTHONPATH=/app

@@ -21,7 +21,6 @@ services:
       - ./logs:/app/logs
       # 更新配置文件挂载路径
       - ./backend/model_p2l:/app/backend/model_p2l:ro
-      - ./backend/api_config.env:/app/api_config.env:ro
     restart: unless-stopped
     # 资源限制（适合轻量服务器）
     deploy:
