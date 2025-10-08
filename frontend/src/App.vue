@@ -20,6 +20,11 @@
       <el-main class="app-main">
         <router-view />
       </el-main>
+
+      <!-- 底部Footer -->
+      <el-footer class="app-footer-container">
+        <AppFooter />
+      </el-footer>
     </el-container>
   </div>
 </template>
@@ -28,6 +33,7 @@
 import { ref, onMounted } from 'vue'
 import { useP2LStore } from './stores/p2l'
 import CubeLogo from './components/icons/CubeLogo.vue'
+import AppFooter from './components/AppFooter.vue'
 
 const p2lStore = useP2LStore()
 
@@ -118,6 +124,12 @@ onMounted(() => {
   padding: 0;
   max-width: 1200px;
   margin: 0 auto;
+  flex: 1;
+}
+
+.app-footer-container {
+  padding: 0;
+  height: auto;
 }
 </style>
 
