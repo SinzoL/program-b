@@ -57,6 +57,12 @@ ENV/
 env.bak/
 venv.bak/
 
+# API密钥文件 - 重要：请勿提交到版本控制！
+backend/model_p2l/api_key.env
+**/api_key.env
+*.env.local
+*.env.production
+
 # Spyder project settings
 .spyderproject
 .spyproject
