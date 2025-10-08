@@ -18,7 +18,7 @@ COPY . .
 # 创建必要目录并设置权限
 RUN mkdir -p /app/models /app/logs /app/backend/model_p2l/models && \
     chmod -R 755 /app && \
-    chmod +x /app/p2l_tools.py
+    chmod +x /app/backend/model_p2l/p2l_tools.py
 
 # 设置环境变量
 ENV PYTHONPATH=/app:/app/backend:/app/backend/model_p2l
@@ -36,4 +36,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=600s --retries=10 \
     CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=30)" || exit 1
 
 # 启动命令 - 先检查模型再启动服务
-CMD ["/bin/bash", "-c", "echo '🐳 P2L Backend容器启动' && echo '🔍 检查P2L模型...' && python3 p2l_tools.py ensure && echo '🚀 启动backend服务...' && python -m backend.main"]
+CMD ["/bin/bash", "-c", "echo '🐳 P2L Backend容器启动' && echo '🔍 检查P2L模型...' && python3 backend/model_p2l/p2l_tools.py ensure && echo '🚀 启动backend服务...' && python -m backend.main"]
