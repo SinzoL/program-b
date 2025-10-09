@@ -88,7 +88,7 @@ echo "📦 检查后端依赖..."
 python3 -c "import fastapi, uvicorn, torch, transformers, aiohttp" 2>/dev/null
 if [ $? -ne 0 ]; then
     echo "🔄 安装后端依赖..."
-    pip3 install -r requirements.txt
+    python3 -m pip install -r requirements.txt
     if [ $? -ne 0 ]; then
         echo "❌ 后端依赖安装失败"
         exit 1
