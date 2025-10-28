@@ -364,7 +364,7 @@ class UnifiedLLMClient:
             
             return LLMResponse(
                 content=content,
-                model=qwen_model,
+                model=model,
                 tokens_used=int(total_tokens),
                 cost=cost,
                 response_time=0,
