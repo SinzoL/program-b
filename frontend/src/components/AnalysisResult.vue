@@ -200,9 +200,9 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
   min-height: 700px;
   height: 100%;
   overflow: visible;
-  border: 2px solid #00d4ff;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(0, 255, 136, 0.05) 100%);
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+  border: 1px solid #d0d0d0;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
 }
 
@@ -223,8 +223,8 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
 }
 
 .analysis-card :deep(.el-card__header) {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
-  border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .analysis-card :deep(.el-card__body) {
@@ -234,7 +234,7 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
   padding: 20px;
   overflow: visible;
   min-height: 600px;
-  background: rgba(15, 15, 35, 0.02);
+  background: #ffffff;
 }
 
 .card-header {
@@ -273,9 +273,9 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
 }
 
 .tech-table {
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
+  background: #f8f9fa;
   overflow: hidden;
   position: relative;
 }
@@ -315,16 +315,16 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
 }
 
 .table-cell.label {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
+  background: #f0f0f0;
   font-weight: bold;
-  color: #00d4ff;
+  color: #2c3e50;
   font-size: 14px;
   justify-content: flex-start;
   text-align: left;
 }
 
 .table-cell.value {
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.02), rgba(0, 212, 255, 0.01));
+  background: #ffffff;
   color: #333;
 }
 
@@ -445,9 +445,9 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
   overflow-y: auto;
   padding: 12px;
   padding-right: 8px;
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.05), rgba(0, 212, 255, 0.02));
+  background: #f8f9fa;
 }
 
 .ranking-list::-webkit-scrollbar {
@@ -473,14 +473,14 @@ const handleCallLLM = (modelName) => emit('call-llm', modelName)
   align-items: center;
   gap: 15px;
   padding: 15px;
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
   transition: all 0.3s;
   min-height: 80px;
   height: 80px;
   overflow: hidden;
   position: relative;
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.05), rgba(0, 212, 255, 0.02));
+  background: #ffffff;
 }
 
 .ranking-item::before {

@@ -3,7 +3,7 @@
     <template #header>
       <div class="placeholder-header">
         <div class="placeholder-title">
-          <TechIcons name="brain" :size="20" color="#00d4ff" />
+          <TechIcons name="brain" :size="20" color="#6c757d" />
           <span>对话区域</span>
           <el-tag size="small" type="info" class="tech-tag">等待输入</el-tag>
         </div>
@@ -14,12 +14,12 @@
       <!-- 问题占位符 -->
       <div class="content-section">
         <div class="section-header">
-          <TechIcons name="analytics" :size="16" color="#00d4ff" />
+          <TechIcons name="analytics" :size="16" color="#6c757d" />
           <span>问题</span>
         </div>
         <div class="section-content placeholder-text">
           <div class="placeholder-message">
-            <CubeLogo :size="32" color="#00d4ff" variant="default" class="placeholder-icon" />
+            <CubeLogo :size="32" color="#6c757d" variant="default" class="placeholder-icon" />
             <span>在左侧输入问题，分析后选择合适模型解答</span>
           </div>
         </div>
@@ -28,12 +28,12 @@
       <!-- 回答占位符 -->
       <div class="content-section">
         <div class="section-header">
-          <TechIcons name="robot" :size="16" color="#00d4ff" />
+          <TechIcons name="robot" :size="16" color="#6c757d" />
           <span>回答</span>
         </div>
         <div class="section-content placeholder-text">
           <div class="placeholder-message">
-            <CubeLogo :size="32" color="#00d4ff" variant="default" :animate="true" class="placeholder-icon loading-pulse" />
+            <CubeLogo :size="32" color="#6c757d" variant="default" :animate="true" class="placeholder-icon loading-pulse" />
             <span>模型的回答将在此展示</span>
           </div>
         </div>
@@ -51,30 +51,16 @@ import CubeLogo from '../icons/CubeLogo.vue'
 .placeholder-chat {
   height: 100%;
   min-height: 650px;
-  border: 2px dashed #00d4ff;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(0, 212, 255, 0.1) 100%);
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+  border: 2px dashed #d0d0d0;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
 }
 
-.placeholder-chat::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
-  animation: shimmer 3s infinite;
-}
 
-@keyframes shimmer {
-  0% { left: -100%; }
-  100% { left: 100%; }
-}
 
 .placeholder-chat :deep(.el-card__body) {
   flex: 1;
@@ -82,7 +68,7 @@ import CubeLogo from '../icons/CubeLogo.vue'
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: rgba(15, 15, 35, 0.02);
+  background: #ffffff;
 }
 
 .placeholder-header {
@@ -96,14 +82,14 @@ import CubeLogo from '../icons/CubeLogo.vue'
   align-items: center;
   gap: 8px;
   font-weight: bold;
-  color: #00d4ff;
+  color: #2c3e50;
 }
 
 .tech-tag {
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: #6c757d;
   color: white;
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .placeholder-content {
@@ -119,7 +105,7 @@ import CubeLogo from '../icons/CubeLogo.vue'
 .content-section {
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .content-section:first-child {
@@ -135,12 +121,12 @@ import CubeLogo from '../icons/CubeLogo.vue'
 .section-header {
   flex-shrink: 0;
   padding: 12px 16px;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05));
-  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #00d4ff;
+  color: #2c3e50;
   font-weight: 500;
 }
 
@@ -150,7 +136,7 @@ import CubeLogo from '../icons/CubeLogo.vue'
 }
 
 .placeholder-text {
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.05), rgba(0, 212, 255, 0.02));
+  background: #ffffff;
   border: none;
   color: #666;
   height: 100%;

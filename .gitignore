@@ -192,6 +192,9 @@ logs
 *.tmp
 *.temp
 
+# Test results and generated files
+backend/test/*.json
+
 # Docker
 .dockerignore
 

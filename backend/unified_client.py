@@ -137,6 +137,9 @@ class UnifiedLLMClient:
         base_urls = self.config["base_urls"]
         model_config = get_model_config(model)
         
+        # 使用配置中的request_name
+        request_model = model_config.get('request_name', model)
+        
         url = base_urls['openai'] + '/chat/completions'
         headers = {
             'Authorization': f'Bearer {api_keys["openai"]}',
@@ -146,7 +149,7 @@ class UnifiedLLMClient:
         messages = kwargs.get('messages', [{'role': 'user', 'content': prompt}])
         
         data = {
-            'model': model,
+            'model': request_model,  # 使用映射后的模型名
             'messages': messages,
             'max_tokens': kwargs.get('max_tokens', model_config.get('max_tokens', 2000)),
             'temperature': kwargs.get('temperature', 0.7)
@@ -186,6 +189,10 @@ class UnifiedLLMClient:
     async def _call_anthropic_proxy(self, model: str, prompt: str, base_url: str, **kwargs) -> LLMResponse:
         """调用中转服务的Anthropic API"""
         api_keys = self.config["api_keys"]
+        model_config = get_model_config(model)
+        
+        # 使用配置中的request_name
+        request_model = model_config.get('request_name', model)
         
         url = f'{base_url}/chat/completions'
         headers = {
@@ -196,7 +203,7 @@ class UnifiedLLMClient:
         messages = kwargs.get('messages', [{'role': 'user', 'content': prompt}])
         
         data = {
-            'model': model,
+            'model': request_model,  # 使用映射后的模型名
             'messages': messages,
             'max_tokens': kwargs.get('max_tokens', 2000),
             'temperature': kwargs.get('temperature', 0.7)
@@ -326,6 +333,9 @@ class UnifiedLLMClient:
         base_urls = self.config["base_urls"]
         model_config = get_model_config(model)
         
+        # 使用配置中的request_name
+        request_model = model_config.get('request_name', model)
+        
         url = f'{base_urls["dashscope"]}/chat/completions'
         headers = {
             'Authorization': f'Bearer {api_keys["dashscope"]}',
@@ -333,10 +343,9 @@ class UnifiedLLMClient:
         }
         
         messages = kwargs.get('messages', [{'role': 'user', 'content': prompt}])
-        qwen_model = model if model.startswith('qwen') else 'qwen2.5-72b-instruct'
         
         data = {
-            'model': qwen_model,
+            'model': request_model,  # 使用映射后的模型名
             'messages': messages,
             'max_tokens': kwargs.get('max_tokens', model_config.get('max_tokens', 2000)),
             'temperature': kwargs.get('temperature', 0.7),
@@ -368,6 +377,9 @@ class UnifiedLLMClient:
         base_urls = self.config["base_urls"]
         model_config = get_model_config(model)
         
+        # 使用配置中的request_name
+        request_model = model_config.get('request_name', model)
+        
         url = f'{base_urls["deepseek"]}/chat/completions'
         headers = {
             'Authorization': f'Bearer {api_keys["deepseek"]}',
@@ -377,7 +389,7 @@ class UnifiedLLMClient:
         messages = kwargs.get('messages', [{'role': 'user', 'content': prompt}])
         
         data = {
-            'model': model,
+            'model': request_model,  # 使用映射后的模型名
             'messages': messages,
             'max_tokens': kwargs.get('max_tokens', 2000),
             'temperature': kwargs.get('temperature', 0.7)

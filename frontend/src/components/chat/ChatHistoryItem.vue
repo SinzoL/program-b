@@ -29,7 +29,7 @@
           @click.stop="switchToConversation"
           class="action-btn switch-btn"
         >
-          <TechIcons name="brain" :size="14" color="#00ff88" />
+          <TechIcons name="brain" :size="14" color="#67c23a" />
         </el-button>
         <el-button 
           type="text" 
@@ -37,12 +37,12 @@
           @click.stop="deleteConversation"
           class="action-btn delete-btn"
         >
-          <TechIcons name="settings" :size="14" color="#ff6b6b" />
+          <TechIcons name="settings" :size="14" color="#f56c6c" />
         </el-button>
         <TechIcons 
           name="chip" 
           :size="16" 
-          color="#00d4ff" 
+          color="#6c757d" 
           class="expand-icon" 
           :class="{ 'rotated': isExpanded }"
         />
@@ -73,7 +73,7 @@
                 <TechIcons 
                   :name="(message.role === 'user' || message.type === 'user') ? 'analytics' : 'robot'" 
                   :size="12" 
-                  :color="(message.role === 'user' || message.type === 'user') ? '#00d4ff' : '#00ff88'" 
+                  :color="(message.role === 'user' || message.type === 'user') ? '#409eff' : '#67c23a'" 
                 />
                 <span class="preview-role">
                   {{ (message.role === 'user' || message.type === 'user') ? '用户' : (message.model || 'AI助手') }}
@@ -209,53 +209,36 @@ const getPreviewMessages = () => {
 
 <style scoped>
 .conversation-item {
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
   margin-bottom: 12px;
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.05), rgba(0, 212, 255, 0.02));
+  background: #ffffff;
   transition: all 0.3s ease;
   overflow: hidden;
   position: relative;
 }
 
-.conversation-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
+
 
 .conversation-item:hover {
-  border-color: #00d4ff;
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2);
-  transform: translateY(-2px);
-}
-
-.conversation-item:hover::before {
-  opacity: 1;
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .conversation-item.expanded {
-  border-color: #00ff88;
-  box-shadow: 0 6px 20px rgba(0, 255, 136, 0.2);
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.05), rgba(0, 212, 255, 0.02));
+  border-color: #67c23a;
+  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
+  background: #f0f9ff;
 }
 
 .conversation-item.current {
-  border-color: #00ff88;
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 212, 255, 0.05));
-  box-shadow: 0 4px 16px rgba(0, 255, 136, 0.3);
+  border-color: #67c23a;
+  background: #f0f9ff;
+  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.3);
 }
 
-.conversation-item.current::before {
-  background: linear-gradient(90deg, transparent, #00ff88, transparent);
-  opacity: 1;
-}
+
 
 .item-header {
   display: flex;
@@ -268,7 +251,7 @@ const getPreviewMessages = () => {
 }
 
 .item-header:hover {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
+  background: #f8f9fa;
 }
 
 .item-info {
@@ -278,7 +261,7 @@ const getPreviewMessages = () => {
 
 .item-title {
   font-weight: 600;
-  color: #fff;
+  color: #2c3e50;
   margin-bottom: 8px;
   line-height: 1.4;
   word-break: break-word;
@@ -295,31 +278,29 @@ const getPreviewMessages = () => {
 }
 
 .tech-tag {
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: #6c757d;
   color: white;
   border: none;
-  box-shadow: 0 2px 6px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .item-time {
-  color: #00d4ff;
+  color: #409eff;
   font-weight: 500;
 }
 
 .item-tokens {
-  color: #00ff88;
+  color: #67c23a;
   font-weight: 500;
-  text-shadow: 0 0 4px rgba(0, 255, 136, 0.5);
 }
 
 .item-cost {
-  color: #ff6b6b;
+  color: #f56c6c;
   font-weight: 500;
-  text-shadow: 0 0 4px rgba(255, 107, 107, 0.5);
 }
 
 .conversation-preview {
-  color: #aaa;
+  color: #666;
   font-size: 13px;
   line-height: 1.4;
   font-style: italic;
@@ -341,25 +322,27 @@ const getPreviewMessages = () => {
 }
 
 .switch-btn {
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05));
-  border-color: rgba(0, 255, 136, 0.3);
+  background: #ffffff;
+  border-color: #67c23a;
+  color: #67c23a;
 }
 
 .switch-btn:hover {
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.2), rgba(0, 255, 136, 0.1));
-  border-color: #00ff88;
-  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+  background: #67c23a;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(103, 194, 58, 0.2);
 }
 
 .delete-btn {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
-  border-color: rgba(255, 107, 107, 0.3);
+  background: #ffffff;
+  border-color: #f56c6c;
+  color: #f56c6c;
 }
 
 .delete-btn:hover {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.1));
-  border-color: #ff6b6b;
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  background: #f56c6c;
+  color: #ffffff;
+  box-shadow: 0 2px 4px rgba(245, 108, 108, 0.2);
 }
 
 .expand-icon {
@@ -372,9 +355,9 @@ const getPreviewMessages = () => {
 }
 
 .item-content {
-  border-top: 1px solid rgba(0, 212, 255, 0.2);
+  border-top: 1px solid #e0e0e0;
   padding: 16px;
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.02), rgba(0, 212, 255, 0.01));
+  background: #f8f9fa;
 }
 
 .conversation-details {
@@ -388,7 +371,7 @@ const getPreviewMessages = () => {
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
-  color: #888;
+  color: #909399;
   font-family: 'Monaco', 'Consolas', monospace;
 }
 
@@ -405,13 +388,13 @@ const getPreviewMessages = () => {
 }
 
 .user-preview {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 212, 255, 0.02));
-  border-left-color: #00d4ff;
+  background: #e3f2fd;
+  border-left-color: #409eff;
 }
 
 .assistant-preview {
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.05), rgba(0, 255, 136, 0.02));
-  border-left-color: #00ff88;
+  background: #f0f9ff;
+  border-left-color: #67c23a;
 }
 
 .preview-header {
@@ -424,27 +407,27 @@ const getPreviewMessages = () => {
 
 .preview-role {
   font-weight: 500;
-  color: #fff;
+  color: #2c3e50;
 }
 
 .preview-time {
-  color: #888;
+  color: #909399;
   margin-left: auto;
 }
 
 .preview-content {
   font-size: 12px;
-  color: #ccc;
+  color: #606266;
   line-height: 1.4;
 }
 
 .more-messages {
   text-align: center;
-  color: #888;
+  color: #909399;
   font-size: 12px;
   font-style: italic;
   padding: 8px;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.02), rgba(0, 255, 136, 0.02));
+  background: #f0f0f0;
   border-radius: 4px;
 }
 

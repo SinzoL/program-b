@@ -66,7 +66,7 @@ export default {
 
 <style scoped>
 .app-footer {
-  background: transparent;
+  background: #6c757d;
   padding: 24px 0 16px;
   margin-top: auto;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
@@ -87,10 +87,10 @@ export default {
   align-items: center;
   gap: 20px;
   padding: 16px 24px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 50px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* GitHub链接 */
@@ -102,15 +102,15 @@ export default {
   text-decoration: none;
   padding: 8px 12px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   transition: all 0.3s ease;
   font-size: 14px;
 }
 
 .github-link:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .github-icon {
@@ -211,7 +211,7 @@ export default {
 /* 深色模式适配 */
 @media (prefers-color-scheme: dark) {
   .app-footer {
-    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    background: #4a5568;
   }
 }
 

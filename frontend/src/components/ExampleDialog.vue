@@ -1,9 +1,10 @@
 <template>
   <el-dialog 
     v-model="visible" 
-    width="600px" 
+    width="650px"
     @close="handleClose"
     class="tech-dialog"
+    :close-on-click-modal="false"
   >
     <template #header>
       <div class="dialog-header">
@@ -48,33 +49,51 @@ const visible = ref(props.modelValue)
 const exampleQuestions = ref([
   {
     id: 1,
-    category: '技术解释',
-    prompt: '你好，你是谁，你擅长什么？',
-    description: '解释类问题，测试知识整理能力'
+    category: '数据分析',
+    prompt: '分析一下2024年全球AI发展趋势，包括主要技术突破和市场变化',
+    description: '分析类问题，测试数据整理和趋势分析能力'
   },
   {
     id: 2,
     category: '创意写作',
-    prompt: '写一首关于人工智能的现代诗',
-    description: '创意类问题，测试文学创作能力'
+    prompt: '为一个智能家居产品写一份吸引人的营销文案',
+    description: '营销文案类问题，测试创意表达和商业思维'
   },
   {
     id: 3,
     category: '编程开发',
-    prompt: '用JS完成编程题寻找到无序数组中第K大的数',
-    description: '编程问题，测试代码编写能力'
+    prompt: '用Python实现一个简单的文件加密解密工具',
+    description: '实用编程问题，测试算法设计和代码实现能力'
   },
   {
     id: 4,
-    category: '技术解释',
-    prompt: '解释什么是区块链技术及其应用场景',
-    description: '解释类问题，测试知识整理能力'
+    category: '问题解决',
+    prompt: '如何优化一个电商网站的用户体验，提高转化率？',
+    description: '业务优化问题，测试系统性思考和解决方案设计'
   },
   {
     id: 5,
-    category: '编程开发',
-    prompt: '展示js实现字符串中下划线转化为驼峰',
-    description: '代码实现类问题，适合测试编程能力'
+    category: '学习辅导',
+    prompt: '用通俗易懂的方式解释机器学习中的"过拟合"现象',
+    description: '教学解释类问题，测试知识传达和简化表达能力'
+  },
+  {
+    id: 6,
+    category: '创意策划',
+    prompt: '设计一个环保主题的社区活动方案，包括具体执行步骤',
+    description: '策划类问题，测试创意思维和项目规划能力'
+  },
+  {
+    id: 7,
+    category: '技术咨询',
+    prompt: '对比分析Vue.js和React在大型项目中的优缺点',
+    description: '技术对比问题，测试深度分析和客观评估能力'
+  },
+  {
+    id: 8,
+    category: '生活助手',
+    prompt: '制定一个适合上班族的健康饮食计划，包含一周菜谱',
+    description: '生活规划问题，测试实用建议和个性化定制能力'
   }
 ])
 
@@ -109,7 +128,7 @@ const handleUseExample = (prompt) => {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  max-height: 400px;
+  max-height: 60vh;
   overflow-y: auto;
   padding-right: 8px;
 }
@@ -134,14 +153,17 @@ const handleUseExample = (prompt) => {
 }
 
 .example-item {
-  padding: 15px;
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  padding: 16px;
+  border: 1px solid rgba(0, 212, 255, 0.4);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
+  background: rgba(255, 255, 255, 0.95);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  margin-bottom: 4px;
+  min-height: auto;
+  height: auto;
 }
 
 .example-item::before {
@@ -158,9 +180,9 @@ const handleUseExample = (prompt) => {
 
 .example-item:hover {
   border-color: #00d4ff;
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
   transform: translateY(-2px);
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
+  background: rgba(240, 248, 255, 0.98);
 }
 
 .example-item:hover::before {
@@ -183,16 +205,31 @@ const handleUseExample = (prompt) => {
 }
 
 .example-prompt {
-  font-weight: bold;
-  color: #00d4ff;
+  font-weight: 600;
+  color: #1a73e8 !important;
   margin-bottom: 8px;
-  line-height: 1.4;
+  line-height: 1.5;
+  font-size: 14px !important;
+  word-wrap: break-word;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
 }
 
 .example-description {
-  font-size: 13px;
-  color: #666;
+  font-size: 12px !important;
+  color: #5f6368 !important;
   line-height: 1.4;
+  word-wrap: break-word;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
 }
 </style>
 
@@ -209,6 +246,12 @@ const handleUseExample = (prompt) => {
 }
 
 .tech-dialog .el-dialog__body {
-  background: rgba(15, 15, 35, 0.02);
+  background: rgba(255, 255, 255, 0.98) !important;
+  color: #333 !important;
+  overflow: visible !important;
+}
+
+.tech-dialog .el-dialog__body * {
+  color: inherit !important;
 }
 </style>

@@ -270,24 +270,11 @@ defineExpose({
   height: 100%;
   min-height: 700px;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.02), rgba(0, 212, 255, 0.01));
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
   border-radius: 12px;
   position: relative;
-}
-
-.tech-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 1px solid rgba(0, 212, 255, 0.2);
-  border-radius: 12px;
-  pointer-events: none;
-  background: linear-gradient(45deg, transparent 49%, rgba(0, 212, 255, 0.1) 50%, transparent 51%);
-  background-size: 20px 20px;
-  opacity: 0.3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Tab容器 */
@@ -301,8 +288,8 @@ defineExpose({
 }
 
 .tech-tabs :deep(.el-tabs__header) {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
   border-radius: 8px 8px 0 0;
   margin: 0;
 }
@@ -333,8 +320,8 @@ defineExpose({
   overflow: hidden;
   padding: 0;
   min-height: 650px;
-  background: rgba(15, 15, 35, 0.01);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
   border-top: none;
   border-radius: 0 0 8px 8px;
 }

@@ -98,9 +98,9 @@ const handleSmartRoutingChange = (enabled) => {
 }
 
 .tech-card {
-  border: 2px solid #00d4ff;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.05));
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+  border: 1px solid #d0d0d0;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
 }
@@ -122,12 +122,12 @@ const handleSmartRoutingChange = (enabled) => {
 }
 
 .tech-card :deep(.el-card__header) {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 255, 136, 0.05));
-  border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .tech-card :deep(.el-card__body) {
-  background: rgba(15, 15, 35, 0.02);
+  background: #ffffff;
 }
 
 .card-header {

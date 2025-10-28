@@ -4,7 +4,7 @@
       <template #header>
         <div class="history-header">
           <div class="history-title">
-            <TechIcons name="database" :size="20" color="#00d4ff" />
+            <TechIcons name="database" :size="20" color="#6c757d" />
             <span>对话窗口管理</span>
             <el-badge :value="conversations.length" class="history-badge tech-badge" />
           </div>
@@ -16,7 +16,7 @@
               class="clear-btn tech-btn"
               :disabled="conversations.length === 0"
             >
-              <TechIcons name="settings" :size="14" color="#ff6b6b" />
+              <TechIcons name="settings" :size="14" color="#dc3545" />
               清空全部
             </el-button>
           </div>
@@ -33,7 +33,7 @@
           clearable
         >
           <template #prefix>
-            <TechIcons name="analytics" :size="16" color="#00d4ff" />
+            <TechIcons name="analytics" :size="16" color="#6c757d" />
           </template>
         </el-input>
       </div>
@@ -257,9 +257,9 @@ const clearAllConversations = async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(0, 212, 255, 0.3);
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.05), rgba(0, 212, 255, 0.02));
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.1);
+  border: 1px solid #d0d0d0;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .history-card :deep(.el-card__body) {
@@ -270,7 +270,7 @@ const clearAllConversations = async () => {
   overflow: hidden;
   min-height: 0;
   height: calc(100% - 60px);
-  background: rgba(15, 15, 35, 0.02);
+  background: #ffffff;
 }
 
 .history-header {
@@ -284,13 +284,13 @@ const clearAllConversations = async () => {
   align-items: center;
   gap: 8px;
   font-weight: bold;
-  color: #00d4ff;
+  color: #2c3e50;
 }
 
 .tech-badge :deep(.el-badge__content) {
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: #6c757d;
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .history-actions {
@@ -301,9 +301,9 @@ const clearAllConversations = async () => {
 .clear-btn {
   padding: 6px 12px;
   font-size: 12px;
-  color: #ff6b6b;
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
-  border: 1px solid rgba(255, 107, 107, 0.3);
+  color: #dc3545;
+  background: #ffffff;
+  border: 1px solid #dc3545;
   border-radius: 6px;
   transition: all 0.3s ease;
   display: flex;
@@ -312,9 +312,9 @@ const clearAllConversations = async () => {
 }
 
 .clear-btn:hover:not(:disabled) {
-  color: #ff6b6b;
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(255, 107, 107, 0.1));
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  color: #ffffff;
+  background: #dc3545;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
   transform: translateY(-1px);
 }
 
@@ -329,33 +329,32 @@ const clearAllConversations = async () => {
 }
 
 .tech-input :deep(.el-input__wrapper) {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(0, 255, 136, 0.02));
-  border: 1px solid rgba(0, 212, 255, 0.3);
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
 .tech-input :deep(.el-input__wrapper:hover) {
-  border-color: #00d4ff;
-  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+  border-color: #409eff;
+  box-shadow: 0 2px 6px rgba(64, 158, 255, 0.2);
 }
 
 .tech-input :deep(.el-input__wrapper.is-focus) {
-  border-color: #00ff88;
-  box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
 }
 
 .tech-input :deep(.el-input__inner) {
-  color: #ffffff !important;
+  color: #333 !important;
   background: transparent !important;
   border: none !important;
   font-weight: 500;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .tech-input :deep(.el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.6) !important;
+  color: #999 !important;
   font-style: italic;
 }
 

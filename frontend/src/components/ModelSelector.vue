@@ -6,8 +6,8 @@
     popper-class="model-selector-popover"
   >
     <template #reference>
-      <el-button type="primary" size="small" class="model-selector-btn tech-button">
-        <TechIcons name="settings" :size="14" color="#ffffff" />
+      <el-button type="primary" size="small" class="model-selector-btn gray-button">
+        <TechIcons name="settings" :size="14" color="#2c3e50" />
         已加载模型 ({{ enabledModelsCount }}/{{ totalModelsCount }})
       </el-button>
     </template>
@@ -220,6 +220,21 @@ const emitEnabledModels = () => {
   display: flex;
   align-items: center;
   gap: 5px;
+}
+
+.gray-button {
+  background: #ffffff !important;
+  border: 1px solid #d0d0d0 !important;
+  color: #2c3e50 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.gray-button:hover {
+  background: #f8f9fa !important;
+  border-color: #409eff !important;
+  color: #2c3e50 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2) !important;
 }
 
 .model-selector-content {

@@ -3,7 +3,7 @@
     <template #header>
       <div class="current-header">
         <div class="current-title">
-          <TechIcons name="brain" :size="20" color="#00ff88" />
+          <TechIcons name="brain" :size="20" color="#67c23a" />
           <span>对话</span>
           <el-tag size="small" type="success" class="tech-tag">
             {{ conversation.messages.length }} 条消息
@@ -35,7 +35,7 @@
           <!-- 用户消息 -->
           <div v-if="message.role === 'user'" class="user-message-content">
             <div class="message-header">
-              <TechIcons name="analytics" :size="16" color="#00d4ff" />
+              <TechIcons name="analytics" :size="16" color="#409eff" />
               <span class="message-label">用户</span>
               <span class="message-time">{{ formatTime(message.timestamp) }}</span>
             </div>
@@ -47,7 +47,7 @@
           <!-- AI回复消息 -->
           <div v-else-if="message.role === 'assistant'" class="assistant-message-content">
             <div class="message-header">
-              <TechIcons name="robot" :size="16" color="#00ff88" />
+              <TechIcons name="robot" :size="16" color="#67c23a" />
               <span class="message-label">{{ message.model || 'AI助手' }}</span>
               <el-tag v-if="message.tokens" size="small" type="success" class="tokens-tag">
                 {{ message.tokens }} tokens
@@ -67,7 +67,7 @@
         <!-- 空状态提示 -->
         <div v-if="conversation.messages.length === 0" class="empty-conversation">
           <div class="empty-icon">
-            <TechIcons name="brain" :size="48" color="#00d4ff" />
+            <TechIcons name="brain" :size="48" color="#409eff" />
           </div>
           <h3>开始新对话</h3>
           <p>在下方输入您的问题，开始与AI的智能对话</p>
@@ -167,29 +167,13 @@ defineExpose({
 .current-chat-card {
   height: 100%;
   min-height: 650px;
-  border: 2px solid #00ff88;
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.05) 0%, rgba(0, 255, 136, 0.1) 100%);
-  box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+  border: 1px solid #d0d0d0;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
-}
-
-.current-chat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #00ff88, transparent);
-  animation: scan 2s infinite;
-}
-
-@keyframes scan {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
 }
 
 .current-chat-card :deep(.el-card__body) {
@@ -198,7 +182,7 @@ defineExpose({
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: rgba(15, 15, 35, 0.02);
+  background: #ffffff;
   padding: 0;
 }
 
@@ -213,30 +197,30 @@ defineExpose({
   align-items: center;
   gap: 8px;
   font-weight: bold;
-  color: #00ff88;
+  color: #2c3e50;
 }
 
 .tech-tag {
-  background: linear-gradient(135deg, #00ff88, #00cc66);
+  background: #67c23a;
   color: white;
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .time-tag {
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: #409eff;
   color: white;
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   font-family: 'Monaco', 'Consolas', monospace;
   font-size: 11px;
 }
 
 .tokens-tag {
-  background: linear-gradient(135deg, #00ff88, #00cc66);
+  background: #67c23a;
   color: white;
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   font-family: 'Monaco', 'Consolas', monospace;
   font-size: 11px;
 }
@@ -249,20 +233,18 @@ defineExpose({
 }
 
 .conversation-id {
-  color: #888;
+  color: #909399;
   font-family: 'Monaco', 'Consolas', monospace;
 }
 
 .total-tokens {
-  color: #00ff88;
+  color: #67c23a;
   font-weight: 500;
-  text-shadow: 0 0 4px rgba(0, 255, 136, 0.5);
 }
 
 .total-cost {
-  color: #ff6b6b;
+  color: #f56c6c;
   font-weight: 500;
-  text-shadow: 0 0 4px rgba(255, 107, 107, 0.5);
 }
 
 .conversation-content {
@@ -307,10 +289,11 @@ defineExpose({
 
 .message-label {
   font-weight: 600;
+  color: #2c3e50;
 }
 
 .message-time {
-  color: #888;
+  color: #909399;
   font-size: 11px;
   margin-left: auto;
 }
@@ -324,22 +307,22 @@ defineExpose({
 }
 
 .user-body {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05));
-  border: 1px solid rgba(0, 212, 255, 0.3);
-  color: #fff;
-  border-left: 4px solid #00d4ff;
+  background: #e3f2fd;
+  border: 1px solid #409eff;
+  color: #2c3e50;
+  border-left: 4px solid #409eff;
 }
 
 .assistant-body {
-  background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.05));
-  border: 1px solid rgba(0, 255, 136, 0.3);
-  color: #fff;
-  border-left: 4px solid #00ff88;
+  background: #f0f9ff;
+  border: 1px solid #67c23a;
+  color: #2c3e50;
+  border-left: 4px solid #67c23a;
 }
 
 .message-cost {
   font-size: 11px;
-  color: #ff6b6b;
+  color: #f56c6c;
   text-align: right;
   font-family: 'Monaco', 'Consolas', monospace;
 }
@@ -351,7 +334,7 @@ defineExpose({
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: #888;
+  color: #909399;
   padding: 40px;
 }
 
@@ -361,7 +344,7 @@ defineExpose({
 }
 
 .empty-conversation h3 {
-  color: #00d4ff;
+  color: #409eff;
   margin: 0 0 8px 0;
   font-size: 1.2rem;
 }
@@ -378,40 +361,41 @@ defineExpose({
 }
 
 .messages-container::-webkit-scrollbar-track {
-  background: rgba(0, 212, 255, 0.1);
+  background: #f0f0f0;
   border-radius: 3px;
 }
 
 .messages-container::-webkit-scrollbar-thumb {
-  background: rgba(0, 212, 255, 0.5);
+  background: #d0d0d0;
   border-radius: 3px;
 }
 
 .messages-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 212, 255, 0.7);
+  background: #b0b0b0;
 }
 
 /* 代码样式 */
 :deep(.code-block) {
-  background: linear-gradient(135deg, rgba(15, 15, 35, 0.1), rgba(0, 212, 255, 0.05));
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
   padding: 12px;
   border-radius: 6px;
   overflow-x: auto;
   margin: 10px 0;
   font-family: 'Monaco', 'Consolas', monospace;
   font-size: 13px;
-  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #2c3e50;
 }
 
 :deep(.inline-code) {
-  background: rgba(0, 212, 255, 0.1);
-  color: #00d4ff;
+  background: #f0f0f0;
+  color: #e83e8c;
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'Monaco', 'Consolas', monospace;
   font-size: 13px;
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  border: 1px solid #e0e0e0;
 }
 
 /* 响应式设计 */
